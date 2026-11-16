@@ -1,0 +1,52 @@
+crawl: 
+video 
+ comment, view, share, like và video -> process
+
+start theo ngày -> chỉ crawl trong ngày 
+giỏ hàng -> crawl có những sản phẩm gì và bán được bao nhiêu
+login -> login gg -> quét mã QR
+login bằng email -> thêm gửi mail
+Admin -> reset authen
+reset password ngoài login và trên admin
+
+crawl theo job -> done
+Phân quyền -> theo role hoặc theo user
+viết readme.md, 
+giao diện hướng dẫn sử dụng trên các module và tính năng
+
+
+Update LSh au: 
+	php: 8.36
+	laravel: 12
+	node: 24
+	docker
+
+
+	==========================================================================DOOH=================================
+	CMS
+	 - Ảnh video -> upload -> hiển thị lên màn hình lớn
+
+	CMS:
+		venve: quản lí màn hình: 
+			venve_id
+			localtion
+			thêm nút có thể xem view mô phỏng màn hình
+		delivery
+			banner: Ảnh -> set ảnh -> chạy ở đâu ví dụ venve 1, 2, 3, 4
+			video
+			link html
+			vast
+			chạy bao nhiêu ngày
+			chạy bao nhiêu lần
+			chạy ở đâu
+			line items
+
+		
+
+		Report
+			Filter: theo line item, theo venne id, theo ngày, số implement
+
+API: viết bằng nodeJS
+Auth: key -> cấu hình env hask key env bên cms lưu vào database
+
+Redis, log stack -> log imp và compplele -> hash venneid, line item, timestamp, thêm thời gian 
