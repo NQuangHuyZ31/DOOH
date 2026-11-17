@@ -7,4 +7,5 @@ export interface AppRoute {
   title?: string;
   icon?: ReactNode;
   children?: AppRoute[];
+  layout?: 'main' | 'guest';
 }

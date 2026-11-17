@@ -3,6 +3,7 @@ import { Card, Typography } from 'antd';
 import { AppRoute } from './types';
 import { ROUTING_CONFIG } from '../configs/routing';
 import '@modules/Venue/resources/js/index';
+import '@modules/Auth/resources/js/index';
 
 const { Title, Paragraph } = Typography;
 

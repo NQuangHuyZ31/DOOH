@@ -10,45 +10,56 @@ import { ROUTING_CONFIG } from './configs/routing';
 registerRoutes(moduleRoutes);
 
 const NotFoundPage: React.FC = () => (
-  <Result
-    status="404"
-    title="404"
-    subTitle="Sorry, the page you visited does not exist."
-    extra={
-      <Button type="primary" href={ROUTING_CONFIG.defaultPath}>
-        Back to Dashboard
-      </Button>
-    }
-  />
+	<Result
+		status="404"
+		title="404"
+		subTitle="Sorry, the page you visited does not exist."
+		extra={
+			<Button type="primary" href={ROUTING_CONFIG.defaultPath}>
+				Back to Dashboard
+			</Button>
+		}
+	/>
 );
 
 const App: React.FC = () => {
-  const routes = getRegisteredRoutes();
+	const routes = getRegisteredRoutes();
 
-  return (
-    <ConfigProvider theme={doohTheme}>
-      <BrowserRouter>
-        <MainLayout>
-          <Routes>
-            <Route path="/" element={<Navigate to={ROUTING_CONFIG.defaultPath} replace />} />
-            <Route path={ROUTING_CONFIG.adminPrefix} element={<Navigate to={ROUTING_CONFIG.defaultPath} replace />} />
+	return (
+		<ConfigProvider theme={doohTheme}>
+			<BrowserRouter>
+				<Routes>
+					<Route path="/" element={<Navigate to={ROUTING_CONFIG.defaultPath} replace />} />
+					<Route path={ROUTING_CONFIG.adminPrefix} element={<Navigate to={ROUTING_CONFIG.defaultPath} replace />} />
 
-            {routes.map((route) => (
-              <Route key={route.path} path={route.path} element={route.element} />
-            ))}
+					{routes.map((route) => {
+						const content =
+							route.layout === 'guest' ? (
+								route.element
+							) : (
+								<MainLayout>{route.element}</MainLayout>
+							);
+						return <Route key={route.path} path={route.path} element={content} />;
+					})}
 
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </MainLayout>
-      </BrowserRouter>
-    </ConfigProvider>
-  );
+					<Route
+						path="*"
+						element={
+							<MainLayout>
+								<NotFoundPage />
+							</MainLayout>
+						}
+					/>
+				</Routes>
+			</BrowserRouter>
+		</ConfigProvider>
+	);
 };
 
 const container = document.getElementById('app');
 if (container) {
-  const root = createRoot(container);
-  root.render(<App />);
+	const root = createRoot(container);
+	root.render(<App />);
 }
 
 export default App;
