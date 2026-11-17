@@ -10,3 +10,6 @@ export { useFilter } from './hooks/useFilter';
 export { formatNumber, formatDuration, formatFileSize } from './utils/formatters';
 export { doohTheme } from './configs/theme';
 export { defaultPagination } from './configs/pagination';
+export { ROUTING_CONFIG } from './configs/routing';
+export { registerRoutes, getRegisteredRoutes } from './routes/registry';
+export type { AppRoute } from './routes/types';

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Layout, Menu, Typography, Space, Button } from 'antd';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   DesktopOutlined,
   SendOutlined,
@@ -9,27 +10,39 @@ import {
   PlaySquareOutlined,
   LogoutOutlined,
 } from '@ant-design/icons';
+import { ROUTING_CONFIG } from '../configs/routing';
 
 const { Header, Content, Sider } = Layout;
 const { Title, Text } = Typography;
 
 interface MainLayoutProps {
   children: React.ReactNode;
-  activeKey?: string;
-  onNavigate?: (key: string) => void;
 }
 
-export const MainLayout: React.FC<MainLayoutProps> = ({ children, activeKey = 'venues', onNavigate }) => {
+export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const currentKey = Object.values(ROUTING_CONFIG.modules).find(
+    (m) => location.pathname.startsWith(m.path)
+  )?.key || ROUTING_CONFIG.defaultModule;
 
   const menuItems = [
-    { key: 'venues', icon: <DesktopOutlined />, label: 'Venues (Screens)' },
-    { key: 'delivery', icon: <SendOutlined />, label: 'Delivery (Campaigns)' },
-    { key: 'creatives', icon: <PictureOutlined />, label: 'Creative Hub' },
-    { key: 'simulator', icon: <PlaySquareOutlined />, label: 'Screen Simulator' },
-    { key: 'reports', icon: <BarChartOutlined />, label: 'Reports & Analytics' },
-    { key: 'logs', icon: <FileTextOutlined />, label: 'Tracking Logs' },
+    { key: ROUTING_CONFIG.modules.venues.key, icon: <DesktopOutlined />, label: ROUTING_CONFIG.modules.venues.label },
+    { key: ROUTING_CONFIG.modules.delivery.key, icon: <SendOutlined />, label: ROUTING_CONFIG.modules.delivery.label },
+    { key: ROUTING_CONFIG.modules.creatives.key, icon: <PictureOutlined />, label: ROUTING_CONFIG.modules.creatives.label },
+    { key: ROUTING_CONFIG.modules.simulator.key, icon: <PlaySquareOutlined />, label: ROUTING_CONFIG.modules.simulator.label },
+    { key: ROUTING_CONFIG.modules.reports.key, icon: <BarChartOutlined />, label: ROUTING_CONFIG.modules.reports.label },
+    { key: ROUTING_CONFIG.modules.logs.key, icon: <FileTextOutlined />, label: ROUTING_CONFIG.modules.logs.label },
   ];
+
+  const handleMenuClick = ({ key }: { key: string }) => {
+    const targetModule = Object.values(ROUTING_CONFIG.modules).find((m) => m.key === key);
+    if (targetModule) {
+      navigate(targetModule.path);
+    }
+  };
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -41,10 +54,10 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children, activeKey = 'v
         </div>
         <Menu
           theme="dark"
-          selectedKeys={[activeKey]}
+          selectedKeys={[currentKey]}
           mode="inline"
           items={menuItems}
-          onClick={({ key }) => onNavigate?.(key)}
+          onClick={handleMenuClick}
         />
       </Sider>
       <Layout>

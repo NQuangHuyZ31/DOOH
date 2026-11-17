@@ -1,0 +1,27 @@
+{
+    "name": "ureka/module-core",
+    "description": "Core foundation module for Ureka DOOH CMS",
+    "type": "library",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "Ureka Media"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "illuminate/support": "^11.0|^12.0|^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\Core\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modules\\Core\\Providers\\CoreServiceProvider"
+            ]
+        }
+    }
+}

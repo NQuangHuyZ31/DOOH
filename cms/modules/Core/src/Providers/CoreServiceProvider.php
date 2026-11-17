@@ -11,6 +11,12 @@ class CoreServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $corePath = dirname(__DIR__, 2);
+        $configFile = "{$corePath}/configs/modules.php";
+        if (file_exists($configFile)) {
+            $this->mergeConfigFrom($configFile, 'modules');
+        }
+
         $this->registerModuleProviders();
     }
 

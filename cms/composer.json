@@ -34,6 +34,15 @@
             "Database\\Seeders\\": "database/seeders/"
         }
     },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "modules/*",
+            "options": {
+                "symlink": true
+            }
+        }
+    ],
     "autoload-dev": {
         "psr-4": {
             "Tests\\": "tests/"

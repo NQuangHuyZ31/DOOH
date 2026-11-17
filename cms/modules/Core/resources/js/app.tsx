@@ -1,66 +1,46 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { ConfigProvider, Card, Typography } from 'antd';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ConfigProvider, Result, Button } from 'antd';
 import { MainLayout, doohTheme } from './index';
-import VenueListPage from '@modules/Venue/resources/js/pages/VenueListPage';
+import { registerRoutes, getRegisteredRoutes } from './routes/registry';
+import { moduleRoutes } from './routes/moduleRoutes';
+import { ROUTING_CONFIG } from './configs/routing';
 
-const { Title, Paragraph } = Typography;
+registerRoutes(moduleRoutes);
+
+const NotFoundPage: React.FC = () => (
+  <Result
+    status="404"
+    title="404"
+    subTitle="Sorry, the page you visited does not exist."
+    extra={
+      <Button type="primary" href={ROUTING_CONFIG.defaultPath}>
+        Back to Dashboard
+      </Button>
+    }
+  />
+);
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('venues');
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'venues':
-        return <VenueListPage />;
-      case 'campaigns':
-      case 'line-items':
-        return (
-          <Card title="Delivery Management">
-            <Title level={4}>Campaigns & Line Items</Title>
-            <Paragraph>
-              Manage DOOH flights, daily share-of-voice pacing (120s loops), and flight targets.
-            </Paragraph>
-          </Card>
-        );
-      case 'creatives':
-        return (
-          <Card title="Creative Library">
-            <Title level={4}>Digital Out-Of-Home Creative Assets</Title>
-            <Paragraph>
-              Upload and validate 16:9 / 9:16 video (H.264 / AAC) and high-res imagery with strict bitrates.
-            </Paragraph>
-          </Card>
-        );
-      case 'simulator':
-        return (
-          <Card title="Screen Simulator & Player">
-            <Title level={4}>Web Player Preview</Title>
-            <Paragraph>
-              Live simulator for screen playback loops and opaque tracking token validation.
-            </Paragraph>
-          </Card>
-        );
-      case 'reports':
-      case 'logs':
-        return (
-          <Card title="Analytics & Audit Logs">
-            <Title level={4}>Proof-of-Play & Audit Reports</Title>
-            <Paragraph>
-              Aggregated hourly and daily impression counts with verification hash auditing.
-            </Paragraph>
-          </Card>
-        );
-      default:
-        return <VenueListPage />;
-    }
-  };
+  const routes = getRegisteredRoutes();
 
   return (
     <ConfigProvider theme={doohTheme}>
-      <MainLayout activeKey={activeTab} onNavigate={(key) => setActiveTab(key)}>
-        {renderContent()}
-      </MainLayout>
+      <BrowserRouter>
+        <MainLayout>
+          <Routes>
+            <Route path="/" element={<Navigate to={ROUTING_CONFIG.defaultPath} replace />} />
+            <Route path={ROUTING_CONFIG.adminPrefix} element={<Navigate to={ROUTING_CONFIG.defaultPath} replace />} />
+
+            {routes.map((route) => (
+              <Route key={route.path} path={route.path} element={route.element} />
+            ))}
+
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </MainLayout>
+      </BrowserRouter>
     </ConfigProvider>
   );
 };

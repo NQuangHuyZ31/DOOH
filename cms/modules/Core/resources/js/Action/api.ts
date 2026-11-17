@@ -1,11 +1,12 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { ROUTING_CONFIG } from '../configs/routing';
 
 class ApiClient {
   private client: AxiosInstance;
 
   constructor() {
     this.client = axios.create({
-      baseURL: '/api',
+      baseURL: ROUTING_CONFIG.apiPrefix,
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
@@ -14,7 +15,7 @@ class ApiClient {
     });
 
     this.client.interceptors.request.use((config) => {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem(ROUTING_CONFIG.auth.tokenKey);
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -25,9 +26,9 @@ class ApiClient {
       (response: AxiosResponse) => response,
       (error) => {
         if (error.response?.status === 401) {
-          localStorage.removeItem('auth_token');
-          if (window.location.pathname !== '/login') {
-            window.location.href = '/login';
+          localStorage.removeItem(ROUTING_CONFIG.auth.tokenKey);
+          if (window.location.pathname !== ROUTING_CONFIG.auth.loginPath) {
+            window.location.href = ROUTING_CONFIG.auth.loginPath;
           }
         }
         return Promise.reject(error);
@@ -35,19 +36,19 @@ class ApiClient {
     );
   }
 
-  public get<T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+  public get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return this.client.get<T>(url, config);
   }
 
-  public post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+  public post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return this.client.post<T>(url, data, config);
   }
 
-  public put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+  public put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return this.client.put<T>(url, data, config);
   }
 
-  public delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+  public delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return this.client.delete<T>(url, config);
   }
 }
