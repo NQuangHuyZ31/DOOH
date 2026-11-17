@@ -9,6 +9,7 @@ export interface AuthUser {
   id: number;
   name: string;
   email: string;
+  permission_type?: 'role' | 'direct';
   role?: string;
   roles?: string[];
   permissions?: string[];

@@ -4,6 +4,7 @@ namespace Modules\User\Models;
 
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -13,12 +14,17 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    public const PERMISSION_TYPE_ROLE = 'role';
+    public const PERMISSION_TYPE_DIRECT = 'direct';
+
     protected $table = 'users';
 
     protected $fillable = [
         'name',
         'email',
         'password',
+        'role_id',
+        'permission_type',
     ];
 
     protected $hidden = [
@@ -35,16 +41,40 @@ class User extends Authenticatable
     }
 
     /**
-     * The roles that belong to the user.
+     * Single assigned role (BelongsTo).
      */
-    public function roles(): BelongsToMany
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, 'role_id');
+    }
+
+    /**
+     * Direct module permissions when permission_type === 'direct'.
+     */
+    public function directPermissions(): BelongsToMany
     {
         return $this->belongsToMany(
-            Role::class,
-            'user_roles',
+            Permission::class,
+            'user_permissions',
             'user_id',
-            'role_id'
+            'permission_id'
         );
+    }
+
+    /**
+     * Check if authorization is based on Role.
+     */
+    public function isRoleMode(): bool
+    {
+        return $this->permission_type === self::PERMISSION_TYPE_ROLE;
+    }
+
+    /**
+     * Check if authorization is based on Direct Module Permissions.
+     */
+    public function isDirectMode(): bool
+    {
+        return $this->permission_type === self::PERMISSION_TYPE_DIRECT;
     }
 
     /**
@@ -52,38 +82,62 @@ class User extends Authenticatable
      */
     public function hasRole(string|array $roles): bool
     {
+        if (!$this->isRoleMode() || !$this->role) {
+            return false;
+        }
+
         $roleList = is_array($roles) ? $roles : [$roles];
-        return $this->roles()->whereIn('name', $roleList)->exists();
+        return in_array($this->role->name, $roleList, true);
     }
 
     /**
-     * Check if user has given permission.
+     * Check if user has given permission (either via Role or Direct, mutually exclusive).
      */
     public function hasPermission(string $permission): bool
     {
+        // 1. Super Admin role always has all permissions
         if ($this->hasRole('super_admin')) {
             return true;
         }
 
-        return $this->roles()
-            ->whereHas('permissions', function ($query) use ($permission) {
-                $query->where('name', $permission);
-            })
-            ->exists();
+        // 2. Direct module permission mode
+        if ($this->isDirectMode()) {
+            return $this->directPermissions()
+                ->where('name', $permission)
+                ->exists();
+        }
+
+        // 3. Role-based permission mode
+        if ($this->isRoleMode() && $this->role) {
+            return $this->role->permissions()
+                ->where('name', $permission)
+                ->exists();
+        }
+
+        return false;
     }
 
     /**
-     * Get all assigned role names.
+     * Get the single role name.
+     */
+    public function getRoleName(): ?string
+    {
+        return $this->isRoleMode() ? $this->role?->name : null;
+    }
+
+    /**
+     * Get role names as array (single element or empty).
      *
      * @return string[]
      */
     public function getRoleNames(): array
     {
-        return $this->roles->pluck('name')->all();
+        $roleName = $this->getRoleName();
+        return $roleName !== null ? [$roleName] : [];
     }
 
     /**
-     * Get all unique permission names for the user.
+     * Get all active permission names for the user.
      *
      * @return string[]
      */
@@ -93,11 +147,74 @@ class User extends Authenticatable
             return Permission::pluck('name')->all();
         }
 
-        return $this->roles
-            ->loadMissing('permissions')
-            ->flatMap(fn ($role) => $role->permissions->pluck('name'))
-            ->unique()
-            ->values()
-            ->all();
+        if ($this->isDirectMode()) {
+            return $this->directPermissions
+                ->pluck('name')
+                ->values()
+                ->all();
+        }
+
+        if ($this->isRoleMode() && $this->role) {
+            return $this->role->permissions
+                ->pluck('name')
+                ->values()
+                ->all();
+        }
+
+        return [];
+    }
+
+    /**
+     * Assign Role (Cách 1).
+     * Enforces mutual exclusivity: automatically clears direct permissions.
+     */
+    public function assignRole(Role|int|string $role): self
+    {
+        $roleModel = $role instanceof Role
+            ? $role
+            : (is_numeric($role) ? Role::find($role) : Role::where('name', $role)->first());
+
+        if (!$roleModel) {
+            throw new \InvalidArgumentException("Role not found.");
+        }
+
+        $this->role_id = $roleModel->id;
+        $this->permission_type = self::PERMISSION_TYPE_ROLE;
+        $this->save();
+
+        // Mutually exclusive: detach all direct permissions
+        $this->directPermissions()->detach();
+
+        return $this;
+    }
+
+    /**
+     * Assign Direct Module Permissions (Cách 2).
+     * Enforces mutual exclusivity: automatically unassigns role.
+     *
+     * @param int[]|string[] $permissionIdsOrNames
+     */
+    public function assignDirectPermissions(array $permissionIdsOrNames): self
+    {
+        $ids = [];
+        foreach ($permissionIdsOrNames as $item) {
+            if (is_numeric($item)) {
+                $ids[] = (int) $item;
+            } else {
+                $perm = Permission::where('name', $item)->first();
+                if ($perm) {
+                    $ids[] = $perm->id;
+                }
+            }
+        }
+
+        $this->role_id = null;
+        $this->permission_type = self::PERMISSION_TYPE_DIRECT;
+        $this->save();
+
+        // Mutually exclusive: sync direct permissions and ensure role is null
+        $this->directPermissions()->sync($ids);
+
+        return $this;
     }
 }

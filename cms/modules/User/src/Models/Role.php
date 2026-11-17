@@ -5,6 +5,7 @@ namespace Modules\User\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Role extends Model
 {
@@ -32,15 +33,10 @@ class Role extends Model
     }
 
     /**
-     * The users that belong to the role.
+     * The users that belong to the role (One Role to Many Users).
      */
-    public function users(): BelongsToMany
+    public function users(): HasMany
     {
-        return $this->belongsToMany(
-            User::class,
-            'user_roles',
-            'role_id',
-            'user_id'
-        );
+        return $this->hasMany(User::class, 'role_id');
     }
 }

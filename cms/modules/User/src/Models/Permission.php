@@ -31,4 +31,17 @@ class Permission extends Model
             'role_id'
         );
     }
+
+    /**
+     * The users assigned this permission directly.
+     */
+    public function directUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            User::class,
+            'user_permissions',
+            'permission_id',
+            'user_id'
+        );
+    }
 }

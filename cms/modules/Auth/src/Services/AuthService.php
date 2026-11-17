@@ -175,6 +175,8 @@ class AuthService
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
+            'permission_type' => $user->permission_type ?? 'role',
+            'role' => $user->getRoleName(),
             'roles' => $user->getRoleNames(),
             'permissions' => $user->getAllPermissions(),
             'created_at' => $user->created_at?->toISOString(),

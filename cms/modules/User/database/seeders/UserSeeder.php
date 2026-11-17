@@ -16,7 +16,8 @@ class UserSeeder extends Seeder
     {
         $defaultPassword = Hash::make('password123');
 
-        $users = [
+        // 1. Users assigned by Role (Cách 1)
+        $roleUsers = [
             [
                 'email' => 'admin@dooh.media',
                 'name' => 'DOOH Super Admin',
@@ -40,7 +41,7 @@ class UserSeeder extends Seeder
             ],
         ];
 
-        foreach ($users as $userData) {
+        foreach ($roleUsers as $userData) {
             $roleName = $userData['role'];
             unset($userData['role']);
 
@@ -49,10 +50,26 @@ class UserSeeder extends Seeder
                 $userData
             );
 
-            $role = Role::where('name', $roleName)->first();
-            if ($role) {
-                $user->roles()->syncWithoutDetaching([$role->id]);
-            }
+            $user->assignRole($roleName);
         }
+
+        // 2. User assigned by Direct Module Permissions (Cách 2)
+        $customUser = User::updateOrCreate(
+            ['email' => 'custom@dooh.media'],
+            [
+                'name' => 'DOOH Custom Permissions User',
+                'password' => $defaultPassword,
+                'email_verified_at' => now(),
+            ]
+        );
+
+        // Assign explicit module permissions directly
+        $customUser->assignDirectPermissions([
+            'venue.view',
+            'venue.create',
+            'creative.view',
+            'creative.upload',
+            'delivery.view',
+        ]);
     }
 }
