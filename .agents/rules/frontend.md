@@ -34,9 +34,13 @@ Detailed Architecture: [`docs/frontend/architecture.md`](file:///E:/Urekamedia/D
 ---
 
 ## 4. State Management & API Integration
+- **Mandatory Redux Toolkit (RTK)**: When API state or domain data needs to be stored and shared in a global store (cross-component sharing, multi-tab caching, server-paginated entity lists, global filters), it **MUST** be placed in the store using **Redux Toolkit (`@reduxjs/toolkit`)** via `createSlice` and `createAsyncThunk`.
+  - Directory: `modules/<ModuleName>/resources/js/store/<domain>Slice.ts`.
+  - Integration: Thunks MUST call `http` from `@core/Action/api`.
+  - Forbidden: Legacy raw Redux (manual action types/creators, switch-case reducers, raw `redux` boilerplate) and ad-hoc global state patterns.
 - **State Partition**:
-  - **Redux Slice + Thunk** (`store/<domain>/`): Shared entity lists (venues, line items), server pagination, search filters, and multi-tab state.
-  - **Direct API + `useAction`**: Single row mutations (delete, toggle status, submit modal, export).
+  - **Redux Toolkit Slice + Thunk** (`store/<domain>/`): Shared entity lists (venues, line items), server pagination, search filters, and multi-tab state.
+  - **Direct API + `useAction`**: Single row mutations (delete, toggle status, submit modal, export) and local transient UI state.
   - NEVER store the exact same entity dataset in both Redux and local React state.
 - **HTTP Client**: Use `http` from `@core/Action/api` (Sanctum bearer token, 401 handling). Never use raw `fetch()` or custom axios instances.
 - **URL Query Parameters**: Use `useSearchParams` only when filter/pagination state must be shareable via link.

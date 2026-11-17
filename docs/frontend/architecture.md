@@ -54,3 +54,17 @@ Configured in `tsconfig.json` and `vite.config.ts`:
   import { http } from '@core/Action/api';
   import { useFilter } from '@core/hooks';
   ```
+
+---
+
+## 4. State Management: Mandatory Redux Toolkit (RTK)
+
+Whenever API data or domain entities require global state or cross-component sharing, they **MUST** be placed in the store using **Redux Toolkit (`@reduxjs/toolkit`)**:
+
+1. **Slice Structure**: Placed in `modules/<ModuleName>/resources/js/store/<domain>Slice.ts`.
+2. **Async Operations**: Built using `createAsyncThunk` invoking `http` from `@core/Action/api`.
+3. **Partitioning**:
+   - **Store (RTK)**: Shared entity lists, server pagination, cross-module caching, persistent filters.
+   - **Local State (`useState` / custom hook)**: Ephemeral UI state (modals, active dropdowns, simple form inputs).
+   - **Direct API (`useAction`)**: Single-row actions (toggle status, quick delete, export).
+4. **Forbidden**: Legacy raw Redux (manual action creators, switch-case reducers) or ad-hoc custom state containers.
