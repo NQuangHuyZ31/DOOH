@@ -20,37 +20,67 @@ class CheckModulePermission
         'auth',
     ];
 
-    /**
-     * Handle an incoming request.
-     */
     public function handle(Request $request, Closure $next, ?string $module = null, ?string $permission = null): Response
     {
-        if (!$module) {
-            $prefix = trim($request->route()?->getPrefix() ?? '', '/');
-            $segments = explode('/', $prefix);
-            $module = end($segments);
-        }
+        $resolvedModule = $this->resolveModuleName($request, $module);
 
-        if (in_array(strtolower($module), $this->exemptModules, true)) {
+        if (in_array($resolvedModule, $this->exemptModules, true)) {
             return $next($request);
         }
 
-        $user = $request->user();
+        $user = $this->resolveAuthenticatedUser($request);
         if (!$user) {
-            return $this->respondError('Unauthenticated.', 401);
+            return $this->respondUnauthorized('Unauthenticated.');
         }
 
-        // Super Admin bypasses all permission checks
         if (method_exists($user, 'hasRole') && $user->hasRole('super_admin')) {
             return $next($request);
         }
 
-        // Check required permission
-        $requiredPermission = $permission ?? strtolower($module) . '.view';
+        $requiredPermission = $this->resolveRequiredPermission($request, $resolvedModule, $permission);
         if (method_exists($user, 'hasPermission') && $user->hasPermission($requiredPermission)) {
             return $next($request);
         }
 
-        return $this->respondError('Access denied: insufficient permissions', 403);
+        return $this->respondForbidden('Access denied: insufficient permissions');
+    }
+
+    protected function resolveModuleName(Request $request, ?string $module): string
+    {
+        if ($module) {
+            return strtolower($module);
+        }
+
+        $prefix = trim($request->route()?->getPrefix() ?? '', '/');
+        $segments = explode('/', $prefix);
+
+        return strtolower((string) end($segments));
+    }
+
+    protected function resolveAuthenticatedUser(Request $request): mixed
+    {
+        $user = $request->user() ?? auth('sanctum')->user();
+
+        if ($user && !$request->user()) {
+            $request->setUserResolver(fn () => $user);
+        }
+
+        return $user;
+    }
+
+    protected function resolveRequiredPermission(Request $request, string $module, ?string $permission): string
+    {
+        if ($permission !== null) {
+            return $permission;
+        }
+
+        $action = match (strtoupper($request->method())) {
+            'POST' => 'create',
+            'PUT', 'PATCH' => 'edit',
+            'DELETE' => 'delete',
+            default => 'view',
+        };
+
+        return "{$module}.{$action}";
     }
 }

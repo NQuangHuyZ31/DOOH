@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Space, message } from 'antd';
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import { ListLayout } from '@core';
+import { ListLayout } from '@core/components/ListLayout';
 import { VenueTable } from '../components/VenueTable';
 import { VenueFormModal } from '../components/VenueFormModal';
 import { venueApi, type VenueItem } from '../Action/venueApi';

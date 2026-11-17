@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Form, Input, InputNumber, Select } from 'antd';
-import { CustomModal } from '@core';
+import { CustomModal } from '@core/components/CustomModal';
 import type { VenueItem } from '../Action/venueApi';
 
 interface VenueFormModalProps {

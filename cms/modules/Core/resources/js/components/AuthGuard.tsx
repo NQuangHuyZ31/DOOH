@@ -4,7 +4,7 @@ import { Spin } from 'antd';
 import { ROUTING_CONFIG } from '../configs/routing';
 import { useAppSelector } from '../store/hooks';
 
-interface AuthGuardProps {
+export interface AuthGuardProps {
   children: React.ReactNode;
 }
 

@@ -1,7 +1,4 @@
-import { registerRoutes } from '@core';
-import { authRoutes } from './routes/route';
-import authReducer from './store/authSlice';
+import { registerRoutes } from '@core/routes/registry';
+import authRoutes from './routes/route';
 
 registerRoutes(authRoutes);
-
-export { authRoutes, authReducer };

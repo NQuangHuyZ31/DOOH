@@ -1,21 +1,29 @@
-import { http } from '@core';
-import type { LoginPayload, AuthResponse, AuthUser } from '../types/auth';
+import { http } from '@core/Action/api';
+import type { ApiResponse } from '@core/types/api';
+import type {
+    LoginPayload,
+    VerifyOtpPayload,
+    ResendOtpPayload,
+    ResendOtpResponse,
+    AuthResponse,
+    AuthUser,
+} from '../types/auth';
 
 export const authApi = {
-  login: (data: LoginPayload) =>
-    http.post<{ status: string; message: string; data: AuthResponse }>('/auth/login', data),
+    login: (data: LoginPayload) =>
+        http.post<ApiResponse<AuthResponse>>('/auth/login', data),
 
-  verifyOtp: (data: { temp_token: string; code: string }) =>
-    http.post<{ status: string; message: string; data: AuthResponse }>('/auth/verify-otp', data),
+    verifyOtp: (data: VerifyOtpPayload) =>
+        http.post<ApiResponse<AuthResponse>>('/auth/verify-otp', data),
 
-  resendOtp: (data: { temp_token: string }) =>
-    http.post<{ status: string; message: string; data: { temp_token: string; email: string } }>('/auth/resend-otp', data),
+    resendOtp: (data: ResendOtpPayload) =>
+        http.post<ApiResponse<ResendOtpResponse>>('/auth/resend-otp', data),
 
-  logout: () =>
-    http.post<{ status: string; message: string }>('/auth/logout'),
+    logout: () =>
+        http.post<ApiResponse<null>>('/auth/logout'),
 
-  me: () =>
-    http.get<{ status: string; data: AuthUser }>('/auth/me'),
+    me: () =>
+        http.get<ApiResponse<AuthUser>>('/auth/me'),
 };
 
 export default authApi;

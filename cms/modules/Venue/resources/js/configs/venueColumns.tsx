@@ -1,7 +1,7 @@
 import React from 'react';
 import { Space, Button, Popconfirm } from 'antd';
 import { EditOutlined, DeleteOutlined, PlayCircleOutlined } from '@ant-design/icons';
-import { StatusTag } from '@core';
+import { StatusTag } from '@core/components/StatusTag';
 import type { VenueItem } from '../Action/venueApi';
 
 interface ColumnActions {

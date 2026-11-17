@@ -2,7 +2,9 @@
 
 namespace Modules\Core\Providers;
 
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
+use Modules\Core\Support\ModuleRegistry;
 
 class CoreServiceProvider extends ServiceProvider
 {
@@ -16,6 +18,13 @@ class CoreServiceProvider extends ServiceProvider
         if (file_exists($configFile)) {
             $this->mergeConfigFrom($configFile, 'modules');
         }
+
+        $this->app->scoped(ModuleRegistry::class, function () {
+            return new ModuleRegistry(
+                base_path('modules'),
+                config('modules.disabled', [])
+            );
+        });
 
         $this->registerModuleProviders();
     }
@@ -35,7 +44,10 @@ class CoreServiceProvider extends ServiceProvider
             $this->app['view']->addLocation($viewsPath);
         }
 
-        // 2. Auto-discover migrations from all modules
+        // 2. Register modular Blade directives for entrypoints.json
+        $this->registerBladeDirectives();
+
+        // 3. Auto-discover migrations from all modules
         if (is_dir($modulesPath)) {
             foreach (scandir($modulesPath) as $module) {
                 if ($module === '.' || $module === '..') {
@@ -48,19 +60,32 @@ class CoreServiceProvider extends ServiceProvider
             }
         }
 
-        // 3. Configure global modular factory discovery
-        \Illuminate\Database\Eloquent\Factories\Factory::guessFactoryNamesUsing(
-            function (string $modelName) {
-                if (str_starts_with($modelName, 'Modules\\')) {
-                    $parts = explode('\\', $modelName);
-                    $module = $parts[1] ?? '';
-                    $model = end($parts);
-                    return "Modules\\{$module}\\Database\\Factories\\{$model}Factory";
-                }
-
-                return 'Database\\Factories\\' . class_basename($modelName) . 'Factory';
+        $this->app->terminating(function () {
+            if ($this->app->bound(ModuleRegistry::class)) {
+                $this->app->make(ModuleRegistry::class)->resetDomCache();
             }
-        );
+        });
+    }
+
+    /**
+     * Register modular Blade directives for DOM-ing assets from entrypoints.json.
+     */
+    protected function registerBladeDirectives(): void
+    {
+        Blade::directive('moduleCss', function ($expression) {
+            $expr = $expression ?: 'null';
+            return "<?php echo app(\\Modules\\Core\\Support\\ModuleRegistry::class)->renderCss($expr); ?>";
+        });
+
+        Blade::directive('moduleJs', function ($expression) {
+            $expr = $expression ?: 'null';
+            return "<?php echo app(\\Modules\\Core\\Support\\ModuleRegistry::class)->renderJs($expr); ?>";
+        });
+
+        Blade::directive('moduleAssets', function ($expression) {
+            $expr = $expression ?: 'null';
+            return "<?php echo app(\\Modules\\Core\\Support\\ModuleRegistry::class)->renderAssets($expr); ?>";
+        });
     }
 
     /**

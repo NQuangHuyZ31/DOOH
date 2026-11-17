@@ -1,9 +1,9 @@
 import React from 'react';
-import { Card, Space, Typography } from 'antd';
+import { Card, Flex, Space, Typography } from 'antd';
 
 const { Title, Paragraph } = Typography;
 
-interface ListLayoutProps {
+export interface ListLayoutProps {
   title: string;
   description?: string;
   extraActions?: React.ReactNode;
@@ -20,7 +20,7 @@ export const ListLayout: React.FC<ListLayoutProps> = ({
 }) => {
   return (
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Flex justify="space-between" align="center">
         <div>
           <Title level={4} style={{ margin: 0 }}>
             {title}
@@ -32,7 +32,7 @@ export const ListLayout: React.FC<ListLayoutProps> = ({
           )}
         </div>
         {extraActions && <Space>{extraActions}</Space>}
-      </div>
+      </Flex>
 
       {filterBar && <Card size="small">{filterBar}</Card>}
 

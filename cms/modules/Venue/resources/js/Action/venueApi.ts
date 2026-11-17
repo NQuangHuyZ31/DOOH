@@ -1,4 +1,4 @@
-import { http } from '@core';
+import { http } from '@core/Action/api';
 
 export interface VenueItem {
   id: number;

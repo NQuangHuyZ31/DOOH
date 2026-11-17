@@ -1,4 +1,5 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
+import { extractErrorMessage } from '@core/utils/error';
 import { authApi } from '../Action/authApi';
 import type { AuthUser } from '../types/auth';
 
@@ -9,11 +10,7 @@ export const fetchMe = createAsyncThunk<AuthUser, void, { rejectValue: string }>
             const response = await authApi.me();
             return response.data.data;
         } catch (err: unknown) {
-            const message =
-                typeof err === 'object' && err !== null && 'response' in err
-                    ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
-                    : 'Failed to authenticate session.';
-            return rejectWithValue(message || 'Session expired.');
+            return rejectWithValue(extractErrorMessage(err, 'Session expired.'));
         }
     }
 );

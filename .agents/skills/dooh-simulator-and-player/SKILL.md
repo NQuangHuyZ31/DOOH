@@ -1,44 +1,32 @@
 ---
 name: dooh-simulator-and-player
-description: Guidelines and implementation patterns for DOOH Web Player and CMS Screen Simulator (Image, Video, HTML, VAST, and tracking beacons).
+description: Use when building or changing the DOOH web player or the CMS Simulator module — playlist loop playback (image, video, HTML5, VAST), tracking beacons, offline queue, LED frame mockup.
 ---
 
-# DOOH Screen Simulator & Player Skill
+# DOOH Player & Simulator
 
-Use this skill when developing, testing, or extending the DOOH Web Player client or the CMS Screen Simulator module.
+## 1. Playback per Creative Type
 
----
-
-## 1. Supported Creative Formats & Playback Rules
-
-Every DOOH Player instance (physical screen or CMS simulator) implements a sequential playlist loop:
-
-| Creative Type | Rendering Element | Duration Handling | Transition Trigger |
+| Type | Element | Duration | Next item on |
 |---|---|---|---|
-| **Image (Banner)** | `<img>` or CSS cover | Fixed `duration_seconds` (e.g. 10s) | Countdown timer reaches 0 |
-| **Video** | HTML5 `<video autoplay muted playsinline>` | Video native duration or `duration_seconds` | `ended` event listener |
-| **HTML5 Link** | `<iframe sandbox="allow-scripts allow-same-origin">` | Fixed `duration_seconds` | Countdown timer reaches 0 |
-| **VAST 2.0-4.0** | Parsed XML `<MediaFile>` (MP4/WebM) | Media duration specified in VAST XML | `ended` event listener |
+| Image | `<img>` / CSS cover | `duration` | timer = 0 |
+| Video | `<video autoplay muted playsinline>` | native or `duration` | `ended` |
+| HTML5 | `<iframe sandbox="allow-scripts allow-same-origin">` | `duration` | timer = 0 |
+| VAST 2.0–4.0 | parsed linear `<MediaFile>` (MP4/WebM) | VAST `<Duration>` | `ended` |
 
----
+Errors (load failure, VAST parse) → skip to next item, never stall the loop.
 
-## 2. Tracking Beacon Specification (Opaque Token)
+## 2. Beacons (opaque token)
 
-- **Playlist Ingestion**: Player calls `GET /api/v1/player/playlist?venue_id={venue_id}`.
-- **Tracking URLs**: Server provides encrypted URLs per item:
-  - `item.tracking.impression_url`: `https://api.yourdomain.com/api/v1/tracking/imp/{hash}`
-  - `item.tracking.complete_url`: `https://api.yourdomain.com/api/v1/tracking/complete/{hash}`
-- **Zero Client Encryption**: Player does NOT need to encrypt or compute HMAC.
-- **Triggers**:
-  - **Impression**: Send immediately on render start (`img.onload` or `video.onplay`) via `navigator.sendBeacon(impression_url)` or `fetch(impression_url, { keepalive: true })`.
-  - **Complete**: Send when video reaches 100% (`video.onended`) via `navigator.sendBeacon(complete_url)`.
-- **Offline Resiliency**: If network is disconnected, queue beacon URLs in `localStorage`/`IndexedDB` and replay when `window.ononline` fires.
+- Fetch `GET /api/v1/delivery/playlist?venue_id={venue_id}`; each item has `tracking.impression_url` (`/api/v1/log/imp/{hash}`) and `tracking.complete_url` (`/api/v1/log/complete/{hash}`).
+- Player does no crypto/HMAC.
+- Impression: on render start (`img.onload`, `video.onplay`) via `navigator.sendBeacon(url)` or `fetch(url, { keepalive: true })`.
+- Complete: on `video.onended` (or timer end for image/HTML5).
+- Offline: queue URLs in `localStorage`/IndexedDB; replay on `window.ononline`.
+- Refresh playlist every `refresh_seconds`.
 
----
+## 3. CMS Simulator (`cms/modules/Simulator/`)
 
-## 3. Screen Simulator Architecture (CMS)
-
-In the CMS Simulator module (`cms/modules/Simulator/`):
-- `LedFrameMockup.tsx`: Renders outdoor LED screen bezel (16:9 landscape, 9:16 portrait, or custom resolution).
-- `PlayerEngine.tsx`: Manages playlist sequence, countdown timers, and video event listeners.
-- `EventDebugPanel.tsx`: Real-time sidebar displaying active item, remaining seconds, and HTTP beacon status (`204 OK`).
+- `LedFrameMockup.tsx`: bezel for 16:9, 9:16, or venue px resolution.
+- `PlayerEngine.tsx`: sequence, timers, media events (logic in `hooks/usePlayerEngine.ts` to keep ≤ 150 lines).
+- `EventDebugPanel.tsx`: active item, remaining seconds, beacon status (`204`).

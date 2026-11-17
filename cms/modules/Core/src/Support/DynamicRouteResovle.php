@@ -2,24 +2,23 @@
 
 namespace Modules\Core\Support;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Modules\Core\Http\Middleware\CheckModulePermission;
+use ReflectionMethod;
 
 class DynamicRouteResovle
 {
-    /**
-     * Register dynamic routes for registered modules
-     */
     public static function registerRoutes(): void
     {
-        $configPath = dirname(__DIR__, 2) . '/configs/modules.php';
-        $modules = file_exists($configPath) ? (require $configPath)['routes'] ?? [] : [];
+        $modules = self::getRegisteredModuleRoutes();
 
         foreach ($modules as $moduleSlug) {
             $middlewares = ['api'];
             if ($moduleSlug !== 'auth') {
-                $middlewares[] = \Modules\Core\Http\Middleware\CheckModulePermission::class;
+                $middlewares[] = CheckModulePermission::class;
             }
 
             Route::prefix($moduleSlug)
@@ -37,81 +36,148 @@ class DynamicRouteResovle
         }
     }
 
-    /**
-     * Dispatch request to controller without requiring redundant IndexController
-     */
     protected static function dispatch(
         Request $request,
         string $moduleSlug,
         ?string $controller,
-        ?string $id_or_action,
+        ?string $idOrAction,
         ?string $action
-    ) {
+    ): mixed {
         $moduleName = Str::studly($moduleSlug);
 
-        // If first param is numeric ID or UUID, treat it as resource ID for domain controller
-        if ($controller !== null && (is_numeric($controller) || Str::isUuid($controller))) {
-            $action = $id_or_action;
-            $id_or_action = $controller;
+        if (self::isResourceIdentifier($controller)) {
+            $action = $idOrAction;
+            $idOrAction = $controller;
             $controller = $moduleSlug;
         }
 
-        // Default controller is <ModuleName>Controller (e.g. VenueController, DeliveryController)
+        $resolved = self::resolveControllerTarget($moduleName, $moduleSlug, $controller, $idOrAction, $action);
+        if (isset($resolved['error'])) {
+            return self::jsonError($resolved['error'], 404);
+        }
+
+        $controllerClass = $resolved['class'];
+        $controllerName = $resolved['name'];
+        $idOrAction = $resolved['id_or_action'];
+        $action = $resolved['action'];
+
+        $instance = app()->make($controllerClass);
+        [$method, $param] = self::resolveActionAndParameter($request, $idOrAction, $action);
+
+        if (!self::isAccessibleAction($instance, $method)) {
+            return self::jsonError("Action [{$method}] not found or not accessible on [{$controllerName}].", 404);
+        }
+
+        return $param !== null
+            ? app()->call([$instance, $method], ['id' => $param])
+            : app()->call([$instance, $method]);
+    }
+
+    /**
+     * @return string[]
+     */
+    protected static function getRegisteredModuleRoutes(): array
+    {
+        $configured = config('modules.routes');
+        if (is_array($configured) && !empty($configured)) {
+            return $configured;
+        }
+
+        $configPath = dirname(__DIR__, 2) . '/configs/modules.php';
+
+        return file_exists($configPath) ? ((require $configPath)['routes'] ?? []) : [];
+    }
+
+    /**
+     * @return array{class?: string, name?: string, id_or_action?: ?string, action?: ?string, error?: string}
+     */
+    protected static function resolveControllerTarget(
+        string $moduleName,
+        string $moduleSlug,
+        ?string $controller,
+        ?string $idOrAction,
+        ?string $action
+    ): array {
         $targetController = (!empty($controller) && strtolower($controller) !== 'index') ? $controller : $moduleSlug;
         $controllerName = Str::studly($targetController) . 'Controller';
         $controllerClass = "Modules\\{$moduleName}\\Http\\Controllers\\{$controllerName}";
 
-        if (!class_exists($controllerClass)) {
-            $domainControllerClass = "Modules\\{$moduleName}\\Http\\Controllers\\{$moduleName}Controller";
-            if (class_exists($domainControllerClass)) {
-                $controllerClass = $domainControllerClass;
-                $controllerName = "{$moduleName}Controller";
-                $action = $id_or_action;
-                $id_or_action = $controller;
-            } else {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => "Controller [{$controllerClass}] not found."
-                ], 404);
-            }
+        if (class_exists($controllerClass)) {
+            return [
+                'class' => $controllerClass,
+                'name' => $controllerName,
+                'id_or_action' => $idOrAction,
+                'action' => $action,
+            ];
         }
 
-        $instance = app()->make($controllerClass);
+        $domainControllerName = "{$moduleName}Controller";
+        $domainControllerClass = "Modules\\{$moduleName}\\Http\\Controllers\\{$domainControllerName}";
 
-        // Determine method name based on HTTP verb and action
-        $method = 'index';
-        $param = null;
+        if (class_exists($domainControllerClass)) {
+            return [
+                'class' => $domainControllerClass,
+                'name' => $domainControllerName,
+                'id_or_action' => $controller,
+                'action' => $idOrAction,
+            ];
+        }
 
+        return [
+            'error' => "Controller [{$controllerClass}] not found.",
+        ];
+    }
+
+    /**
+     * @return array{0: string, 1: ?string}
+     */
+    protected static function resolveActionAndParameter(
+        Request $request,
+        ?string $idOrAction,
+        ?string $action
+    ): array {
         if ($action !== null) {
-            $method = Str::camel($action);
-            $param = $id_or_action;
-        } elseif ($id_or_action !== null) {
-            if (is_numeric($id_or_action) || Str::isUuid($id_or_action)) {
-                $param = $id_or_action;
+            return [Str::camel($action), $idOrAction];
+        }
+
+        if ($idOrAction !== null) {
+            if (self::isResourceIdentifier($idOrAction)) {
                 $method = match ($request->method()) {
                     'GET' => 'show',
                     'PUT', 'PATCH' => 'update',
                     'DELETE' => 'destroy',
-                    default => 'show'
+                    default => 'show',
                 };
-            } else {
-                $method = Str::camel($id_or_action);
+
+                return [$method, $idOrAction];
             }
-        } else {
-            $method = match ($request->method()) {
-                'GET' => 'index',
-                'POST' => 'store',
-                default => 'index'
-            };
+
+            return [Str::camel($idOrAction), null];
         }
 
-        if (!method_exists($instance, $method) || !(new \ReflectionMethod($instance, $method))->isPublic()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => "Action [{$method}] not found or not accessible on [{$controllerName}]."
-            ], 404);
-        }
+        $method = match ($request->method()) {
+            'POST' => 'store',
+            default => 'index',
+        };
 
-        return $param !== null ? app()->call([$instance, $method], ['id' => $param]) : app()->call([$instance, $method]);
+        return [$method, null];
+    }
+
+    protected static function isResourceIdentifier(?string $segment): bool
+    {
+        return $segment !== null && (is_numeric($segment) || Str::isUuid($segment));
+    }
+
+    protected static function isAccessibleAction(object $instance, string $method): bool
+    {
+        return method_exists($instance, $method) && (new ReflectionMethod($instance, $method))->isPublic();
+    }
+
+    protected static function jsonError(string $message, int $statusCode = 404): JsonResponse
+    {
+        return response()->json([
+            'status' => 'error',
+            'message' => $message,
+        ], $statusCode);
     }
 }

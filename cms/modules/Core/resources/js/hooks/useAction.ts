@@ -1,14 +1,15 @@
 import { useState, useCallback } from 'react';
 import { message } from 'antd';
+import { extractErrorMessage } from '../utils/error';
 
-interface UseActionOptions<T, P> {
+export interface UseActionOptions<T, P> {
   action: (params: P) => Promise<T>;
   onSuccess?: (data: T) => void;
-  onError?: (error: Error) => void;
+  onError?: (error: unknown) => void;
   successMessage?: string;
 }
 
-export function useAction<T = any, P = any>({
+export function useAction<T = unknown, P = void>({
   action,
   onSuccess,
   onError,
@@ -26,8 +27,8 @@ export function useAction<T = any, P = any>({
         }
         onSuccess?.(result);
         return result;
-      } catch (err: any) {
-        const errorMsg = err.response?.data?.message || err.message || 'Action failed';
+      } catch (err: unknown) {
+        const errorMsg = extractErrorMessage(err, 'Action failed');
         message.error(errorMsg);
         onError?.(err);
         throw err;

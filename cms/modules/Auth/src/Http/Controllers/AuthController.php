@@ -9,6 +9,7 @@ use Modules\Auth\Http\Requests\ResendOtpRequest;
 use Modules\Auth\Http\Requests\VerifyOtpRequest;
 use Modules\Auth\Services\AuthService;
 use Modules\Core\Http\Controllers\BaseController;
+use Modules\User\Models\User;
 
 class AuthController extends BaseController
 {
@@ -51,7 +52,7 @@ class AuthController extends BaseController
 
     public function me(Request $request): JsonResponse
     {
-        $user = $request->user() ?? auth('sanctum')->user();
+        $user = $this->resolveUser($request);
         if (!$user) {
             return $this->respondUnauthorized('Unauthenticated.');
         }
@@ -61,11 +62,18 @@ class AuthController extends BaseController
 
     public function logout(Request $request): JsonResponse
     {
-        $user = $request->user() ?? auth('sanctum')->user();
+        $user = $this->resolveUser($request);
         if ($user) {
             $this->authService->logout($user);
         }
 
         return $this->respondSuccess(null, 'Logged out successfully.');
+    }
+
+    protected function resolveUser(Request $request): ?User
+    {
+        $user = $request->user() ?? auth('sanctum')->user();
+
+        return $user instanceof User ? $user : null;
     }
 }

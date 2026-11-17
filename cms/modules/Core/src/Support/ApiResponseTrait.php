@@ -6,9 +6,6 @@ use Illuminate\Http\JsonResponse;
 
 trait ApiResponseTrait
 {
-    /**
-     * Standard success response
-     */
     public function respondSuccess(mixed $data = null, string $message = 'Success', int $statusCode = 200): JsonResponse
     {
         return response()->json([
@@ -18,9 +15,11 @@ trait ApiResponseTrait
         ], $statusCode);
     }
 
-    /**
-     * Standard error response
-     */
+    public function respondCreated(mixed $data = null, string $message = 'Created'): JsonResponse
+    {
+        return $this->respondSuccess($data, $message, 201);
+    }
+
     public function respondError(string $message = 'Error', int $statusCode = 400, mixed $errors = null): JsonResponse
     {
         $response = [
@@ -35,9 +34,21 @@ trait ApiResponseTrait
         return response()->json($response, $statusCode);
     }
 
-    /**
-     * Standard paginated response
-     */
+    public function respondUnauthorized(string $message = 'Unauthenticated.'): JsonResponse
+    {
+        return $this->respondError($message, 401);
+    }
+
+    public function respondForbidden(string $message = 'Access denied: insufficient permissions'): JsonResponse
+    {
+        return $this->respondError($message, 403);
+    }
+
+    public function respondNotFound(string $message = 'Resource not found.'): JsonResponse
+    {
+        return $this->respondError($message, 404);
+    }
+
     public function respondPaginated(mixed $paginator, string $message = 'Success'): JsonResponse
     {
         return response()->json([

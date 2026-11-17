@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table } from '@core';
+import { Table } from '@core/components/Table';
 import { getVenueColumns } from '../configs/venueColumns';
 import type { VenueItem } from '../Action/venueApi';
 

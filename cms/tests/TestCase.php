@@ -18,10 +18,15 @@ abstract class TestCase extends BaseTestCase
             ['display_name' => 'Super Administrator']
         );
 
-        $user = User::factory()->create([
-            'role_id' => $role->id,
-            'permission_type' => User::PERMISSION_TYPE_ROLE,
-        ]);
+        $user = User::firstOrCreate(
+            ['email' => 'admin@dooh.media'],
+            [
+                'name' => 'Super Administrator',
+                'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+                'role_id' => $role->id,
+                'permission_type' => User::PERMISSION_TYPE_ROLE,
+            ]
+        );
 
         $this->actingAs($user, 'web');
 

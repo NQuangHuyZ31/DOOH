@@ -1,73 +1,44 @@
 ---
 name: ureka-module-scaffolder
-description: Scaffolds Ureka modular architecture boilerplate for Backend (Laravel 11/12) and Frontend (React 19/18 + TypeScript + Ant Design).
+description: Use when creating a new domain module or a new backend entity (model, repository, service, controller, tests) under cms/modules. Step checklist; rules are in backend/frontend/testing rules.
 ---
 
-# Ureka Module Scaffolder Skill (DOOH Platform)
+# Module / Entity Scaffolder
 
-Use this skill when scaffolding a new domain module in `cms/modules/<ModuleName>/`.
+Follow `.agents/rules/backend.md`, `frontend.md`, `database.md`, `testing.md` — this file lists steps only. Reference module: `cms/modules/Venue/`.
 
-Rules: [`.agents/rules/backend.md`](file:///E:/Urekamedia/DOOH/.agents/rules/backend.md) | [`.agents/rules/frontend.md`](file:///E:/Urekamedia/DOOH/.agents/rules/frontend.md) | Architecture: [`docs/backend/architecture.md`](file:///E:/Urekamedia/DOOH/docs/backend/architecture.md)
+## 1. Layout
 
----
-
-## 1. Directory Structure (`cms/modules/<ModuleName>/`)
 ```text
-cms/modules/<ModuleName>/
-├── composer.json
-├── database/migrations/
-├── routes/api.php
-├── resources/js/ (Action/, components/, configs/, pages/, routes/, store/) — Direct imports, NO redundant index.ts
-└── src/ (Http/Controllers/, Http/Requests/, Models/, Providers/, Repositories/Interfaces/, Services/, Resources/) — Domain-named controllers only, NO redundant IndexController
+cms/modules/<Module>/
+├── composer.json                # PSR-4: src/, database/factories/, database/seeders/
+├── database/{migrations,factories,seeders}/
+├── resources/js/                # see skill rtk-feature-slice
+├── routes/
+├── src/{Http/Controllers,Http/Requests,Models,Providers,Repositories/Interfaces,Services,Resources}/
+└── tests/{Feature,Unit}/
 ```
 
-Standard DOOH Domain Modules:
-- `Core`: Base controller, Base repository, Dynamic router, Common components.
-- `Auth`: User authentication, roles, API key management.
-- `Venue`: Screen inventory, geolocation, resolution, secret keys.
-- `Creative`: Asset uploads (Image, Video), HTML5 links, VAST tag parsing.
-- `Delivery`: Campaigns, Line Items, Venue targeting, pacing & flight dates.
-- `Report`: Ant Design analytics charts, query aggregation from MongoDB.
-- `Log`: Raw tracking event lookup, audit trail.
-- `Simulator`: LED screen simulation and live playback debugger.
+## 2. Backend Steps (per entity)
 
----
+1. Migration (additive) + Model (`$fillable`, `$casts`, `use HasFactory;`).
+2. `Repositories/Interfaces/<Model>RepositoryInterface.php` + `Repositories/<Model>Repository.php` (extends `BaseRepository`).
+3. `Services/<Model>Service.php` (inject interface).
+4. `Http/Requests/Store<Model>Request.php` / `Update<Model>Request.php`.
+5. `Http/Controllers/<Model>Controller.php` (extends `BaseController`; helpers non-public).
+6. `Providers/<Module>ServiceProvider.php` → bind interface.
+7. Factory + Seeder in module `database/`; register PSR-4 in module and `cms/composer.json` → `composer dump-autoload`.
+8. Tests: `<Model>ApiTest`, `<Model>RepositoryTest`, `<Model>ServiceTest`.
 
-## 2. Step-by-Step Scaffolding Checklist
+## 3. New Module Only
 
-### Step 1: Backend Layer
-1. **Model & Migration**: Plural table name, explicit `$fillable` array. (For MongoDB models, extend `MongoDB\Laravel\Eloquent\Model`).
-2. **Repository & Interface**:
-   - Interface: `src/Repositories/Interfaces/<Model>RepositoryInterface.php`.
-   - Implementation: `src/Repositories/<Model>Repository.php` extending `BaseRepository`.
-3. **Service Layer**: `src/Services/<Model>Service.php`. Injects repository interface. **NO Model queries in Service**. Handles `DB::transaction()`.
-4. **FormRequest & Controller**:
-   - `src/Http/Requests/Store<Model>Request.php`.
-   - `src/Http/Controllers/<Model>Controller.php` extending `BaseController`.
-5. **ServiceProvider**: `src/Providers/<ModuleName>ServiceProvider.php`. Binds repository interface to implementation.
-6. **Factory & Seeder**: Place inside `database/factories/` and `database/seeders/` within the module. Autoload via PSR-4 in `composer.json` (`Modules\<ModuleName>\Database\Factories\`). Resolved automatically by `CoreServiceProvider` (NEVER write `newFactory()` in models).
+- Add name to `'modules'` and slug to `'routes'` in `cms/modules/Core/configs/modules.php`.
+- Do NOT touch `bootstrap/providers.php` (auto-discovered).
 
-### Step 2: System Registration
-1. In `cms/modules/Core/configs/modules.php`: Add slug to `'routes'` and module name to `'modules'`.
-2. In `cms/package.json`: Add module alias or build scripts if applicable.
+## 4. Frontend
 
-### Step 3: Frontend Layer
-1. **API Client**: `resources/js/Action/<name>.ts` using `http` from `@core/Action/api`.
-2. **Configs**: Declare column configs and filter presets in `resources/js/configs/`.
-3. **Pages**: Create page orchestrator in `resources/js/pages/`. Hard limit $\le$ 150 lines per TSX file.
-4. **Routes**: Declare `RouteDef[]` in `resources/js/routes/route.ts` and register via `registerRoutes()` in `resources/js/index.ts`.
-5. **State Management (Redux Toolkit)**: If global state is needed, strictly separate into:
-   - `resources/js/store/<domain>Thunk.ts`: Asynchronous thunks (`createAsyncThunk`).
-   - `resources/js/store/<domain>Slice.ts`: State schema, initial state, synchronous reducers, and builder `extraReducers`.
-   - **NEVER** write thunk and slice in the same file.
-   - **NEVER** re-export thunks from slices (`export { ... } from './*Thunk'`).
-   - **NEVER** dump internal slice actions or thunks into `index.ts`. Root `index.ts` exports ONLY minimal shell contract (`routes`, `reducer`). Direct imports for everything else.
+Run skill `rtk-feature-slice`.
 
----
+## 5. Verify (from `cms/`)
 
-## 3. Verification
-```powershell
-# From cms/
-npm.cmd run check-types
-php artisan test --filter <ModuleName>Test
-```
+`php artisan test --filter <Model>` · `npm.cmd run check-types`

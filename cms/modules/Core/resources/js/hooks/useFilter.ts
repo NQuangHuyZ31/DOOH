@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 
-export function useFilter<T extends Record<string, any>>(initialFilters: T) {
+export function useFilter<T extends object>(initialFilters: T) {
   const [filters, setFilters] = useState<T>(initialFilters);
 
   const updateFilter = useCallback(<K extends keyof T>(key: K, value: T[K]) => {

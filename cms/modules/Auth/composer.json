@@ -19,6 +19,11 @@
 			"Modules\\Auth\\": "src/"
 		}
 	},
+	"autoload-dev": {
+		"psr-4": {
+			"Modules\\Auth\\Tests\\": "tests/"
+		}
+	},
 	"extra": {
 		"laravel": {
 			"providers": [

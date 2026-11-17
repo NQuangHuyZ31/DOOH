@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { ROUTING_CONFIG } from '@core';
+import { getAuthToken, setAuthToken, clearAuthToken } from '@core/utils/tokenStorage';
 import type { AuthUser } from '../types/auth';
 import { fetchMe, logout } from './authThunk';
 
@@ -12,7 +12,7 @@ export interface AuthState {
     error: string | null;
 }
 
-const initialToken = localStorage.getItem(ROUTING_CONFIG.auth.tokenKey);
+const initialToken = getAuthToken();
 
 const initialState: AuthState = {
     token: initialToken,
@@ -21,6 +21,15 @@ const initialState: AuthState = {
     isInitialized: false,
     loading: false,
     error: null,
+};
+
+const resetAuthState = (state: AuthState) => {
+    state.token = null;
+    state.user = null;
+    state.isAuthenticated = false;
+    state.isInitialized = true;
+    state.error = null;
+    clearAuthToken();
 };
 
 export const authSlice = createSlice({
@@ -38,15 +47,10 @@ export const authSlice = createSlice({
             state.isAuthenticated = true;
             state.isInitialized = true;
             state.error = null;
-            localStorage.setItem(ROUTING_CONFIG.auth.tokenKey, action.payload.token);
+            setAuthToken(action.payload.token);
         },
         clearAuth: (state) => {
-            state.token = null;
-            state.user = null;
-            state.isAuthenticated = false;
-            state.isInitialized = true;
-            state.error = null;
-            localStorage.removeItem(ROUTING_CONFIG.auth.tokenKey);
+            resetAuthState(state);
         },
         setInitialized: (state, action: PayloadAction<boolean>) => {
             state.isInitialized = action.payload;
@@ -67,28 +71,14 @@ export const authSlice = createSlice({
             })
             .addCase(fetchMe.rejected, (state, action) => {
                 state.loading = false;
-                state.user = null;
-                state.isAuthenticated = false;
-                state.token = null;
-                state.isInitialized = true;
+                resetAuthState(state);
                 state.error = action.payload || null;
-                localStorage.removeItem(ROUTING_CONFIG.auth.tokenKey);
             })
             .addCase(logout.fulfilled, (state) => {
-                state.token = null;
-                state.user = null;
-                state.isAuthenticated = false;
-                state.isInitialized = true;
-                state.error = null;
-                localStorage.removeItem(ROUTING_CONFIG.auth.tokenKey);
+                resetAuthState(state);
             })
             .addCase(logout.rejected, (state) => {
-                state.token = null;
-                state.user = null;
-                state.isAuthenticated = false;
-                state.isInitialized = true;
-                state.error = null;
-                localStorage.removeItem(ROUTING_CONFIG.auth.tokenKey);
+                resetAuthState(state);
             });
     },
 });

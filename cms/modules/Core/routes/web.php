@@ -2,8 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 
-$adminPrefix = config('modules.admin_prefix', env('CMS_ADMIN_PREFIX', 'admin'));
-$defaultModule = config('modules.default_module', env('CMS_DEFAULT_MODULE', 'venues'));
+$adminPrefix = config('modules.admin_prefix', 'admin');
+$defaultModule = config('modules.default_module', 'venues');
 
 Route::get('/', function () use ($adminPrefix, $defaultModule) {
     return redirect("/{$adminPrefix}/{$defaultModule}");

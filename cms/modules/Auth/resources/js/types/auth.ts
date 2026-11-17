@@ -5,15 +5,32 @@ export interface LoginPayload {
   remember?: boolean;
 }
 
+export interface VerifyOtpPayload {
+  temp_token: string;
+  code: string;
+}
+
+export interface ResendOtpPayload {
+  temp_token: string;
+}
+
+export interface ResendOtpResponse {
+  step: 'email_otp';
+  require_otp: boolean;
+  temp_token: string;
+  email: string;
+  message?: string;
+}
+
 export interface AuthUser {
   id: number;
   name: string;
   email: string;
   permission_type?: 'role' | 'direct';
-  role?: string;
+  role?: string | null;
   roles?: string[];
   permissions?: string[];
-  avatar?: string;
+  created_at?: string | null;
 }
 
 export interface AuthResponse {
@@ -24,5 +41,5 @@ export interface AuthResponse {
   token?: string;
   token_type?: string;
   user?: AuthUser;
-  expires_in?: number;
+  message?: string;
 }

@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { ROUTING_CONFIG } from '../configs/routing';
+import { getAuthToken, clearAuthToken } from '../utils/tokenStorage';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -15,7 +16,7 @@ class ApiClient {
     });
 
     this.client.interceptors.request.use((config) => {
-      const token = localStorage.getItem(ROUTING_CONFIG.auth.tokenKey);
+      const token = getAuthToken();
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -26,7 +27,7 @@ class ApiClient {
       (response: AxiosResponse) => response,
       (error) => {
         if (error.response?.status === 401) {
-          localStorage.removeItem(ROUTING_CONFIG.auth.tokenKey);
+          clearAuthToken();
           if (window.location.pathname !== ROUTING_CONFIG.auth.loginPath) {
             window.location.href = ROUTING_CONFIG.auth.loginPath;
           }

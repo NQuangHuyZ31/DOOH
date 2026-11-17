@@ -1,47 +1,33 @@
 ---
 name: core-reusability-promoter
-description: Enforces code reusability workflow, codebase analysis, REUSE/EXTEND/CREATE strategy, and Core promotion.
+description: Use before creating any new component, hook, service, repository, or endpoint. Search-first REUSE / EXTEND / CREATE decision and promotion to Core.
 ---
 
-# Code Reusability & Anti-Duplication Skill
+# Reusability (REUSE → EXTEND → CREATE)
 
-Use this skill before creating or modifying UI components, hooks, services, or endpoints.
+## 1. Search First
 
-Component Catalog: [`docs/frontend/core-components.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/frontend/core-components.md) | Frontend Rules: [`.agents/rules/frontend.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/.agents/rules/frontend.md)
+```powershell
+git grep -n "<keyword>" -- cms/modules
+```
+Check in order: `modules/Core/resources/js/{components,hooks,utils,configs}`, `modules/Core/src/{Repositories,Support,Http}`, sibling modules with similar features.
 
----
+## 2. Decide
 
-## 1. Step-by-Step Analysis Workflow
+| Strategy | When | Obligation |
+|---|---|---|
+| REUSE | existing piece fits as-is | — |
+| EXTEND | fits with an optional prop/param | keep backward compatible; check every consumer (`git grep` usages) |
+| CREATE | genuinely new need | state in plan why reuse/extend failed |
 
-1. **Search Codebase**: Before writing any new UI widget or logic, search across all modules (`Select-String` / `rg`) for existing tables, filter bars, status tags, API actions, and services.
-2. **Compare Implementations**: Check if sibling modules already implemented similar behavior.
-3. **Select Strategy**:
-   - **REUSE**: Existing component satisfies requirements with current configuration.
-   - **EXTEND**: Existing component covers need with optional props/configs (must verify all existing consumers).
-   - **CREATE**: Novel requirement only. Document why reuse/extend was rejected.
-4. **Core Promotion**: Promote to `@core` only if the component is generic and used (or about to be used) by 2+ modules.
+Promote to Core only when generic AND used by ≥ 2 modules. Core code: props-configurable, typed, zero domain logic, no feature-module imports.
 
----
+## 3. Simplicity Check (before finishing)
 
-## 2. Shared Component Invariants
+- Can any new file/class/abstraction be removed or merged?
+- Any duplicated logic, redundant condition, conversion, or fallback?
+- Does every change serve the approved scope?
 
-- Clearly defined, single responsibility.
-- Configurable via props; no hardcoded page-specific values.
-- Clean TypeScript types; no `any`.
-- Zero domain business logic inside `@core`.
+## 4. Report Lines (append to final report)
 
----
-
-## 3. Pre-Completion Verification & Reporting
-
-Before completing the task, verify:
-- No unnecessary duplicates were introduced.
-- Existing consumers still function without regressions.
-- Types and API contracts remain consistent.
-
-Conclude with the mandatory **Agent Report**:
-1. **Discovered**: Existing implementations found (with paths).
-2. **Reused / Extended**: Components and services reused or extended.
-3. **Created + Rationale**: New components created and why reuse was unsuitable.
-4. **Refactored**: Duplicates consolidated.
-5. **Affected Scope**: Verified pages, modules, and endpoints.
+`Reused:` paths · `Extended:` paths + consumers verified · `Created:` paths + reason.

@@ -1,8 +1,21 @@
 import React from 'react';
 import { Card, Flex, Space, Typography } from 'antd';
 import { CheckCircleFilled, DesktopOutlined, SafetyCertificateFilled, ThunderboltFilled } from '@ant-design/icons';
+import { AUTH_BRAND_CONFIG, LOGIN_HERO_FEATURES, LoginHeroFeature } from '../configs/authConfig';
 
 const { Title, Text, Paragraph } = Typography;
+
+const renderFeatureIcon = (feature: LoginHeroFeature) => {
+	const style = { color: feature.color, fontSize: 18 };
+	switch (feature.key) {
+		case 'security':
+			return <SafetyCertificateFilled style={style} />;
+		case 'realtime':
+			return <ThunderboltFilled style={style} />;
+		case 'pacing':
+			return <CheckCircleFilled style={style} />;
+	}
+};
 
 export const LoginHeroBanner: React.FC = () => {
 	return (
@@ -52,19 +65,17 @@ export const LoginHeroBanner: React.FC = () => {
 					</div>
 					<div>
 						<Title level={4} style={{ color: '#ffffff', margin: 0, fontWeight: 700, letterSpacing: -0.5 }}>
-							DOOH CMS
+							{AUTH_BRAND_CONFIG.name}
 						</Title>
-						<Text style={{ color: '#94a3b8', fontSize: 12 }}>Next-Gen Digital Out-Of-Home Operations</Text>
+						<Text style={{ color: '#94a3b8', fontSize: 12 }}>{AUTH_BRAND_CONFIG.tagline}</Text>
 					</div>
 				</Flex>
 
 				<Title level={2} style={{ color: '#f8fafc', fontWeight: 800, lineHeight: 1.25, marginBottom: 16 }}>
-					High-performance DOOH network with enterprise reliability.
+					{AUTH_BRAND_CONFIG.headline}
 				</Title>
 
-				<Paragraph style={{ color: '#94a3b8', fontSize: 14, maxWidth: 380, lineHeight: 1.6 }}>
-					Manage digital billboard loops, flight pacing schedules, real-time proof-of-play tracking, and secure administrative access.
-				</Paragraph>
+				<Paragraph style={{ color: '#94a3b8', fontSize: 14, maxWidth: 380, lineHeight: 1.6 }}>{AUTH_BRAND_CONFIG.description}</Paragraph>
 			</div>
 
 			<Card
@@ -74,21 +85,15 @@ export const LoginHeroBanner: React.FC = () => {
 					backdropFilter: 'blur(12px)',
 					borderRadius: 14,
 				}}
-				styles={{ body: { padding: '20px' } }}
+				styles={{ body: { padding: 20 } }}
 			>
 				<Space direction="vertical" size={12} style={{ width: '100%' }}>
-					<Flex align="center" gap={10}>
-						<SafetyCertificateFilled style={{ color: '#10b981', fontSize: 18 }} />
-						<Text style={{ color: '#f1f5f9', fontWeight: 600, fontSize: 13 }}>Enterprise Sanctum RBAC & Multi-factor Protection</Text>
-					</Flex>
-					<Flex align="center" gap={10}>
-						<ThunderboltFilled style={{ color: '#38bdf8', fontSize: 18 }} />
-						<Text style={{ color: '#f1f5f9', fontWeight: 600, fontSize: 13 }}>Real-Time Proof-of-Play Tracking (&lt; 3ms Ingest)</Text>
-					</Flex>
-					<Flex align="center" gap={10}>
-						<CheckCircleFilled style={{ color: '#a855f7', fontSize: 18 }} />
-						<Text style={{ color: '#f1f5f9', fontWeight: 600, fontSize: 13 }}>Dynamic 120s Playlist & SOV Flight Optimizer</Text>
-					</Flex>
+					{LOGIN_HERO_FEATURES.map((feature) => (
+						<Flex key={feature.key} align="center" gap={10}>
+							{renderFeatureIcon(feature)}
+							<Text style={{ color: '#f1f5f9', fontWeight: 600, fontSize: 13 }}>{feature.label}</Text>
+						</Flex>
+					))}
 				</Space>
 			</Card>
 		</div>

@@ -1,100 +1,38 @@
-# Backend Engineering Rules (Laravel 11/12 + PHP 8.3+)
-
-Scope: `cms/modules/*/src/`, `cms/database/`, and backend controllers. Read when editing backend code.
-Detailed Architecture: [`docs/backend/architecture.md`](file:///E:/Urekamedia/DOOH/docs/backend/architecture.md) | SOLID Principles: [`docs/development/solid-principles.md`](file:///E:/Urekamedia/DOOH/docs/development/solid-principles.md) | API Contracts: [`docs/api/routing-and-contracts.md`](file:///E:/Urekamedia/DOOH/docs/api/routing-and-contracts.md)
-
+---
+trigger: glob
+description: Laravel backend architecture for cms/modules (3-layer, dynamic routing, providers, factories).
+globs: cms/modules/**/src/**, cms/modules/**/database/**, cms/modules/**/routes/**
 ---
 
-## 1. Strict 3-Layer Architecture (Controller -> Service -> Repository)
-1. **Controller Layer** (`src/Http/Controllers/`):
-   - Extends `Modules\Core\Http\Controllers\BaseController`.
-   - Handles HTTP inputs, validation via `FormRequest`, response formatting (`respondSuccess`, `respondError`, `respondPaginated`, or an API Resource).
-   - In custom actions, MUST ONLY invoke the **Service Layer**.
-   - NEVER inject Repositories or execute Eloquent queries / business logic inside custom actions.
-2. **Service Layer** (`src/Services/`):
-   - Domain business logic, data mutations, transactions (`DB::transaction`), audit events (`Auditor`/`ActivityLogger`), and queue jobs.
-   - Depends ONLY on **Repository Interfaces** via Dependency Injection.
-   - **STRICTLY FORBIDDEN from direct Model queries or persistence** (never `Model::where()`, `Model::create()`, `$modelClass::...`, or `DB::table()`). Delegate 100% of data access to Repositories.
-   - Importing Model classes strictly for type hints / parameter typing is allowed.
-3. **Repository Layer** (`src/Repositories/`):
-   - Encapsulates all database operations (Eloquent queries for MySQL or Aggregation pipelines for MongoDB).
-   - MySQL Repositories: MUST extend `Modules\Core\Repositories\BaseRepository` and implement `<Model>RepositoryInterface` in `src/Repositories/Interfaces/`.
-   - MongoDB Repositories: Implement dedicated interfaces (e.g. `TrackingLogRepositoryInterface`, `DailyReportRepositoryInterface`) for fast time-series aggregation.
-   - Bound in `<Module>ServiceProvider`: `$this->app->bind(<Model>RepositoryInterface::class, <Model>Repository::class)`.
+# Backend Rules (Laravel 11/12, PHP 8.3)
 
----
+Deep dive: `docs/backend/architecture.md`. DB rules: `database.md`. Tests: `testing.md`. Responses: `api-contract.md`.
 
-## 2. Dual Database Strategy (MySQL + MongoDB)
-- **MySQL Connection (`mysql`)**:
-  - Used for transactional, relational entities: `venues`, `campaigns`, `line_items`, `creatives`, `api_keys`, `users`, `roles`, `permissions`.
-  - Models extend `Illuminate\Database\Eloquent\Model`.
-- **MongoDB Connection (`mongodb`)**:
-  - Used for high-volume logs and analytics: `tracking_logs`, `daily_aggregated_reports`.
-  - Models extend `MongoDB\Laravel\Eloquent\Model` (using `mongodb/laravel-mongodb`).
-  - Strict projection and indexing: Always use indexed fields (`venue_id`, `line_item_id`, `date`) in queries.
+## 1. Strict 3-Layer: Controller → Service → Repository
 
----
+| Layer | Path | MUST | NEVER |
+|---|---|---|---|
+| Controller | `src/Http/Controllers/` | extend `Modules\Core\Http\Controllers\BaseController`; validate via `FormRequest` (`src/Http/Requests/`); call Service only; respond via `ApiResponseTrait` or `src/Resources/` | inject Repositories, run queries, hold business logic, validate inline |
+| Service | `src/Services/` | business logic, `DB::transaction()`, events, jobs; depend on Repository **interfaces** (DI) | `Model::where/create`, `DB::table()`, any persistence (Model imports for type hints are OK) |
+| Repository | `src/Repositories/` | MySQL: extend `Modules\Core\Repositories\BaseRepository` + implement `Interfaces/<Model>RepositoryInterface`; Mongo: dedicated interface | business logic |
 
-## 3. Dynamic Routing & Method Safety
-- Routes are resolved dynamically by `Modules\Core\Support\DynamicRouteResovle` matching `/{module}/{controller}/{id?}/{action?}` to `Modules\<Module>\Http\Controllers\<Studly>Controller`.
-- **No Dummy `IndexController`**: NEVER create redundant `IndexController` or dummy files. Use domain-named controllers (`VenueController`, `CampaignController`, etc.). When `{controller}` is omitted or matches the module slug (e.g. `/venue` or `/venue/1`), `DynamicRouteResovle` automatically routes to `<ModuleName>Controller`.
-- **CRITICAL**: Every `public` controller method is an HTTP endpoint. Internal helpers MUST be `protected` or `private`.
-- Permissions enforced automatically by `CheckModulePermission` middleware (403 on denial). `auth` and public player simulation routes are exempt as configured.
-- Check `DynamicRouteResovle` before adding explicit routes to `routes/api.php`.
+Bind in `<Module>ServiceProvider`: `$this->app->bind(<Model>RepositoryInterface::class, <Model>Repository::class)`.
 
----
+## 2. Dynamic Routing
 
-## 4. Validation & Resources
-- Validate all incoming data via dedicated `FormRequest` classes in `src/Http/Requests/`. Never validate inline in controllers.
-- Return standardized JSON responses using `ApiResponseTrait` or explicit API Resources from `src/Resources/`.
-- Never return raw Eloquent models containing hidden tokens, passwords, or internal database flags.
+- `Modules\Core\Support\DynamicRouteResovle`: `/{module}/{controller}/{id?}/{action?}` → `Modules\<Module>\Http\Controllers\<Studly>Controller`. Omitted/same-as-module controller → `<Module>Controller`.
+- Every `public` controller method is an endpoint → helpers MUST be `protected`/`private`.
+- NEVER create dummy `IndexController`. Check the dynamic router before adding explicit routes.
+- RBAC via `CheckModulePermission` (403 on deny).
 
----
+## 3. Seeders & Entity Creation (tiktok-crawler pattern)
 
-## 5. Zero Code Outside Modules & Provider Discovery (Hard Invariant)
-- **Zero Outside Modules**: NEVER place application-specific code, shared routes, or views outside `cms/modules/`.
-- **Shared Routes & Views in Core**:
-  - Web SPA route: `modules/Core/routes/web.php`
-  - Dynamic API route: `modules/Core/routes/api.php`
-  - SPA Blade view: `modules/Core/resources/views/app.blade.php`
-- **Auto-Discovered Providers**:
-  - `bootstrap/providers.php` ONLY registers `AppServiceProvider` and `CoreServiceProvider`.
-  - NEVER register feature module providers in `bootstrap/providers.php`.
-  - `CoreServiceProvider` automatically scans `cms/modules/` and registers each `Modules\<Name>\Providers\<Name>ServiceProvider`, migrations, and view namespaces.
+- Seeders live in `modules/<Module>/database/seeders/<Entity>Seeder.php` (namespace `Modules\<Module>\Database\Seeders`), autoloaded via PSR-4 in `composer.json`.
+- `database/seeders/DatabaseSeeder.php` calls module seeders via `$this->call([RolePermissionSeeder::class, UserSeeder::class, ...])`.
+- In tests & fixtures, create records directly using Eloquent (`User::create()`, `User::firstOrCreate()`) or call seeders (`$this->seed(...)`).
+- NEVER add speculative `guessFactoryNamesUsing` closures in `CoreServiceProvider` or write boilerplate `newFactory()` in models. Keep it simple and aligned with `cms-tiktok-crawler`.
 
----
+## 4. Size & Robustness
 
-## 5. Background Jobs & Transactions
-- Queue jobs (`src/Jobs/`) must be idempotent and safe to retry.
-- Wrap multi-table MySQL mutations in `DB::transaction()` inside the Service layer.
-- External HTTP integrations must specify timeouts and retry backoffs.
-
----
-
-## 6. SOLID & God Class Prevention
-- **SRP & DIP**: Controllers handle HTTP only; Services orchestrate business logic and depend strictly on Repository Interfaces; Repositories handle database queries.
-- **God Class Threshold**: Split Controllers or Services exceeding ~300 lines or >7 dependencies into focused domain sub-services (e.g. `PacingDeliveryService`, `CreativeAssetService`).
-- **No Overengineering**: Rely on Laravel & Core base classes (`BaseController`, `BaseRepository`). Never introduce speculative abstract factories or wrappers for simple tasks.
-
----
-
-## 7. Mandatory Automated Testing (Hard Invariant)
-- **Zero Features Without Tests**: Every module MUST have automated tests alongside its implementation. Shipping untested features is strictly forbidden.
-- **Test Structure**:
-  - `modules/<ModuleName>/tests/Feature/<Entity>ApiTest.php`: Feature tests for API endpoints, HTTP status codes (200, 201, 401, 403, 404, 422), JSON payload contract, validation failure rules, and RBAC permissions.
-  - `modules/<ModuleName>/tests/Unit/<Entity>ServiceTest.php`: Unit tests mocking Repository interfaces to test pure business logic and edge cases.
-  - `modules/<ModuleName>/tests/Feature/<Entity>RepositoryTest.php`: Integration tests for complex repository queries, scopes, and pagination on SQLite `:memory:`.
-- **Quality Gate**: `php artisan test` must execute and pass 100% of tests before any task is submitted or reported.
-
----
-
-## 8. Modular Factories & Seeders Autoloading (Hard Invariant)
-- **Location**: All entity factories and seeders MUST be placed inside their domain module:
-  - Factories: `cms/modules/<ModuleName>/database/factories/<Model>Factory.php` (namespace `Modules\<ModuleName>\Database\Factories`).
-  - Seeders: `cms/modules/<ModuleName>/database/seeders/<Entity>Seeder.php` (namespace `Modules\<ModuleName>\Database\Seeders`).
-- **Autoload Registration**:
-  - Every module's `database/factories/` and `database/seeders/` directories MUST be registered in PSR-4 autoload (via `cms/composer.json` and `modules/<ModuleName>/composer.json`).
-  - NEVER place domain factories or seeders directly in root `cms/database/factories/`.
-- **Automatic Factory Resolution (Zero Boilerplate)**:
-  - `CoreServiceProvider` globally registers `Factory::guessFactoryNamesUsing(...)` so any `Modules\<Module>\Models\<Model>` automatically resolves to `Modules\<Module>\Database\Factories\<Model>Factory`.
-  - **STRICTLY FORBIDDEN from writing boilerplate `newFactory()` in models**. Models simply use `use HasFactory;` without any redundant helper methods.
+- Split Controllers/Services > ~300 lines or > 7 dependencies into focused sub-services.
+- Jobs (`src/Jobs/`) idempotent and retry-safe. External HTTP: explicit timeout + retry backoff.
