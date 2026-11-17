@@ -1,11 +1,21 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider, Result, Button } from 'antd';
-import { MainLayout, doohTheme } from './index';
+import { Provider } from 'react-redux';
+import {
+	MainLayout,
+	AuthGuard,
+	GuestGuard,
+	doohTheme,
+	store,
+	useAppDispatch,
+	ROUTING_CONFIG,
+} from './index';
 import { registerRoutes, getRegisteredRoutes } from './routes/registry';
 import { moduleRoutes } from './routes/moduleRoutes';
-import { ROUTING_CONFIG } from './configs/routing';
+import { setInitialized } from '@modules/Auth/resources/js/store/authSlice';
+import { fetchMe } from '@modules/Auth/resources/js/store/authThunk';
 
 registerRoutes(moduleRoutes);
 
@@ -22,39 +32,59 @@ const NotFoundPage: React.FC = () => (
 	/>
 );
 
-const App: React.FC = () => {
+const AppRoutes: React.FC = () => {
+	const dispatch = useAppDispatch();
 	const routes = getRegisteredRoutes();
 
+	useEffect(() => {
+		const token = localStorage.getItem(ROUTING_CONFIG.auth.tokenKey);
+		if (token) {
+			dispatch(fetchMe());
+		} else {
+			dispatch(setInitialized(true));
+		}
+	}, [dispatch]);
+
 	return (
-		<ConfigProvider theme={doohTheme}>
-			<BrowserRouter>
-				<Routes>
-					<Route path="/" element={<Navigate to={ROUTING_CONFIG.defaultPath} replace />} />
-					<Route path={ROUTING_CONFIG.adminPrefix} element={<Navigate to={ROUTING_CONFIG.defaultPath} replace />} />
+		<BrowserRouter>
+			<Routes>
+				<Route path="/" element={<Navigate to={ROUTING_CONFIG.defaultPath} replace />} />
+				<Route path={ROUTING_CONFIG.adminPrefix} element={<Navigate to={ROUTING_CONFIG.defaultPath} replace />} />
 
-					{routes.map((route) => {
-						const content =
-							route.layout === 'guest' ? (
-								route.element
-							) : (
+				{routes.map((route) => {
+					const content =
+						route.layout === 'guest' ? (
+							<GuestGuard>{route.element}</GuestGuard>
+						) : (
+							<AuthGuard>
 								<MainLayout>{route.element}</MainLayout>
-							);
-						return <Route key={route.path} path={route.path} element={content} />;
-					})}
+							</AuthGuard>
+						);
+					return <Route key={route.path} path={route.path} element={content} />;
+				})}
 
-					<Route
-						path="*"
-						element={
+				<Route
+					path="*"
+					element={
+						<AuthGuard>
 							<MainLayout>
 								<NotFoundPage />
 							</MainLayout>
-						}
-					/>
-				</Routes>
-			</BrowserRouter>
-		</ConfigProvider>
+						</AuthGuard>
+					}
+				/>
+			</Routes>
+		</BrowserRouter>
 	);
 };
+
+const App: React.FC = () => (
+	<Provider store={store}>
+		<ConfigProvider theme={doohTheme}>
+			<AppRoutes />
+		</ConfigProvider>
+	</Provider>
+);
 
 const container = document.getElementById('app');
 if (container) {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Typography, Space, Button } from 'antd';
+import { Layout, Menu, Typography, Space, Button, Tag, Avatar } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   DesktopOutlined,
@@ -9,9 +9,11 @@ import {
   FileTextOutlined,
   PlaySquareOutlined,
   LogoutOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { ROUTING_CONFIG } from '../configs/routing';
-import { http } from '../Action/api';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { logout } from '@modules/Auth/resources/js/store/authThunk';
 
 const { Header, Content, Sider } = Layout;
 const { Title, Text } = Typography;
@@ -24,6 +26,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
 
   const currentKey = Object.values(ROUTING_CONFIG.modules).find(
     (m) => location.pathname.startsWith(m.path)
@@ -46,14 +50,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   };
 
   const handleLogout = async () => {
-    try {
-      await http.post('/auth/logout');
-    } catch {
-      // Silently handle error if session already revoked
-    } finally {
-      localStorage.removeItem(ROUTING_CONFIG.auth.tokenKey);
-      navigate(ROUTING_CONFIG.auth.loginPath, { replace: true });
-    }
+    await dispatch(logout());
+    navigate(ROUTING_CONFIG.auth.loginPath, { replace: true });
   };
 
   return (
@@ -75,8 +73,12 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       <Layout>
         <Header style={{ background: '#fff', padding: '0 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text strong>DOOH Media Management Platform</Text>
-          <Space>
-            <Text type="secondary">Admin</Text>
+          <Space size="middle">
+            <Space size="small">
+              <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} />
+              <Text strong>{user?.name || 'User'}</Text>
+              {user?.role && <Tag color="blue">{user.role}</Tag>}
+            </Space>
             <Button type="text" icon={<LogoutOutlined />} onClick={handleLogout}>
               Logout
             </Button>
