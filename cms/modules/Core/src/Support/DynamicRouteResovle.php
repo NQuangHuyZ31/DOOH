@@ -17,8 +17,13 @@ class DynamicRouteResovle
         $modules = file_exists($configPath) ? (require $configPath)['routes'] ?? [] : [];
 
         foreach ($modules as $moduleSlug) {
+            $middlewares = ['api'];
+            if ($moduleSlug !== 'auth') {
+                $middlewares[] = \Modules\Core\Http\Middleware\CheckModulePermission::class;
+            }
+
             Route::prefix($moduleSlug)
-                ->middleware(['api'])
+                ->middleware($middlewares)
                 ->group(function () use ($moduleSlug) {
                     Route::any('/{controller?}/{id_or_action?}/{action?}', function (
                         Request $request,

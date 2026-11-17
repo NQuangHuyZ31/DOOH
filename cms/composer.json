@@ -44,6 +44,7 @@
 			"Modules\\Simulator\\": "modules/Simulator/src/",
 			"Modules\\Auth\\": "modules/Auth/src/",
 			"Modules\\User\\": "modules/User/src/",
+			"Modules\\User\\Database\\Seeders\\": "modules/User/database/seeders/",
 			"Database\\Factories\\": "database/factories/",
 			"Database\\Seeders\\": "database/seeders/"
 		}

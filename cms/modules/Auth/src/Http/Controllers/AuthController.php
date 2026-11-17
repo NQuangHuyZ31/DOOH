@@ -51,7 +51,7 @@ class AuthController extends BaseController
 
     public function me(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $user = $request->user() ?? auth('sanctum')->user();
         if (!$user) {
             return $this->respondUnauthorized('Unauthenticated.');
         }
@@ -61,7 +61,7 @@ class AuthController extends BaseController
 
     public function logout(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $user = $request->user() ?? auth('sanctum')->user();
         if ($user) {
             $this->authService->logout($user);
         }
