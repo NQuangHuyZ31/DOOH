@@ -11,6 +11,7 @@ import {
   LogoutOutlined,
 } from '@ant-design/icons';
 import { ROUTING_CONFIG } from '../configs/routing';
+import { http } from '../Action/api';
 
 const { Header, Content, Sider } = Layout;
 const { Title, Text } = Typography;
@@ -44,6 +45,17 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await http.post('/auth/logout');
+    } catch {
+      // Silently handle error if session already revoked
+    } finally {
+      localStorage.removeItem(ROUTING_CONFIG.auth.tokenKey);
+      navigate(ROUTING_CONFIG.auth.loginPath, { replace: true });
+    }
+  };
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider collapsible collapsed={collapsed} onCollapse={(val) => setCollapsed(val)} width={220}>
@@ -65,7 +77,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           <Text strong>DOOH Media Management Platform</Text>
           <Space>
             <Text type="secondary">Admin</Text>
-            <Button type="text" icon={<LogoutOutlined />}>Logout</Button>
+            <Button type="text" icon={<LogoutOutlined />} onClick={handleLogout}>
+              Logout
+            </Button>
           </Space>
         </Header>
         <Content style={{ margin: '24px 16px', padding: 24, background: '#f5f5f5', minHeight: 280 }}>

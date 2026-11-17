@@ -12,5 +12,11 @@ class AuthServiceProvider extends ServiceProvider
         $this->app->singleton(AuthService::class);
     }
 
-    public function boot(): void {}
+    public function boot(): void
+    {
+        $viewsPath = dirname(__DIR__, 2) . '/resources/views';
+        if (is_dir($viewsPath)) {
+            $this->loadViewsFrom($viewsPath, 'auth');
+        }
+    }
 }

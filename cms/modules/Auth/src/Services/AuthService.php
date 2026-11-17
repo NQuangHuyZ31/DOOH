@@ -5,8 +5,10 @@ namespace Modules\Auth\Services;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Modules\Auth\Mail\OtpVerificationMail;
 use Modules\User\Models\User;
 use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
 
@@ -21,7 +23,10 @@ class AuthService
 
     public function isOtpEnabled(): bool
     {
-        return (bool) config('auth.email_otp.enabled', false);
+        return filter_var(
+            config('auth.email_otp.enabled', env('AUTH_EMAIL_OTP_ENABLED', false)),
+            FILTER_VALIDATE_BOOLEAN
+        );
     }
 
     public function login(string $email, string $password, ?string $ip = null, ?string $userAgent = null): array
@@ -62,11 +67,12 @@ class AuthService
 
         if (trim($code) !== (string) $data['otp']) {
             $data['attempts'] = $attempts;
-            $ttlMinutes = (int) config('auth.email_otp.ttl_minutes', self::DEFAULT_OTP_TTL_MINUTES);
+            $ttlMinutes = (int) config('auth.email_otp.ttl_minutes', env('AUTH_EMAIL_OTP_TTL_MINUTES', self::DEFAULT_OTP_TTL_MINUTES));
             Cache::put($cacheKey, $data, now()->addMinutes($ttlMinutes));
 
+            $remaining = self::MAX_OTP_ATTEMPTS - $attempts;
             throw ValidationException::withMessages([
-                'code' => ['Invalid verification code. Please check your email.'],
+                'code' => ["Invalid verification code. {$remaining} attempt(s) remaining."],
             ]);
         }
 
@@ -104,8 +110,15 @@ class AuthService
         $data['otp'] = $otp;
         $data['attempts'] = 0;
 
-        $ttlMinutes = (int) config('auth.email_otp.ttl_minutes', self::DEFAULT_OTP_TTL_MINUTES);
+        $ttlMinutes = (int) config('auth.email_otp.ttl_minutes', env('AUTH_EMAIL_OTP_TTL_MINUTES', self::DEFAULT_OTP_TTL_MINUTES));
         Cache::put($cacheKey, $data, now()->addMinutes($ttlMinutes));
+
+        // Dispatch queued email notification
+        Mail::to($user->email)->queue(new OtpVerificationMail(
+            userName: $user->name,
+            otpCode: $otp,
+            ttlMinutes: $ttlMinutes
+        ));
 
         Log::info("Resent Login OTP for [{$user->email}]: {$otp}");
 
@@ -114,7 +127,7 @@ class AuthService
             'require_otp' => true,
             'temp_token' => $tempToken,
             'email' => $this->maskEmail($user->email),
-            'message' => 'A fresh verification code has been sent to your email address.',
+            'message' => 'A fresh verification code has been dispatched to your email address.',
         ];
     }
 
@@ -125,14 +138,19 @@ class AuthService
 
     public function logout(User $user): void
     {
-        $user->currentAccessToken()?->delete();
+        $token = $user->currentAccessToken();
+        if ($token) {
+            $token->delete();
+        } else {
+            $user->tokens()->delete();
+        }
     }
 
     protected function initiateEmailOtp(User $user, ?string $ip = null, ?string $userAgent = null): array
     {
         $otp = sprintf('%06d', random_int(100000, 999999));
         $tempToken = Str::random(64);
-        $ttlMinutes = (int) config('auth.email_otp.ttl_minutes', self::DEFAULT_OTP_TTL_MINUTES);
+        $ttlMinutes = (int) config('auth.email_otp.ttl_minutes', env('AUTH_EMAIL_OTP_TTL_MINUTES', self::DEFAULT_OTP_TTL_MINUTES));
 
         $sessionData = [
             'user_id' => $user->id,
@@ -145,14 +163,21 @@ class AuthService
 
         Cache::put("auth_email_otp_{$tempToken}", $sessionData, now()->addMinutes($ttlMinutes));
 
-        Log::info("Generated Login OTP for [{$user->email}]: {$otp} (temp_token: {$tempToken})");
+        // Dispatch queued email notification
+        Mail::to($user->email)->queue(new OtpVerificationMail(
+            userName: $user->name,
+            otpCode: $otp,
+            ttlMinutes: $ttlMinutes
+        ));
+
+        Log::info("Dispatched queued Login OTP for [{$user->email}]: {$otp} (temp_token: {$tempToken})");
 
         return [
             'step' => 'email_otp',
             'require_otp' => true,
             'temp_token' => $tempToken,
             'email' => $this->maskEmail($user->email),
-            'message' => 'A 6-digit verification code has been sent to your email address.',
+            'message' => 'A 6-digit verification code has been dispatched to your email address.',
         ];
     }
 
