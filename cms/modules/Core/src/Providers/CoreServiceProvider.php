@@ -47,6 +47,20 @@ class CoreServiceProvider extends ServiceProvider
                 }
             }
         }
+
+        // 3. Configure global modular factory discovery
+        \Illuminate\Database\Eloquent\Factories\Factory::guessFactoryNamesUsing(
+            function (string $modelName) {
+                if (str_starts_with($modelName, 'Modules\\')) {
+                    $parts = explode('\\', $modelName);
+                    $module = $parts[1] ?? '';
+                    $model = end($parts);
+                    return "Modules\\{$module}\\Database\\Factories\\{$model}Factory";
+                }
+
+                return 'Database\\Factories\\' . class_basename($modelName) . 'Factory';
+            }
+        );
     }
 
     /**

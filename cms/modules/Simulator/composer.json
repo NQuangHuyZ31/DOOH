@@ -1,28 +1,29 @@
 {
-    "name": "ureka/module-simulator",
-    "description": "DOOH LED screen simulator and playback debugger module for Ureka DOOH CMS",
-    "type": "library",
-    "license": "proprietary",
-    "authors": [
-        {
-            "name": "Ureka Media"
-        }
-    ],
-    "require": {
-        "php": "^8.3",
-        "ureka/module-core": "*",
-        "illuminate/support": "^11.0|^12.0|^13.0"
-    },
-    "autoload": {
-        "psr-4": {
-            "Modules\\Simulator\\": "src/"
-        }
-    },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "Modules\\Simulator\\Providers\\SimulatorServiceProvider"
-            ]
-        }
-    }
+	"name": "dooh/module-simulator",
+	"description": "DOOH LED screen simulator and playback debugger module for DOOH CMS",
+	"type": "library",
+	"version": "1.0.0",
+	"license": "proprietary",
+	"authors": [
+		{
+			"name": "DOOH"
+		}
+	],
+	"require": {
+		"php": "^8.3",
+		"dooh/module-core": "^1.0.0",
+		"illuminate/support": "^11.0|^12.0|^13.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"Modules\\Simulator\\": "src/"
+		}
+	},
+	"extra": {
+		"laravel": {
+			"providers": [
+				"Modules\\Simulator\\Providers\\SimulatorServiceProvider"
+			]
+		}
+	}
 }

@@ -75,3 +75,26 @@ Detailed Architecture: [`docs/backend/architecture.md`](file:///E:/Urekamedia/DO
 - **SRP & DIP**: Controllers handle HTTP only; Services orchestrate business logic and depend strictly on Repository Interfaces; Repositories handle database queries.
 - **God Class Threshold**: Split Controllers or Services exceeding ~300 lines or >7 dependencies into focused domain sub-services (e.g. `PacingDeliveryService`, `CreativeAssetService`).
 - **No Overengineering**: Rely on Laravel & Core base classes (`BaseController`, `BaseRepository`). Never introduce speculative abstract factories or wrappers for simple tasks.
+
+---
+
+## 7. Mandatory Automated Testing (Hard Invariant)
+- **Zero Features Without Tests**: Every module MUST have automated tests alongside its implementation. Shipping untested features is strictly forbidden.
+- **Test Structure**:
+  - `modules/<ModuleName>/tests/Feature/<Entity>ApiTest.php`: Feature tests for API endpoints, HTTP status codes (200, 201, 401, 403, 404, 422), JSON payload contract, validation failure rules, and RBAC permissions.
+  - `modules/<ModuleName>/tests/Unit/<Entity>ServiceTest.php`: Unit tests mocking Repository interfaces to test pure business logic and edge cases.
+  - `modules/<ModuleName>/tests/Feature/<Entity>RepositoryTest.php`: Integration tests for complex repository queries, scopes, and pagination on SQLite `:memory:`.
+- **Quality Gate**: `php artisan test` must execute and pass 100% of tests before any task is submitted or reported.
+
+---
+
+## 8. Modular Factories & Seeders Autoloading (Hard Invariant)
+- **Location**: All entity factories and seeders MUST be placed inside their domain module:
+  - Factories: `cms/modules/<ModuleName>/database/factories/<Model>Factory.php` (namespace `Modules\<ModuleName>\Database\Factories`).
+  - Seeders: `cms/modules/<ModuleName>/database/seeders/<Entity>Seeder.php` (namespace `Modules\<ModuleName>\Database\Seeders`).
+- **Autoload Registration**:
+  - Every module's `database/factories/` and `database/seeders/` directories MUST be registered in PSR-4 autoload (via `cms/composer.json` and `modules/<ModuleName>/composer.json`).
+  - NEVER place domain factories or seeders directly in root `cms/database/factories/`.
+- **Automatic Factory Resolution (Zero Boilerplate)**:
+  - `CoreServiceProvider` globally registers `Factory::guessFactoryNamesUsing(...)` so any `Modules\<Module>\Models\<Model>` automatically resolves to `Modules\<Module>\Database\Factories\<Model>Factory`.
+  - **STRICTLY FORBIDDEN from writing boilerplate `newFactory()` in models**. Models simply use `use HasFactory;` without any redundant helper methods.

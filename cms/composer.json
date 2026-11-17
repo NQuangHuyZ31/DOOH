@@ -44,6 +44,7 @@
 			"Modules\\Simulator\\": "modules/Simulator/src/",
 			"Modules\\Auth\\": "modules/Auth/src/",
 			"Modules\\User\\": "modules/User/src/",
+			"Modules\\User\\Database\\Factories\\": "modules/User/database/factories/",
 			"Modules\\User\\Database\\Seeders\\": "modules/User/database/seeders/",
 			"Database\\Factories\\": "database/factories/",
 			"Database\\Seeders\\": "database/seeders/"
@@ -60,7 +61,16 @@
 	],
 	"autoload-dev": {
 		"psr-4": {
-			"Tests\\": "tests/"
+			"Tests\\": "tests/",
+			"Modules\\Venue\\Tests\\": "modules/Venue/tests/",
+			"Modules\\Core\\Tests\\": "modules/Core/tests/",
+			"Modules\\Delivery\\Tests\\": "modules/Delivery/tests/",
+			"Modules\\Creative\\Tests\\": "modules/Creative/tests/",
+			"Modules\\Simulator\\Tests\\": "modules/Simulator/tests/",
+			"Modules\\Report\\Tests\\": "modules/Report/tests/",
+			"Modules\\Log\\Tests\\": "modules/Log/tests/",
+			"Modules\\Auth\\Tests\\": "modules/Auth/tests/",
+			"Modules\\User\\Tests\\": "modules/User/tests/"
 		}
 	},
 	"scripts": {

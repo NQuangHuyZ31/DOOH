@@ -12,25 +12,32 @@ class DynamicRouteTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->artisan('migrate', ['--path' => 'modules/Venue/database/migrations', '--realpath' => false]);
+        $this->artisan('migrate');
     }
 
     public function test_spa_root_endpoint(): void
     {
         $response = $this->get('/');
-        $response->assertStatus(200);
+        $response->assertRedirect('/admin/venues');
+
+        $spa = $this->get('/admin/venues');
+        $spa->assertStatus(200);
     }
 
     public function test_venue_module_dispatches_to_venue_controller(): void
     {
-        $response = $this->getJson('/api/venue');
+        $this->authenticateAsSuperAdmin();
+
+        $response = $this->getJson('/admin/api/venue');
         $response->assertStatus(200)
                  ->assertJsonPath('status', 'success');
     }
 
     public function test_delivery_module_route(): void
     {
-        $response = $this->getJson('/api/delivery');
+        $this->authenticateAsSuperAdmin();
+
+        $response = $this->getJson('/admin/api/delivery');
         $response->assertStatus(200)
                  ->assertJsonPath('status', 'success')
                  ->assertJsonPath('data.module', 'Delivery');
@@ -38,7 +45,9 @@ class DynamicRouteTest extends TestCase
 
     public function test_creative_module_route(): void
     {
-        $response = $this->getJson('/api/creative');
+        $this->authenticateAsSuperAdmin();
+
+        $response = $this->getJson('/admin/api/creative');
         $response->assertStatus(200)
                  ->assertJsonPath('status', 'success')
                  ->assertJsonPath('data.module', 'Creative');
@@ -46,7 +55,9 @@ class DynamicRouteTest extends TestCase
 
     public function test_simulator_module_route(): void
     {
-        $response = $this->getJson('/api/simulator');
+        $this->authenticateAsSuperAdmin();
+
+        $response = $this->getJson('/admin/api/simulator');
         $response->assertStatus(200)
                  ->assertJsonPath('status', 'success')
                  ->assertJsonPath('data.module', 'Simulator');
@@ -54,7 +65,9 @@ class DynamicRouteTest extends TestCase
 
     public function test_report_module_route(): void
     {
-        $response = $this->getJson('/api/report');
+        $this->authenticateAsSuperAdmin();
+
+        $response = $this->getJson('/admin/api/report');
         $response->assertStatus(200)
                  ->assertJsonPath('status', 'success')
                  ->assertJsonPath('data.module', 'Report');
@@ -62,7 +75,9 @@ class DynamicRouteTest extends TestCase
 
     public function test_log_module_route(): void
     {
-        $response = $this->getJson('/api/log');
+        $this->authenticateAsSuperAdmin();
+
+        $response = $this->getJson('/admin/api/log');
         $response->assertStatus(200)
                  ->assertJsonPath('status', 'success')
                  ->assertJsonPath('data.module', 'Log');
@@ -70,9 +85,10 @@ class DynamicRouteTest extends TestCase
 
     public function test_auth_module_route(): void
     {
-        $response = $this->getJson('/api/auth');
+        $this->authenticateAsSuperAdmin();
+
+        $response = $this->getJson('/admin/api/auth/me');
         $response->assertStatus(200)
-                 ->assertJsonPath('status', 'success')
-                 ->assertJsonPath('data.module', 'Auth');
+                 ->assertJsonPath('status', 'success');
     }
 }

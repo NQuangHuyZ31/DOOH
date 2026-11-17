@@ -45,4 +45,4 @@ Detailed Workflow: [`docs/development/git-workflow.md`](file:///E:/Urekamedia/TI
      `git checkout -b <branch>` or `git checkout <branch>`.
    - Verify `git branch --show-current` matches target branch.
 4. **Code & Verify**: Implement approved scope only; run applicable quality gates (`npm run check-types`, `php artisan test`, etc.).
-5. **Stage & Commit**: Stage explicit files only (no `git add .`, no `.env` or credential files), commit in English with Conventional Commits, and push to the task branch (`git push -u origin <branch>`). NEVER push to `main`.
+Note Important: no commit until I approve

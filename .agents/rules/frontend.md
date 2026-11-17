@@ -34,10 +34,16 @@ Detailed Architecture: [`docs/frontend/architecture.md`](file:///E:/Urekamedia/D
 ---
 
 ## 4. State Management & API Integration
-- **Mandatory Redux Toolkit (RTK)**: When API state or domain data needs to be stored and shared in a global store (cross-component sharing, multi-tab caching, server-paginated entity lists, global filters), it **MUST** be placed in the store using **Redux Toolkit (`@reduxjs/toolkit`)** via `createSlice` and `createAsyncThunk`.
-  - Directory: `modules/<ModuleName>/resources/js/store/<domain>Slice.ts`.
-  - Integration: Thunks MUST call `http` from `@core/Action/api`.
-  - Forbidden: Legacy raw Redux (manual action types/creators, switch-case reducers, raw `redux` boilerplate) and ad-hoc global state patterns.
+- **Mandatory Redux Toolkit (RTK)**: When API state or domain data must be stored in the store (cross-component sharing, multi-tab caching, server-paginated entity lists, global filters), it **MUST** be placed in the store using **Redux Toolkit (`@reduxjs/toolkit`)**.
+- **Strict Separation of Slice & Thunk (Hard Invariant)**:
+  - **NEVER write `createSlice` and `createAsyncThunk` in the same file.**
+  - **Thunk File (`store/<domain>Thunk.ts`)**: Contains all asynchronous operations created via `createAsyncThunk`. Responsible strictly for async network requests (invoking API clients from `Action/`), error payload transformation with `rejectWithValue`, and response extraction.
+  - **Slice File (`store/<domain>Slice.ts`)**: Contains state interfaces, initial state, synchronous reducers, and builder `extraReducers` that respond to the lifecycle actions (`pending`, `fulfilled`, `rejected`) of thunks imported from `<domain>Thunk.ts`.
+  - **No Re-exporting Thunks in Slice**: Slices MUST NOT re-export thunks (`export { fetchMe, logout } from './authThunk'` is strictly forbidden). Consumers must import thunks directly from `<domain>Thunk.ts`.
+  - **File Convention**:
+    - `modules/<ModuleName>/resources/js/store/<domain>Thunk.ts` (Thunks only)
+    - `modules/<ModuleName>/resources/js/store/<domain>Slice.ts` (Slice only)
+  - **Forbidden**: Writing `createAsyncThunk` inside `*Slice.ts` files, re-exporting thunks from slices, mixing network logic into slice files, legacy raw Redux boilerplate, and unmanaged ad-hoc global state.
 - **State Partition**:
   - **Redux Toolkit Slice + Thunk** (`store/<domain>/`): Shared entity lists (venues, line items), server pagination, search filters, and multi-tab state.
   - **Direct API + `useAction`**: Single row mutations (delete, toggle status, submit modal, export) and local transient UI state.
@@ -47,8 +53,12 @@ Detailed Architecture: [`docs/frontend/architecture.md`](file:///E:/Urekamedia/D
 
 ---
 
-## 5. Imports & Configs
+## 5. Imports & Clean Export Boundaries
 - **No Redundant `index.ts` / `index.tsx`**: NEVER generate unnecessary index files in feature module directories. Import components, pages, and configs directly from their respective files (e.g. `@modules/Venue/resources/js/pages/VenueListPage`). Only `@core` root package exports use `index.ts`.
+- **No Re-export Dumping in `index.ts` (Strict Clean Boundary)**:
+  - If a module has a root `index.ts`, it MUST ONLY export its minimal package shell contract (e.g. `export { authRoutes, authReducer }`).
+  - **NEVER re-export internal slice actions (`setCredentials`, `clearAuth`), thunks (`fetchMe`, `logout`), configs, or sub-components in `index.ts`**.
+  - Consumers that need actions, thunks, or sub-components MUST import directly from their dedicated files (e.g. `import { fetchMe } from '@modules/Auth/resources/js/store/authThunk';`).
 - **Path Aliases**: Use `@core/...` and `@modules/<Module>/...`. Sibling relative imports (`./`, `../`) are allowed. NEW imports MUST NOT use `../../` or deeper.
 - **Static Configs**: Move column definitions, presets, and select options to `configs/` (e.g. `configs/tableConfig.ts`). Do not inline in TSX.
 

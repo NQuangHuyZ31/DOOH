@@ -45,6 +45,7 @@ Standard DOOH Domain Modules:
    - `src/Http/Requests/Store<Model>Request.php`.
    - `src/Http/Controllers/<Model>Controller.php` extending `BaseController`.
 5. **ServiceProvider**: `src/Providers/<ModuleName>ServiceProvider.php`. Binds repository interface to implementation.
+6. **Factory & Seeder**: Place inside `database/factories/` and `database/seeders/` within the module. Autoload via PSR-4 in `composer.json` (`Modules\<ModuleName>\Database\Factories\`). Resolved automatically by `CoreServiceProvider` (NEVER write `newFactory()` in models).
 
 ### Step 2: System Registration
 1. In `cms/modules/Core/configs/modules.php`: Add slug to `'routes'` and module name to `'modules'`.
@@ -55,6 +56,12 @@ Standard DOOH Domain Modules:
 2. **Configs**: Declare column configs and filter presets in `resources/js/configs/`.
 3. **Pages**: Create page orchestrator in `resources/js/pages/`. Hard limit $\le$ 150 lines per TSX file.
 4. **Routes**: Declare `RouteDef[]` in `resources/js/routes/route.ts` and register via `registerRoutes()` in `resources/js/index.ts`.
+5. **State Management (Redux Toolkit)**: If global state is needed, strictly separate into:
+   - `resources/js/store/<domain>Thunk.ts`: Asynchronous thunks (`createAsyncThunk`).
+   - `resources/js/store/<domain>Slice.ts`: State schema, initial state, synchronous reducers, and builder `extraReducers`.
+   - **NEVER** write thunk and slice in the same file.
+   - **NEVER** re-export thunks from slices (`export { ... } from './*Thunk'`).
+   - **NEVER** dump internal slice actions or thunks into `index.ts`. Root `index.ts` exports ONLY minimal shell contract (`routes`, `reducer`). Direct imports for everything else.
 
 ---
 

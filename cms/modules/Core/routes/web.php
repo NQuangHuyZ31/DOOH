@@ -11,8 +11,8 @@ Route::get('/', function () use ($adminPrefix, $defaultModule) {
 
 Route::get("/{$adminPrefix}/{any?}", function () {
     return view('core::app');
-})->where('any', '.*');
+})->where('any', '^(?!api).*$');
 
 Route::get('/{any}', function () {
     return view('core::app');
-})->where('any', '.*');
+})->where('any', '^(?!admin\/api|api).*$');

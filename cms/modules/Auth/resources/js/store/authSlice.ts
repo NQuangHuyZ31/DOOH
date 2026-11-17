@@ -94,5 +94,4 @@ export const authSlice = createSlice({
 });
 
 export const { setCredentials, clearAuth, setInitialized } = authSlice.actions;
-export { fetchMe, logout } from './authThunk';
 export default authSlice.reducer;

@@ -40,9 +40,10 @@
    - Switch/create target branch: Use base category branches directly: `feature` (new feature/UI), `fix` (bug fix), `refactor`, or `chore`. **NEVER use sub-branches like `feature/<name>` or `feature/des`**.
 5. **Implement**:
    - Scope-only implementation. Reuse before create. No unrequested features.
+   - **Automated Tests (Mandatory)**: Write Feature tests (`modules/<Module>/tests/Feature/`) and Unit tests (`modules/<Module>/tests/Unit/`) alongside every feature.
    - Stage explicit files only: `git add <file>...` (NEVER `git add .`).
    - Conventional Commits in English on the task branch (`feat(scope): ...`, `fix(scope): ...`).
-6. **Review**: Inspect git diff, verify architecture & run quality gates.
+6. **Review**: Inspect git diff, verify architecture & run quality gates (`php artisan test`).
 7. **Report**: Concise summary of changes, created/modified files, test results.
 
 ---
@@ -51,8 +52,8 @@
 
 | Layer | Hard Invariant | Forbidden |
 |---|---|---|
-| **Backend (CMS)** | Strict 3-Layer: `Controller → Service → Repository`. Repositories extend `BaseRepository` or Mongo repos. Named domain controllers only (`VenueController`, etc.). Dynamic router auto-dispatches to `<ModuleName>Controller`. All shared code in `Core`. `CoreServiceProvider` auto-registers all module providers. | Dummy/redundant `IndexController`. Model queries or `DB::table()` inside Service. Direct persistence in Controller. Manual registration of module providers in `bootstrap/providers.php`. Custom code outside `modules/`. |
-| **Frontend (CMS)** | **Hard Limit $\le$ 150 lines per TSX**. 100% English UI text. Ant Design components. No `any`. Direct file imports. Only `@core` root package exports use `index.ts`. Store: Any API state requiring global store MUST use Redux Toolkit (`@reduxjs/toolkit`). | Redundant `index.ts`/`index.tsx`. Exceeding 150 lines (must extract hooks/configs/subcomponents). Vietnamese in UI. Raw `fetch()`. Legacy raw Redux boilerplate or unmanaged global state. |
+| **Backend (CMS)** | Strict 3-Layer: `Controller → Service → Repository`. Repositories extend `BaseRepository` or Mongo repos. Named domain controllers only (`VenueController`, etc.). Dynamic router auto-dispatches to `<ModuleName>Controller`. All shared code in `Core`. `CoreServiceProvider` auto-registers all module providers. **Mandatory Automated Tests**: Every module MUST include Feature tests (endpoints, validation, RBAC) and Unit tests (services, algorithms). **Modular Factories & Seeders**: All factories & seeders live inside `modules/<Module>/database/` and are autoloaded via PSR-4. Resolved globally by `CoreServiceProvider`; NEVER write boilerplate `newFactory()` in models. | Dummy/redundant `IndexController`. Model queries or `DB::table()` inside Service. Direct persistence in Controller. Manual registration of module providers in `bootstrap/providers.php`. Custom code outside `modules/`. Domain factories/seeders in root `database/`. Boilerplate `newFactory()` in models. Shipping features without accompanying automated tests. |
+| **Frontend (CMS)** | **Hard Limit $\le$ 150 lines per TSX**. 100% English UI text. Ant Design components. No `any`. Direct file imports. Only `@core` root package exports use `index.ts`. **Redux Toolkit (RTK)**: Slices and Thunks MUST be in separate files (`<domain>Slice.ts` and `<domain>Thunk.ts`). NEVER write Slice and Thunk in the same file. **No Redundant Re-exports**: Slice files MUST NOT re-export thunks (`export { ... } from './*Thunk'`). Module `index.ts` MUST ONLY export the minimal shell contract (`routes`, `reducer`). NEVER re-export internal actions or thunks. | Writing `createAsyncThunk` and `createSlice` in the same file. Re-exporting thunks from slice files. Dumping internal actions/thunks into `index.ts`. Redundant `index.ts`/`index.tsx`. Exceeding 150 lines (must extract hooks/configs/subcomponents). Vietnamese in UI. Raw `fetch()`. Legacy raw Redux boilerplate or unmanaged global state. |
 | **Tracking API** | Latency **< 3ms** (HTTP 204). Pure Node.js. Opaque token (`:hash`), Redis `SET dedup:{hash} 1 EX 30 NX` + queue. Batch worker to Mongo. | Blocking synchronous Mongo/disk writes in HTTP request pipeline. |
 | **Databases** | **Dual-DB**: MySQL for relational entities (explicit `$fillable`, additive migrations); MongoDB for logs (`tracking_logs`, `daily_aggregated_reports` with compound/TTL indexes). | Mutating production data; editing merged migrations; unguarded models (`$guarded = []`). |
 | **Git / Deploy** | Never push to `main`. Use base category branches directly (`feature`, `fix`, `refactor`, `chore`). Human Deploy Gate: Merging to `main` creates draft release; human publishes. | Sub-branch slashes (`feature/<desc>`, `feature/des`); destructive git (`reset --hard`, force push); `git add .`. |
@@ -76,4 +77,4 @@ npm.cmd run build && npm.cmd test
 ---
 
 ## 5. Final Checklist
-1. Plan approved? ➔ 2. Switched to task branch (not `main`)? ➔ 3. Reused existing components? ➔ 4. TSX $\le$ 150 lines? ➔ 5. Backend 3-layer respected? ➔ 6. Quality gates pass? ➔ 7. Staged explicit files & committed in English?
+1. Plan approved? ➔ 2. Switched to task branch (not `main`)? ➔ 3. Reused existing components? ➔ 4. TSX $\le$ 150 lines? ➔ 5. Backend 3-layer respected? ➔ 6. Automated tests written & passing? ➔ 7. Quality gates pass? ➔ 8. Staged explicit files & committed in English?
