@@ -4,10 +4,11 @@ class RouteRegistry {
   private routes: AppRoute[] = [];
 
   public register(route: AppRoute | AppRoute[]): void {
-    if (Array.isArray(route)) {
-      this.routes.push(...route);
-    } else {
-      this.routes.push(route);
+    const incoming = Array.isArray(route) ? route : [route];
+    for (const r of incoming) {
+      if (!this.routes.some((existing) => existing.path === r.path)) {
+        this.routes.push(r);
+      }
     }
   }
 

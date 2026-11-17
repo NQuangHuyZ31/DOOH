@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, Typography } from 'antd';
 import { AppRoute } from './types';
 import { ROUTING_CONFIG } from '../configs/routing';
-import { venueRoutes } from '@modules/Venue/resources/js/routes';
+import '@modules/Venue/resources/js/index';
 
 const { Title, Paragraph } = Typography;
 
@@ -14,7 +14,6 @@ const createModulePlaceholder = (title: string, subtitle: string, desc: string):
 );
 
 export const moduleRoutes: AppRoute[] = [
-  ...venueRoutes,
   {
     path: ROUTING_CONFIG.modules.delivery.path,
     key: ROUTING_CONFIG.modules.delivery.key,
