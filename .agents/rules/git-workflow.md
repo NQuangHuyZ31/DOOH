@@ -25,19 +25,24 @@ Detailed Workflow: [`docs/development/git-workflow.md`](file:///E:/Urekamedia/TI
 - Agents MUST NEVER publish releases or trigger production deployments.
 
 
-## 5. Auto-Evaluate, Branch Switch & Commit Protocol
+## 5. Auto-Evaluate, Branch Switch & Commit Protocol (MANDATORY INVARIANT)
 
-| Task Intent | Target Branch | Commit Prefix |
+**NEVER WRITE CODE DIRECTLY ON `main`.**
+
+| Task Intent | Target Branch Convention | Commit Prefix |
 |---|---|---|
-| New feature / module / API / UI | `feature` | `feat(scope): ...` |
-| Bug / build / Docker / UI / API fix | `fix` | `fix(scope): ...` |
-| Urgent production fix | `hotfix` | `fix(scope): ...` |
-| Code restructure (no behavior change) | `refactor` | `refactor(scope): ...` |
-| Tests only | `test` | `test(scope): ...` |
-| Config / deps / docs / CI / tooling | `chore` | `chore\|docs\|ci(scope): ...` |
+| New feature / module / API / UI | `feature` or `feature/<name>` | `feat(scope): ...` |
+| Bug / build / Docker / UI / API fix | `fix` or `fix/<name>` | `fix(scope): ...` |
+| Urgent production fix | `hotfix` or `hotfix/<name>` | `fix(scope): ...` |
+| Code restructure (no behavior change) | `refactor` or `refactor/<name>` | `refactor(scope): ...` |
+| Tests only | `test` or `test/<name>` | `test(scope): ...` |
+| Config / deps / docs / CI / tooling | `chore` or `chore/<name>` | `chore\|docs\|ci(scope): ...` |
 
 1. **Inspect & Guard**: Run `git status --short` and `git branch --show-current`. If unrelated uncommitted changes exist, **STOP and ask**.
-2. **Declare in Plan**: State the evaluated target branch in the Plan (per `AGENTS.md` approval gate).
-3. **Switch**: After approval, if not on target branch: `git fetch origin` -> `git checkout <branch>` (or `git checkout -b <branch> origin/main` if missing; never `git checkout -B`).
-4. **Code & Verify**: Implement approved scope only; run applicable quality gates (`check-types`, `artisan test` / `pytest`, `verify-workflow.ps1`).
-5. **Commit & Push**: Stage explicit files only (no `git add .`, no manifests/`.env`), commit in English, and `git push -u origin <branch>` (never `main`).
+2. **Declare in Plan**: State the exact target branch in the Plan before asking for approval.
+3. **MANDATORY SWITCH BEFORE TOUCHING CODE**:
+   - Immediately after approval, before creating/modifying ANY file, switch to the task branch:
+     `git checkout -b <branch>` or `git checkout <branch>`.
+   - Verify `git branch --show-current` matches target branch.
+4. **Code & Verify**: Implement approved scope only; run applicable quality gates (`npm run check-types`, `php artisan test`, etc.).
+5. **Stage & Commit**: Stage explicit files only (no `git add .`, no `.env` or credential files), commit in English with Conventional Commits, and push to the task branch (`git push -u origin <branch>`). NEVER push to `main`.

@@ -1,53 +1,28 @@
-# Documentation Index & Architecture Map
+# DOOH Platform Documentation Index
 
-Welcome to the `TIKTOK-CRAWLER` technical documentation system.
-This directory contains architectural specifications, developer guides, database schemas, and operational runbooks.
-
----
-
-## 1. Quick Navigation by Topic
-
-### Architecture & System Overview
-- [Architecture Overview](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/architecture/overview.md) — High-level system topology, technology stack, and module boundaries.
-
-### Frontend Engineering (React 19 + TypeScript + Ant Design 6)
-- [Frontend Architecture](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/frontend/architecture.md) — SPA routing, Redux Toolkit state management, and English-only UI standards.
-- [Core Components Catalog](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/frontend/core-components.md) — Catalog of reusable tables, filters, modals, cards, and formatting hooks.
-
-### Backend Engineering (Laravel 13 + PHP 8.3+)
-- [Backend Architecture](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/backend/architecture.md) — Strict 3-layer architecture (Controller -> Service -> Repository) and base classes.
-
-### API Contracts & Routing
-- [API Routing & Contracts](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/api/routing-and-contracts.md) — Dynamic route resolution (`DynamicRouteResovle`), RBAC permissions, and standardized response formats.
-
-### Database & Schemas
-- [Database Schema & Migrations](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/database/schema-and-migrations.md) — Database table specifications, index design, and soft deletes conventions.s.
-
-### Development Standards & Quality Assurance
-- [SOLID Principles & Architecture](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/development/solid-principles.md) — Mandatory SOLID coding rules, God Class/Component prevention, and review checklist.
-- [Coding Standards](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/development/coding-standards.md) — Naming conventions, PSR-12, TypeScript standards, and English-only requirement.
-- [Automated Testing Guide](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/development/testing-guide.md) — Pest feature test templates, unit tests, and type checking commands.
-- [Git Workflow & Release Management](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/development/git-workflow.md) — Branch strategies (single-workspace & worktree slots), Conventional Commits, and Human Deploy Gate.
-
-### Infrastructure & Deployment
-- [CI/CD Pipeline Architecture](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/deployment/ci-cd-architecture.md) — Breakdown of GitHub Actions workflows.
-- [Release Management & SemVer](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/deployment/release-management.md) — Release candidate lifecycle and automated draft release generation.
-- [Render Deployment Playbook](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/deployment/render-deployment.md) — Render IaC configuration (`render.yaml`), health checks, and rollback procedures.
-
-### Historical Archives (Preserved Reference)
-- [Historical Milestones 1–50](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/archive/historical-milestones.md) — Comprehensive archive of early development milestones (300+ KB).
-- [Legacy Architecture Details](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/archive/legacy-architecture-details.md) — Historical reference notes (43 KB).
-- [Project Summary Archive](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/archive/PROJECT_SUMMARY_ARCHIVE.md) — Complete historical milestone log (360 KB).
+Welcome to the **DOOH (Digital Out-Of-Home)** platform engineering documentation.
 
 ---
 
-## 2. AI Agent Navigation Path
+## 1. Quick Navigation
 
-When completing tasks in this repository, follow this progressive loading path:
+| Topic | Document | Scope & Key Contents |
+|---|---|---|
+| **System Overview** | [`overview.md`](file:///E:/Urekamedia/DOOH/docs/architecture/overview.md) | High-level topology, Monorepo layout (`cms/`, `api/`), Dual-DB strategy. |
+| **System & Data Flow** | [`system-flow.md`](file:///E:/Urekamedia/DOOH/docs/architecture/system-flow.md) | End-to-end activity diagrams, Playlist loop, Tracking beacon, Offline flow. |
+| **Business Specs** | [`business-requirements.md`](file:///E:/Urekamedia/DOOH/docs/architecture/business-requirements.md) | Venue, Delivery, Creative formats (VAST/MP4), Pacing & Proof of Play. |
+| **API & Tracking** | [`routing-and-contracts.md`](file:///E:/Urekamedia/DOOH/docs/api/routing-and-contracts.md) | Pure Node.js API, Playlist generation, Opaque token tracking (`:hash`). |
+| **CMS Backend** | [`architecture.md`](file:///E:/Urekamedia/DOOH/docs/backend/architecture.md) | Laravel 11/12, Strict 3-Layer (`Controller → Service → Repository`), Modules. |
+| **CMS Frontend** | [`architecture.md`](file:///E:/Urekamedia/DOOH/docs/frontend/architecture.md) | React 19/18 + TS + Ant Design 5/6, 150-line TSX hard limit, English UI. |
+| **Database & Cache** | [`schema-and-migrations.md`](file:///E:/Urekamedia/DOOH/docs/database/schema-and-migrations.md) | MySQL relational entities, MongoDB tracking/reporting, Redis caching. |
 
-| Task Domain | Mandatory Rules | Relevant Skills | Deep Architecture Docs |
-| :--- | :--- | :--- | :--- |
-| **Frontend UI / Pages** | `.agents/rules/frontend.md` | `core-reusability-promoter` | `docs/frontend/architecture.md`<br>`docs/frontend/core-components.md`<br>`docs/development/solid-principles.md` |
-| **Backend API / Service**| `.agents/rules/backend.md`<br>`.agents/rules/database.md` | `ureka-module-scaffolder` | `docs/backend/architecture.md`<br>`docs/api/routing-and-contracts.md`<br>`docs/development/solid-principles.md` |
-| **Database Migration** | `.agents/rules/database.md` | `ureka-module-scaffolder` | `docs/database/schema-and-migrations.md` |
-| **Git / Commits / PRs** | `.agents/rules/git-workflow.md` | `git-workflow` | `docs/development/git-workflow.md` |
+---
+
+## 2. Progressive Navigation For Agents
+
+When executing tasks, reference scoped rules first, then deep architecture docs:
+- **Backend / Laravel**: `.agents/rules/backend.md` $\rightarrow$ `docs/backend/architecture.md`.
+- **Frontend / React**: `.agents/rules/frontend.md` $\rightarrow$ `docs/frontend/architecture.md`.
+- **Node.js Tracking**: `.agents/rules/node-tracking-api.md` $\rightarrow$ `docs/api/routing-and-contracts.md`.
+- **Database / Mongo**: `.agents/rules/database.md` $\rightarrow$ `docs/database/schema-and-migrations.md`.
+- **Git / Workflow**: `.agents/rules/git-workflow.md` $\rightarrow$ `AGENTS.md`.
