@@ -5,7 +5,7 @@ namespace Modules\Simulator\Http\Controllers;
 use Modules\Core\Http\Controllers\BaseController;
 use Illuminate\Http\JsonResponse;
 
-class IndexController extends BaseController
+class SimulatorController extends BaseController
 {
     public function index(): JsonResponse
     {

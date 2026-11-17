@@ -5,7 +5,7 @@ namespace Modules\Creative\Http\Controllers;
 use Modules\Core\Http\Controllers\BaseController;
 use Illuminate\Http\JsonResponse;
 
-class IndexController extends BaseController
+class CreativeController extends BaseController
 {
     public function index(): JsonResponse
     {

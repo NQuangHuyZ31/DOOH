@@ -37,6 +37,7 @@ Detailed Architecture: [`docs/backend/architecture.md`](file:///E:/Urekamedia/DO
 
 ## 3. Dynamic Routing & Method Safety
 - Routes are resolved dynamically by `Modules\Core\Support\DynamicRouteResovle` matching `/{module}/{controller}/{id?}/{action?}` to `Modules\<Module>\Http\Controllers\<Studly>Controller`.
+- **No Dummy `IndexController`**: NEVER create redundant `IndexController` or dummy files. Use domain-named controllers (`VenueController`, `CampaignController`, etc.). When `{controller}` is omitted or matches the module slug (e.g. `/venue` or `/venue/1`), `DynamicRouteResovle` automatically routes to `<ModuleName>Controller`.
 - **CRITICAL**: Every `public` controller method is an HTTP endpoint. Internal helpers MUST be `protected` or `private`.
 - Permissions enforced automatically by `CheckModulePermission` middleware (403 on denial). `auth` and public player simulation routes are exempt as configured.
 - Check `DynamicRouteResovle` before adding explicit routes to `routes/api.php`.

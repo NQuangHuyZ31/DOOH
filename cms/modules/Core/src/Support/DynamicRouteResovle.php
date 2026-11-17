@@ -22,7 +22,7 @@ class DynamicRouteResovle
                 ->group(function () use ($moduleSlug) {
                     Route::any('/{controller?}/{id_or_action?}/{action?}', function (
                         Request $request,
-                        ?string $controller = 'index',
+                        ?string $controller = null,
                         ?string $id_or_action = null,
                         ?string $action = null
                     ) use ($moduleSlug) {
@@ -33,7 +33,7 @@ class DynamicRouteResovle
     }
 
     /**
-     * Dispatch request to controller
+     * Dispatch request to controller without requiring redundant IndexController
      */
     protected static function dispatch(
         Request $request,
@@ -43,7 +43,17 @@ class DynamicRouteResovle
         ?string $action
     ) {
         $moduleName = Str::studly($moduleSlug);
-        $controllerName = Str::studly($controller ?? 'index') . 'Controller';
+
+        // If first param is numeric ID or UUID, treat it as resource ID for domain controller
+        if ($controller !== null && (is_numeric($controller) || Str::isUuid($controller))) {
+            $action = $id_or_action;
+            $id_or_action = $controller;
+            $controller = $moduleSlug;
+        }
+
+        // Default controller is <ModuleName>Controller (e.g. VenueController, DeliveryController)
+        $targetController = (!empty($controller) && strtolower($controller) !== 'index') ? $controller : $moduleSlug;
+        $controllerName = Str::studly($targetController) . 'Controller';
         $controllerClass = "Modules\\{$moduleName}\\Http\\Controllers\\{$controllerName}";
 
         if (!class_exists($controllerClass)) {

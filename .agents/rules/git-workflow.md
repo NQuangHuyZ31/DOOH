@@ -31,12 +31,12 @@ Detailed Workflow: [`docs/development/git-workflow.md`](file:///E:/Urekamedia/TI
 
 | Task Intent | Target Branch Convention | Commit Prefix |
 |---|---|---|
-| New feature / module / API / UI | `feature` or `feature/<name>` | `feat(scope): ...` |
-| Bug / build / Docker / UI / API fix | `fix` or `fix/<name>` | `fix(scope): ...` |
-| Urgent production fix | `hotfix` or `hotfix/<name>` | `fix(scope): ...` |
-| Code restructure (no behavior change) | `refactor` or `refactor/<name>` | `refactor(scope): ...` |
-| Tests only | `test` or `test/<name>` | `test(scope): ...` |
-| Config / deps / docs / CI / tooling | `chore` or `chore/<name>` | `chore\|docs\|ci(scope): ...` |
+| New feature / module / API / UI | `feature` (direct category branch, NO `feature/des` or `feature/<name>`) | `feat(scope): ...` |
+| Bug / build / Docker / UI / API fix | `fix` (direct category branch) | `fix(scope): ...` |
+| Urgent production fix | `hotfix` (direct category branch) | `fix(scope): ...` |
+| Code restructure (no behavior change) | `refactor` (direct category branch) | `refactor(scope): ...` |
+| Tests only | `test` (direct category branch) | `test(scope): ...` |
+| Config / deps / docs / CI / tooling | `chore` (direct category branch) | `chore\|docs\|ci(scope): ...` |
 
 1. **Inspect & Guard**: Run `git status --short` and `git branch --show-current`. If unrelated uncommitted changes exist, **STOP and ask**.
 2. **Declare in Plan**: State the exact target branch in the Plan before asking for approval.

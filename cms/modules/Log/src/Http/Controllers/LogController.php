@@ -1,18 +1,18 @@
 <?php
 
-namespace Modules\Auth\Http\Controllers;
+namespace Modules\Log\Http\Controllers;
 
 use Modules\Core\Http\Controllers\BaseController;
 use Illuminate\Http\JsonResponse;
 
-class IndexController extends BaseController
+class LogController extends BaseController
 {
     public function index(): JsonResponse
     {
         return $this->respondSuccess([
-            'module' => 'Auth',
+            'module' => 'Log',
             'version' => '1.0.0',
-            'endpoints' => ['login', 'logout', 'me', 'refresh'],
-        ], 'Auth module ready');
+            'collections' => ['tracking_logs', 'system_audit_logs'],
+        ], 'Log module ready');
     }
 }

@@ -35,7 +35,7 @@
 4. **Mandatory Branch Switch (STEP 0 - HARD INVARIANT)**:
    - **NEVER code directly on `main`**.
    - Check current branch: `git branch --show-current`.
-   - Switch/create target branch: `feature/<name>` (new feature/UI), `fix/<name>` (bug fix), `refactor/<name>`, or `chore/<name>`.
+   - Switch/create target branch: Use base category branches directly: `feature` (new feature/UI), `fix` (bug fix), `refactor`, or `chore`. **NEVER use sub-branches like `feature/<name>` or `feature/des`**.
 5. **Implement**:
    - Scope-only implementation. Reuse before create. No unrequested features.
    - Stage explicit files only: `git add <file>...` (NEVER `git add .`).
@@ -49,11 +49,11 @@
 
 | Layer | Hard Invariant | Forbidden |
 |---|---|---|
-| **Backend (CMS)** | Strict 3-Layer: `Controller → Service → Repository`. Repositories extend `BaseRepository` or Mongo repos. | Model queries or `DB::table()` inside Service. Direct persistence in Controller. |
-| **Frontend (CMS)** | **Hard Limit $\le$ 150 lines per TSX**. 100% English UI text. Ant Design components. No `any`. | Exceeding 150 lines (must extract hooks/configs/subcomponents). Vietnamese in UI. Raw `fetch()`. |
+| **Backend (CMS)** | Strict 3-Layer: `Controller → Service → Repository`. Repositories extend `BaseRepository` or Mongo repos. Named domain controllers only (`VenueController`, etc.). Dynamic router auto-dispatches to `<ModuleName>Controller`. | Dummy/redundant `IndexController`. Model queries or `DB::table()` inside Service. Direct persistence in Controller. |
+| **Frontend (CMS)** | **Hard Limit $\le$ 150 lines per TSX**. 100% English UI text. Ant Design components. No `any`. Direct file imports. Only `@core` root package exports use `index.ts`. | Redundant `index.ts`/`index.tsx`. Exceeding 150 lines (must extract hooks/configs/subcomponents). Vietnamese in UI. Raw `fetch()`. |
 | **Tracking API** | Latency **< 3ms** (HTTP 204). Pure Node.js. Opaque token (`:hash`), Redis `SET dedup:{hash} 1 EX 30 NX` + queue. Batch worker to Mongo. | Blocking synchronous Mongo/disk writes in HTTP request pipeline. |
 | **Databases** | **Dual-DB**: MySQL for relational entities (explicit `$fillable`, additive migrations); MongoDB for logs (`tracking_logs`, `daily_aggregated_reports` with compound/TTL indexes). | Mutating production data; editing merged migrations; unguarded models (`$guarded = []`). |
-| **Git / Deploy** | Never push to `main`. Human Deploy Gate: Merging to `main` creates draft release; human publishes. | Destructive git (`reset --hard`, force push); `git add .`. |
+| **Git / Deploy** | Never push to `main`. Use base category branches directly (`feature`, `fix`, `refactor`, `chore`). Human Deploy Gate: Merging to `main` creates draft release; human publishes. | Sub-branch slashes (`feature/<desc>`, `feature/des`); destructive git (`reset --hard`, force push); `git add .`. |
 
 ---
 

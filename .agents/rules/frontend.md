@@ -44,6 +44,7 @@ Detailed Architecture: [`docs/frontend/architecture.md`](file:///E:/Urekamedia/D
 ---
 
 ## 5. Imports & Configs
+- **No Redundant `index.ts` / `index.tsx`**: NEVER generate unnecessary index files in feature module directories. Import components, pages, and configs directly from their respective files (e.g. `@modules/Venue/resources/js/pages/VenueListPage`). Only `@core` root package exports use `index.ts`.
 - **Path Aliases**: Use `@core/...` and `@modules/<Module>/...`. Sibling relative imports (`./`, `../`) are allowed. NEW imports MUST NOT use `../../` or deeper.
 - **Static Configs**: Move column definitions, presets, and select options to `configs/` (e.g. `configs/tableConfig.ts`). Do not inline in TSX.
 

@@ -17,8 +17,8 @@ cms/modules/<ModuleName>/
 ├── composer.json
 ├── database/migrations/
 ├── routes/api.php
-├── resources/js/ (Action/, components/, configs/, pages/, routes/, store/, index.ts)
-└── src/ (Http/Controllers/, Http/Requests/, Models/, Providers/, Repositories/Interfaces/, Services/, Resources/)
+├── resources/js/ (Action/, components/, configs/, pages/, routes/, store/) — Direct imports, NO redundant index.ts
+└── src/ (Http/Controllers/, Http/Requests/, Models/, Providers/, Repositories/Interfaces/, Services/, Resources/) — Domain-named controllers only, NO redundant IndexController
 ```
 
 Standard DOOH Domain Modules:

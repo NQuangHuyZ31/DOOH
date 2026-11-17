@@ -5,7 +5,7 @@ namespace Modules\Report\Http\Controllers;
 use Modules\Core\Http\Controllers\BaseController;
 use Illuminate\Http\JsonResponse;
 
-class IndexController extends BaseController
+class ReportController extends BaseController
 {
     public function index(): JsonResponse
     {

@@ -2,14 +2,30 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class DynamicRouteTest extends TestCase
 {
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->artisan('migrate', ['--path' => 'modules/Venue/database/migrations', '--realpath' => false]);
+    }
+
     public function test_spa_root_endpoint(): void
     {
         $response = $this->get('/');
         $response->assertStatus(200);
+    }
+
+    public function test_venue_module_dispatches_to_venue_controller(): void
+    {
+        $response = $this->getJson('/api/venue');
+        $response->assertStatus(200)
+                 ->assertJsonPath('status', 'success');
     }
 
     public function test_delivery_module_route(): void

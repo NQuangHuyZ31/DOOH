@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ConfigProvider, Card, Typography } from 'antd';
 import { MainLayout, doohTheme } from '@core';
-import { VenueListPage } from '@modules/Venue/resources/js';
+import VenueListPage from '@modules/Venue/resources/js/pages/VenueListPage';
 
 const { Title, Paragraph } = Typography;
 
