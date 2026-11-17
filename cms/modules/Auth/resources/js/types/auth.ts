@@ -1,19 +1,25 @@
 export interface LoginPayload {
-    username_or_email: string;
-    password: string;
-    remember?: boolean;
+  email?: string;
+  username_or_email: string;
+  password: string;
+  remember?: boolean;
 }
 
 export interface AuthUser {
-    id: number;
-    name: string;
-    email: string;
-    role?: string;
-    avatar?: string;
+  id: number;
+  name: string;
+  email: string;
+  role?: string;
+  avatar?: string;
 }
 
 export interface AuthResponse {
-    token: string;
-    user: AuthUser;
-    expires_in?: number;
+  step: 'completed' | 'email_otp';
+  require_otp?: boolean;
+  temp_token?: string;
+  email?: string;
+  token?: string;
+  token_type?: string;
+  user?: AuthUser;
+  expires_in?: number;
 }

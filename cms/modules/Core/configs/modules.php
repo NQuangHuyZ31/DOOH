@@ -8,6 +8,7 @@ return [
     'modules' => [
         'Core',
         'Auth',
+        'User',
         'Venue',
         'Creative',
         'Delivery',
@@ -18,6 +19,7 @@ return [
     'routes' => [
         'core',
         'auth',
+        'user',
         'venue',
         'creative',
         'delivery',

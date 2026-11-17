@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
-import { Card, Typography, theme, Alert } from 'antd';
-import { DesktopOutlined } from '@ant-design/icons';
+import { Card, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { ROUTING_CONFIG } from '@core';
 import { authApi } from '../Action/authApi';
 import { LoginForm } from '../components/LoginForm';
 import { LoginHeroBanner } from '../components/LoginHeroBanner';
+import { LoginHeaderBadge } from '../components/LoginHeaderBadge';
 import type { LoginPayload } from '../types/auth';
 
-const { Title, Text } = Typography;
-
 export const LoginPage: React.FC = () => {
-  const { token: antdTheme } = theme.useToken();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [otpMode, setOtpMode] = useState(false);
+  const [tempToken, setTempToken] = useState<string | null>(null);
+  const [maskedEmail, setMaskedEmail] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = async (values: LoginPayload) => {
@@ -21,9 +21,18 @@ export const LoginPage: React.FC = () => {
     setError(null);
     try {
       const res = await authApi.login(values);
-      const token = res.data?.data?.token || 'mock_token';
-      localStorage.setItem(ROUTING_CONFIG.auth.tokenKey, token);
-      navigate(ROUTING_CONFIG.defaultPath, { replace: true });
+      const data = res.data?.data;
+
+      if (data?.require_otp || data?.step === 'email_otp') {
+        setOtpMode(true);
+        setTempToken(data.temp_token || null);
+        setMaskedEmail(data.email || '');
+        message.info('Verification code dispatched to your email.');
+      } else if (data?.token) {
+        localStorage.setItem(ROUTING_CONFIG.auth.tokenKey, data.token);
+        message.success('Login successful. Redirecting...');
+        navigate(ROUTING_CONFIG.defaultPath, { replace: true });
+      }
     } catch (err: unknown) {
       const errorMsg =
         typeof err === 'object' && err !== null && 'response' in err
@@ -32,6 +41,39 @@ export const LoginPage: React.FC = () => {
       setError(errorMsg || 'Login failed.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (code: string) => {
+    if (!tempToken) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await authApi.verifyOtp({ temp_token: tempToken, code });
+      const token = res.data?.data?.token;
+      if (token) {
+        localStorage.setItem(ROUTING_CONFIG.auth.tokenKey, token);
+        message.success('Verification passed. Redirecting...');
+        navigate(ROUTING_CONFIG.defaultPath, { replace: true });
+      }
+    } catch (err: unknown) {
+      const errorMsg =
+        typeof err === 'object' && err !== null && 'response' in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : 'Verification failed. Please check the code.';
+      setError(errorMsg || 'Verification failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!tempToken) return;
+    try {
+      await authApi.resendOtp({ temp_token: tempToken });
+      message.success('Fresh verification code dispatched to your email.');
+    } catch {
+      message.error('Failed to resend code. Please try again.');
     }
   };
 
@@ -72,43 +114,23 @@ export const LoginPage: React.FC = () => {
               background: '#ffffff',
             }}
           >
-            <div style={{ textAlign: 'center', marginBottom: 28 }}>
-              <div
-                style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 14,
-                  background: `${antdTheme.colorPrimary}18`,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 14,
-                }}
-              >
-                <DesktopOutlined style={{ fontSize: 24, color: antdTheme.colorPrimary }} />
-              </div>
-              <Title level={3} style={{ margin: 0, fontWeight: 700, color: antdTheme.colorPrimary }}>
-                Sign In
-              </Title>
-              <Text type="secondary" style={{ fontSize: 13 }}>
-                Enter your credentials to access DOOH CMS
-              </Text>
-            </div>
-
-            {error && (
-              <Alert
-                type="error"
-                showIcon
-                message={error}
-                style={{ marginBottom: 16, borderRadius: 8 }}
-                closable
-                onClose={() => setError(null)}
-              />
-            )}
+            <LoginHeaderBadge
+              otpMode={otpMode}
+              error={error}
+              onCloseError={() => setError(null)}
+            />
 
             <LoginForm
               loading={loading}
+              otpMode={otpMode}
+              maskedEmail={maskedEmail}
               onSubmit={handleLogin}
+              onVerifyOtp={handleVerifyOtp}
+              onResendOtp={handleResendOtp}
+              onBackToLogin={() => {
+                setOtpMode(false);
+                setError(null);
+              }}
               onForgotPassword={() => {}}
               onGoogleLogin={() => {}}
             />

@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\User;
+use Modules\User\Models\User;
 
 return [
 
@@ -113,5 +113,10 @@ return [
     */
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
+
+    'email_otp' => [
+        'enabled' => env('AUTH_EMAIL_OTP_ENABLED', false),
+        'ttl_minutes' => (int) env('AUTH_EMAIL_OTP_TTL_MINUTES', 5),
+    ],
 
 ];

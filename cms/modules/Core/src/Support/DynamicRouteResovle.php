@@ -57,10 +57,18 @@ class DynamicRouteResovle
         $controllerClass = "Modules\\{$moduleName}\\Http\\Controllers\\{$controllerName}";
 
         if (!class_exists($controllerClass)) {
-            return response()->json([
-                'status' => 'error',
-                'message' => "Controller [{$controllerClass}] not found."
-            ], 404);
+            $domainControllerClass = "Modules\\{$moduleName}\\Http\\Controllers\\{$moduleName}Controller";
+            if (class_exists($domainControllerClass)) {
+                $controllerClass = $domainControllerClass;
+                $controllerName = "{$moduleName}Controller";
+                $action = $id_or_action;
+                $id_or_action = $controller;
+            } else {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => "Controller [{$controllerClass}] not found."
+                ], 404);
+            }
         }
 
         $instance = app()->make($controllerClass);
