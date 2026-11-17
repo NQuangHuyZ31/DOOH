@@ -22,6 +22,6 @@
       "@modules/*": ["modules/*"]
     }
   },
-  "include": ["resources/js", "modules/*/resources/js"],
+  "include": ["modules/*/resources/js/**/*"],
   "exclude": ["node_modules", "public", "vendor"]
 }

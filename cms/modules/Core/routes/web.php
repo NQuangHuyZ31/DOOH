@@ -3,5 +3,5 @@
 use Illuminate\Support\Facades\Route;
 
 Route::get('/{any?}', function () {
-    return view('app');
-})->where('any', '^(?!api).*$');
+    return view('core::app');
+})->where('any', '.*');

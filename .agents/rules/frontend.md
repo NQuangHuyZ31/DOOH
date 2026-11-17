@@ -6,7 +6,7 @@ Detailed Architecture: [`docs/frontend/architecture.md`](file:///E:/Urekamedia/D
 ---
 
 ## 1. Component Placement & Module Core Architecture
-- **Module Core (`modules/Core/`)**: A dedicated module housing ALL shared infrastructure: HTTP client (`@core/Action/api`), shared components (`@core/components/`), custom hooks (`@core/hooks/`), common configs (`@core/configs/`), and layouts (`@core/layouts/`).
+- **Module Core (`modules/Core/`)**: A dedicated module housing ALL shared infrastructure: SPA root entrypoint (`modules/Core/resources/js/app.tsx`), HTTP client (`@core/Action/api`), shared components (`@core/components/`), custom hooks (`@core/hooks/`), common configs (`@core/configs/`), and layouts (`@core/layouts/`). Zero code in root `cms/resources/`.
 - **Layers**: `pages/` (orchestration, layout) -> feature `components/` (decomposed UI) -> `@core/components/` (generic shared UI).
 - **Page Responsibility**: Pages MUST NOT contain large inline SVGs, raw data transformations, or inline table column arrays (>40 lines). Extract to sub-components or `configs/`.
 - **Strict 150-Line Limit (Hard Invariant)**: TSX files (pages, components) MUST NEVER exceed 150 lines. Any component approaching ~120-130 lines MUST be decomposed proactively:

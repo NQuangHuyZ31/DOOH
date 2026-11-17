@@ -51,6 +51,19 @@ Detailed Architecture: [`docs/backend/architecture.md`](file:///E:/Urekamedia/DO
 
 ---
 
+## 5. Zero Code Outside Modules & Provider Discovery (Hard Invariant)
+- **Zero Outside Modules**: NEVER place application-specific code, shared routes, or views outside `cms/modules/`.
+- **Shared Routes & Views in Core**:
+  - Web SPA route: `modules/Core/routes/web.php`
+  - Dynamic API route: `modules/Core/routes/api.php`
+  - SPA Blade view: `modules/Core/resources/views/app.blade.php`
+- **Auto-Discovered Providers**:
+  - `bootstrap/providers.php` ONLY registers `AppServiceProvider` and `CoreServiceProvider`.
+  - NEVER register feature module providers in `bootstrap/providers.php`.
+  - `CoreServiceProvider` automatically scans `cms/modules/` and registers each `Modules\<Name>\Providers\<Name>ServiceProvider`, migrations, and view namespaces.
+
+---
+
 ## 5. Background Jobs & Transactions
 - Queue jobs (`src/Jobs/`) must be idempotent and safe to retry.
 - Wrap multi-table MySQL mutations in `DB::transaction()` inside the Service layer.

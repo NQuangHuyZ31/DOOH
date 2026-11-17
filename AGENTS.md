@@ -14,6 +14,8 @@
 | **API** | `api/` | Node.js 24, TypeScript (Pure HTTP) | **Redis 7.0** (Buffer/Dedup/Cache) + **MongoDB** | `api/` (`npm.cmd`) |
 
 - **Modules**: `Core, Auth, Venue, Creative, Delivery, Report, Log, Simulator, System, User`.
+- **Zero Outside Modules (Hard Invariant)**: All shared assets (`app.blade.php`, `app.tsx`, `routes/web.php`, `routes/api.php`) live inside `modules/Core/`. Root `cms/resources/` and `cms/routes/` have no custom app code.
+- **Auto-Discovered Providers**: `bootstrap/providers.php` only registers `CoreServiceProvider`. `CoreServiceProvider` scans `modules/` and auto-registers every module's ServiceProvider (`Modules\<Name>\Providers\<Name>ServiceProvider`). NEVER manually register module providers in `providers.php`.
 - **Dynamic Routing**: `Core/src/Support/DynamicRouteResovle.php` (`/{module}/{controller}/{action}`). Internal helpers MUST be `protected`/`private`.
 - **RBAC**: Enforced via `CheckModulePermission` middleware.
 
@@ -49,7 +51,7 @@
 
 | Layer | Hard Invariant | Forbidden |
 |---|---|---|
-| **Backend (CMS)** | Strict 3-Layer: `Controller → Service → Repository`. Repositories extend `BaseRepository` or Mongo repos. Named domain controllers only (`VenueController`, etc.). Dynamic router auto-dispatches to `<ModuleName>Controller`. | Dummy/redundant `IndexController`. Model queries or `DB::table()` inside Service. Direct persistence in Controller. |
+| **Backend (CMS)** | Strict 3-Layer: `Controller → Service → Repository`. Repositories extend `BaseRepository` or Mongo repos. Named domain controllers only (`VenueController`, etc.). Dynamic router auto-dispatches to `<ModuleName>Controller`. All shared code in `Core`. `CoreServiceProvider` auto-registers all module providers. | Dummy/redundant `IndexController`. Model queries or `DB::table()` inside Service. Direct persistence in Controller. Manual registration of module providers in `bootstrap/providers.php`. Custom code outside `modules/`. |
 | **Frontend (CMS)** | **Hard Limit $\le$ 150 lines per TSX**. 100% English UI text. Ant Design components. No `any`. Direct file imports. Only `@core` root package exports use `index.ts`. | Redundant `index.ts`/`index.tsx`. Exceeding 150 lines (must extract hooks/configs/subcomponents). Vietnamese in UI. Raw `fetch()`. |
 | **Tracking API** | Latency **< 3ms** (HTTP 204). Pure Node.js. Opaque token (`:hash`), Redis `SET dedup:{hash} 1 EX 30 NX` + queue. Batch worker to Mongo. | Blocking synchronous Mongo/disk writes in HTTP request pipeline. |
 | **Databases** | **Dual-DB**: MySQL for relational entities (explicit `$fillable`, additive migrations); MongoDB for logs (`tracking_logs`, `daily_aggregated_reports` with compound/TTL indexes). | Mutating production data; editing merged migrations; unguarded models (`$guarded = []`). |
