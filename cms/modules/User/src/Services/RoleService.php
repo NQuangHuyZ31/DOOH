@@ -18,14 +18,16 @@ class RoleService
         return $this->roleRepository->all();
     }
 
-    public function paginateRoles(int $perPage = 15): LengthAwarePaginator
+    /**
+     * @param array<string, mixed> $filters
+     */
+    public function paginateRoles(int $perPage = 15, array $filters = []): LengthAwarePaginator
     {
-        return $this->roleRepository->paginate($perPage);
+        return $this->roleRepository->paginate($perPage, $filters);
     }
 
     public function getRole(int $id): ?Role
     {
-        /** @var Role|null */
         return $this->roleRepository->find($id);
     }
 
@@ -37,14 +39,12 @@ class RoleService
         $permissions = $data['permissions'] ?? [];
         unset($data['permissions']);
 
-        /** @var Role $role */
         $role = $this->roleRepository->create($data);
 
         if (!empty($permissions)) {
             $this->roleRepository->syncPermissions($role, $permissions);
         }
 
-        /** @var Role */
         return $this->roleRepository->find($role->id);
     }
 
@@ -53,7 +53,6 @@ class RoleService
      */
     public function updateRole(int $id, array $data): ?Role
     {
-        /** @var Role|null $role */
         $role = $this->roleRepository->find($id);
         if (!$role) {
             return null;
@@ -74,7 +73,6 @@ class RoleService
             $this->roleRepository->syncPermissions($role, $permissions);
         }
 
-        /** @var Role|null */
         return $this->roleRepository->find($id);
     }
 

@@ -20,7 +20,8 @@ class RoleController extends BaseController
     {
         if ($request->boolean('paginate')) {
             $perPage = $request->integer('per_page', 15);
-            $paginated = $this->roleService->paginateRoles($perPage);
+            $filters = $request->only(['search']);
+            $paginated = $this->roleService->paginateRoles($perPage, $filters);
 
             return $this->respondPaginated(RoleResource::collection($paginated));
         }

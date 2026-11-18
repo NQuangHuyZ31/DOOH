@@ -21,3 +21,7 @@ export interface RoleFormData {
 	description?: string;
 	permissions?: number[];
 }
+
+export interface RoleFilterParams {
+	search?: string;
+}
