@@ -23,7 +23,9 @@ Merge module config in `<Module>ServiceProvider::register()`: `$this->mergeConfi
 
 - **Split Services by Domain Capability (SRP)**: Whenever a module contains a distinct sub-domain or cohesive workflow (e.g., `OtpService` separate from `AuthService`, `RoleService` separate from `UserService`, `PacingService` separate from `PlaylistService`), extract it into a dedicated `<SubDomain>Service` immediately — do NOT wait for a single Service to grow past 300 lines.
 - **Reuse & Promote to `Core`**: Always reuse `BaseController`, `BaseRepository` (`find`, `findOrFail`, `all`, `paginate`, `create`, `update`, `delete`), `ApiResponseTrait`, and `MetadataService` (`cms/modules/Core/configs/metadata.php`) from `Modules\Core`.
-- **Metadata-First (`cms/modules/Core/configs/metadata.php` & `MetadataService`)**: Shared statuses, status tag definitions, domain enums (`orientations`, `creative_types`, `pacing_modes`, `permission_types`, etc.), and pagination defaults MUST live in `cms/modules/Core/configs/metadata.php` and be served through `MetadataService` (`GET /admin/api/core/metadata`). NEVER duplicate status/enum option arrays across individual feature controllers or services — if a new enum or status set is needed, extend `cms/modules/Core/configs/metadata.php`.
+- **Scoped Metadata (`cms/modules/Core/configs/metadata.php` & `MetadataService`)**:
+  - **Shared Only (`≥ 2` Modules / Global)**: `cms/modules/Core/configs/metadata.php` (served via `MetadataService` at `GET /admin/api/core/metadata`) is strictly for platform-wide / cross-module metadata shared across `≥ 2` modules (e.g., global pagination defaults, common statuses, shared status tag mappings, and cross-module enums). If a new shared enum/status is needed across multiple modules, add it to `cms/modules/Core/configs/metadata.php`.
+  - **Single-Module Only (`1` Module)**: NEVER place options, enums, or settings used by only a single module into `Core/configs/metadata.php` — keep them in `cms/modules/<Module>/configs/<module>.php` and serve them through that module's own service/endpoint.
 
 ## 3. Dynamic Routing & RBAC
 
