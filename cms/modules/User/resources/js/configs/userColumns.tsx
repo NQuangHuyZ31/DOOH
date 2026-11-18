@@ -2,6 +2,7 @@ import React from 'react';
 import type { ColumnsType } from 'antd/es/table';
 import { Avatar, Button, Popconfirm, Space, Tag, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, UserOutlined } from '@ant-design/icons';
+import { UREKA_COLORS } from '@core/configs/theme';
 import type { UserItem } from '../types/user';
 
 const { Text } = Typography;
@@ -20,7 +21,7 @@ export const getUserColumns = (onEdit: (user: UserItem) => void, onDelete: (id: 
 		key: 'name',
 		render: (_: unknown, record: UserItem) => (
 			<Space direction="horizontal" size="middle">
-				<Avatar icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
+				<Avatar icon={<UserOutlined />} style={{ backgroundColor: UREKA_COLORS.primary }} />
 				<Space direction="vertical" size={0}>
 					<Text strong>{record.name}</Text>
 					<Text type="secondary" style={{ fontSize: 12 }}>

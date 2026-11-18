@@ -2,6 +2,7 @@ import React from 'react';
 import { Layout, Typography, Space, Button, Tag, Avatar } from 'antd';
 import { LogoutOutlined, UserOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { UREKA_COLORS } from '@core/configs/theme';
 import { getLoginRoutePath } from '@core/routes/registry';
 import { useAppDispatch, useAppSelector } from '@core/store/hooks';
 import { logout } from '@modules/Auth/resources/js/store/authThunk';
@@ -32,7 +33,7 @@ export const AppHeader: React.FC = () => {
       <Text strong>DOOH Media Management Platform</Text>
       <Space size="middle">
         <Space size="small">
-          <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
+          <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: UREKA_COLORS.primary }} />
           <Text strong>{user?.name || 'User'}</Text>
           {user?.role && <Tag color="blue">{user.role}</Tag>}
         </Space>

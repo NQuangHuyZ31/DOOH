@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Flex, Input, Space, Typography } from 'antd';
 import { ArrowLeftOutlined, MailOutlined, ReloadOutlined } from '@ant-design/icons';
+import { UREKA_COLORS } from '@core/configs/theme';
 import { AUTH_PRIMARY_BUTTON_STYLE } from '../configs/authConfig';
 
 const { Text, Paragraph } = Typography;
@@ -51,7 +52,7 @@ export const OtpVerificationForm: React.FC<OtpVerificationFormProps> = ({
     <div>
       <div style={{ textAlign: 'center', marginBottom: 20 }}>
         <div style={{ padding: '8px 0' }}>
-          <MailOutlined style={{ fontSize: 44, color: '#1677ff', marginBottom: 8 }} />
+          <MailOutlined style={{ fontSize: 44, color: UREKA_COLORS.primary, marginBottom: 8 }} />
           <Paragraph type="secondary" style={{ fontSize: 13, margin: '0 0 4px' }}>
             We sent a 6-digit verification code to
           </Paragraph>

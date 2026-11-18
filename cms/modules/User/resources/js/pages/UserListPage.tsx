@@ -4,6 +4,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { ListLayout } from '@core/components/ListLayout';
 import { useAppDispatch, useAppSelector } from '@core/store/hooks';
 import type { FilterFieldConfig } from '@core/types/filter';
+import { extractErrorMessage } from '@core/utils/error';
 import { UserFormModal } from '../components/UserFormModal';
 import { UserTable } from '../components/UserTable';
 import { closeUserModal, openCreateUserModal, openEditUserModal, setUserFilters, setUserPagination } from '../store/userSlice';
@@ -38,23 +39,27 @@ export const UserListPage: React.FC = () => {
 	};
 
 	const handleCreateOrUpdate = async (values: UserFormData) => {
-		const action = editingUser ? await dispatch(updateUser({ id: editingUser.id, payload: values })) : await dispatch(createUser(values));
-
-		if (updateUser.fulfilled.match(action) || createUser.fulfilled.match(action)) {
-			message.success(editingUser ? 'User updated successfully' : 'User created successfully');
+		try {
+			if (editingUser) {
+				await dispatch(updateUser({ id: editingUser.id, payload: values })).unwrap();
+				message.success('User updated successfully');
+			} else {
+				await dispatch(createUser(values)).unwrap();
+				message.success('User created successfully');
+			}
 			loadUsers();
-		} else {
-			message.error((action.payload as string) || 'Operation failed');
+		} catch (err: unknown) {
+			message.error(extractErrorMessage(err, 'Operation failed'));
 		}
 	};
 
 	const handleDelete = async (id: number) => {
-		const action = await dispatch(deleteUser(id));
-		if (deleteUser.fulfilled.match(action)) {
+		try {
+			await dispatch(deleteUser(id)).unwrap();
 			message.success('User deleted successfully');
 			loadUsers();
-		} else {
-			message.error((action.payload as string) || 'Delete failed');
+		} catch (err: unknown) {
+			message.error(extractErrorMessage(err, 'Delete failed'));
 		}
 	};
 
@@ -66,7 +71,7 @@ export const UserListPage: React.FC = () => {
 				type: 'select',
 				placeholder: 'Filter by Role',
 				width: 160,
-				options: roles.map((r) => ({ label: r.display_name || r.name, value: r.name })),
+				options: roles.map((r) => ({ label: r.display_name, value: r.name })),
 			},
 			{
 				name: 'permission_type',
