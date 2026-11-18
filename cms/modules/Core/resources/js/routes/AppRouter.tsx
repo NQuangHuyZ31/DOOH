@@ -1,8 +1,10 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AccessDeniedPage } from '../components/AccessDeniedPage';
 import { AuthGuard } from '../components/AuthGuard';
 import { GuestGuard } from '../components/GuestGuard';
 import { NotFoundPage } from '../components/NotFoundPage';
+import { PermissionGuard } from '../components/PermissionGuard';
 import { MainLayout } from '../layouts/MainLayout';
 import { useAuthInit } from '../hooks/useAuthInit';
 import { getDefaultRoutePath, useRegisteredRoutes } from './registry';
@@ -30,12 +32,25 @@ export const AppRouter: React.FC = () => {
 						<GuestGuard>{pageNode}</GuestGuard>
 					) : (
 						<AuthGuard>
-							<MainLayout>{pageNode}</MainLayout>
+							<MainLayout>
+								<PermissionGuard route={route}>{pageNode}</PermissionGuard>
+							</MainLayout>
 						</AuthGuard>
 					);
 
 					return <Route key={route.path} path={route.path} element={content} />;
 				})}
+
+				<Route
+					path="/admin/403"
+					element={
+						<AuthGuard>
+							<MainLayout>
+								<AccessDeniedPage />
+							</MainLayout>
+						</AuthGuard>
+					}
+				/>
 
 				<Route
 					path="*"

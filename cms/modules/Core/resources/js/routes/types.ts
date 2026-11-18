@@ -23,10 +23,12 @@ export interface AppRoute {
   layout?: 'main' | 'admin' | 'guest' | 'bare';
   /** Module slug for permission filtering */
   module?: string;
-  /** Permission action (default: 'view') */
-  action?: string;
-  /** Required roles */
-  roles?: string[];
+	/** Permission action (default: 'view') */
+	action?: string;
+	/** Explicit permission name or list of permissions */
+	permission?: string | string[];
+	/** Required roles */
+	roles?: string[];
   /** SubMenu Option 1: attach this route under a parent route's path */
   parentPath?: string;
   /** SubMenu Option 2: nested child routes */
