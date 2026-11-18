@@ -59,15 +59,18 @@ Configured in `tsconfig.json` and `vite.config.ts`:
 
 ## 4. State Management: Mandatory Redux Toolkit (RTK)
 
-Whenever API data or domain entities require global state or cross-component sharing, they **MUST** be placed in the store using **Redux Toolkit (`@reduxjs/toolkit`)**:
+All API operations and domain entity states **MUST** be managed in the Redux store using **Redux Toolkit (`@reduxjs/toolkit`)** to prevent redundant `useState` proliferation across pages, components, and hooks:
 
 1. **Strict Separation of Slice & Thunk (Hard Invariant)**:
    - Slices and Thunks **MUST NOT** be combined into one file.
-   - **Thunk File**: `modules/<ModuleName>/resources/js/store/<domain>Thunk.ts` (contains all `createAsyncThunk` functions calling API clients).
+   - **Thunk File**: `modules/<ModuleName>/resources/js/store/<domain>Thunk.ts` (contains all `createAsyncThunk` functions calling `Action/<entity>Api.ts`).
    - **Slice File**: `modules/<ModuleName>/resources/js/store/<domain>Slice.ts` (contains `createSlice`, initial state, reducers, and `extraReducers(builder => ...)`).
-2. **Async Operations**: Built in `<domain>Thunk.ts` using `createAsyncThunk` invoking API clients or `http` from `@core/Action/api`.
-3. **Partitioning**:
-   - **Store (RTK)**: Shared entity lists, server pagination, cross-module caching, persistent filters.
-   - **Local State (`useState` / custom hook)**: Ephemeral UI state (modals, active dropdowns, simple form inputs).
-   - **Direct API (`useAction`)**: Single-row actions (toggle status, quick delete, export).
-4. **Forbidden**: Writing `createAsyncThunk` and `createSlice` in the same file, legacy raw Redux (manual action creators, switch-case reducers), or ad-hoc custom state containers.
+2. **Async Operations**: Built in `<domain>Thunk.ts` using `createAsyncThunk` invoking stateless API clients in `Action/<entity>Api.ts` (which use `http` from `@core/Action/api`).
+3. **State Partitioning & `useState` Minimization**:
+   - **Store (RTK Slice + Thunk)**: All API data and async lifecycle states (`items`, `selectedItem`, `pagination`, `loading`, `submitting`, `error`), plus CRUD/status mutations.
+   - **Forms (`Form.useForm()`)**: All form field values, validation, and reset lifecycles MUST use Ant Design's `Form.useForm()` instead of `useState`.
+   - **Local State (`useState`)**: Restricted strictly to minimal, isolated ephemeral UI toggles (at most 1–2 hooks when not already represented in Redux or AntD Form).
+4. **Forbidden**:
+   - Calling API clients directly inside components/pages/hooks and storing `data`, `loading`, `submitting`, or `error` in `useState`.
+   - Writing `createAsyncThunk` and `createSlice` in the same file, or re-exporting thunks from a slice file.
+   - Legacy raw Redux (manual action creators, switch-case reducers) or ad-hoc custom state containers.
