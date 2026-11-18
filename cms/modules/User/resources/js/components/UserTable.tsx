@@ -6,7 +6,7 @@ import type { UserItem } from '../types/user';
 
 export interface UserTableProps {
 	users: UserItem[];
-	currentUser: UserItem;
+	currentUser?: { id: number } | null;
 	loading: boolean;
 	pagination: {
 		current: number;

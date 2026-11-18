@@ -1,6 +1,6 @@
 import React from 'react';
 import type { ColumnsType } from 'antd/es/table';
-import { Avatar, Button, Popconfirm, Space, Tag, Typography } from 'antd';
+import { Avatar, Button, Popconfirm, Space, Tag, Tooltip, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, UserOutlined } from '@ant-design/icons';
 import { UREKA_COLORS } from '@core/configs/theme';
 import type { UserItem } from '../types/user';
@@ -14,7 +14,7 @@ const ROLE_COLORS: Record<string, string> = {
 	viewer: 'orange',
 };
 
-export const getUserColumns = (currentUser: UserItem, onEdit: (user: UserItem) => void, onDelete: (id: number) => void): ColumnsType<UserItem> => [
+export const getUserColumns = (currentUser: { id: number } | null | undefined, onEdit: (user: UserItem) => void, onDelete: (id: number) => void): ColumnsType<UserItem> => [
 	{
 		title: 'User',
 		dataIndex: 'name',
@@ -59,13 +59,29 @@ export const getUserColumns = (currentUser: UserItem, onEdit: (user: UserItem) =
 		key: 'actions',
 		width: 140,
 		align: 'center',
-		render: (_: unknown, record: UserItem) => (
-			<Space size="small">
-				<Button type="text" icon={<EditOutlined />} size="small" onClick={() => onEdit(record)} />
-				<Popconfirm title="Delete user" description={`Are you sure you want to delete ${record.name}?`} onConfirm={() => onDelete(record.id)} okText="Yes" cancelText="No" okButtonProps={{ danger: true }}>
-					<Button type="text" danger icon={<DeleteOutlined />} size="small" disabled={record.id === currentUser.id} />
-				</Popconfirm>
-			</Space>
-		),
+		render: (_: unknown, record: UserItem) => {
+			const isCurrentUser = Boolean(currentUser?.id && record.id === currentUser.id);
+
+			return (
+				<Space size="small">
+					<Button type="text" icon={<EditOutlined />} size="small" onClick={() => onEdit(record)} />
+					<Tooltip title={isCurrentUser ? 'You cannot delete your own account' : undefined}>
+						<span>
+							<Popconfirm
+								title="Delete user"
+								description={`Are you sure you want to delete ${record.name}?`}
+								onConfirm={() => onDelete(record.id)}
+								okText="Yes"
+								cancelText="No"
+								okButtonProps={{ danger: true }}
+								disabled={isCurrentUser}
+							>
+								<Button type="text" danger icon={<DeleteOutlined />} size="small" disabled={isCurrentUser} />
+							</Popconfirm>
+						</span>
+					</Tooltip>
+				</Space>
+			);
+		},
 	},
 ];
