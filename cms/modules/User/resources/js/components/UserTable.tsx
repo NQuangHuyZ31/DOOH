@@ -6,6 +6,7 @@ import type { UserItem } from '../types/user';
 
 export interface UserTableProps {
 	users: UserItem[];
+	currentUser: UserItem;
 	loading: boolean;
 	pagination: {
 		current: number;
@@ -17,8 +18,8 @@ export interface UserTableProps {
 	onDelete: (id: number) => void;
 }
 
-export const UserTable: React.FC<UserTableProps> = ({ users, loading, pagination, onTableChange, onEdit, onDelete }) => {
-	const columns = useMemo(() => getUserColumns(onEdit, onDelete), [onEdit, onDelete]);
+export const UserTable: React.FC<UserTableProps> = ({ users, currentUser, loading, pagination, onTableChange, onEdit, onDelete }) => {
+	const columns = useMemo(() => getUserColumns(currentUser, onEdit, onDelete), [currentUser, onEdit, onDelete]);
 
 	return (
 		<Table<UserItem>

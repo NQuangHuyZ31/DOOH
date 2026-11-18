@@ -14,7 +14,7 @@ const ROLE_COLORS: Record<string, string> = {
 	viewer: 'orange',
 };
 
-export const getUserColumns = (onEdit: (user: UserItem) => void, onDelete: (id: number) => void): ColumnsType<UserItem> => [
+export const getUserColumns = (currentUser: UserItem, onEdit: (user: UserItem) => void, onDelete: (id: number) => void): ColumnsType<UserItem> => [
 	{
 		title: 'User',
 		dataIndex: 'name',
@@ -63,7 +63,7 @@ export const getUserColumns = (onEdit: (user: UserItem) => void, onDelete: (id: 
 			<Space size="small">
 				<Button type="text" icon={<EditOutlined />} size="small" onClick={() => onEdit(record)} />
 				<Popconfirm title="Delete user" description={`Are you sure you want to delete ${record.name}?`} onConfirm={() => onDelete(record.id)} okText="Yes" cancelText="No" okButtonProps={{ danger: true }}>
-					<Button type="text" danger icon={<DeleteOutlined />} size="small" />
+					<Button type="text" danger icon={<DeleteOutlined />} size="small" disabled={record.id === currentUser.id} />
 				</Popconfirm>
 			</Space>
 		),
