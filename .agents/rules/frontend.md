@@ -31,6 +31,7 @@ Deep dive: `docs/frontend/architecture.md`. New entity flow: skill `rtk-feature-
 
 - NEVER `any` (use interfaces, generics, `unknown` + narrowing). Typed props interface for every component.
 - Request/response types declared once (`Action/` or `types/`); ISP: pass only the fields a component needs.
+- **Minimal Single-Line Comments (`//` Only — No JSDoc Blocks)**: NEVER write `/** ... */` JSDoc blocks. Use concise single-line `//` comments ONLY when explaining non-obvious logic.
 
 ## 3. UI, Ant Design v5 & Ureka Media Brand Theme
 

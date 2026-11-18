@@ -34,6 +34,9 @@ Modules (`cms/modules/`): `Core, Auth, User, Venue, Creative, Delivery, Report, 
 - **Zero Redundant Files & Dead Code (KISS/YAGNI)**:
   - NEVER create speculative abstractions, pass-through wrapper components/hooks, barrel `index.ts` re-exports, `DTO` classes, or `ServiceInterface` files (only Repositories use interfaces for DI/Mocking).
   - Delete obsolete files, unused imports, commented-out code blocks, and debug statements (`console.log`, `dd()`, `dump()`) immediately when refactoring.
+- **Minimal Comments (`//` Only — No Docblock Noise)**:
+  - NEVER write multi-line PHPDoc/JSDoc blocks (`/** ... */`, `@param`, `@return`, `@var`) that repeat native PHP 8.3 or TypeScript types.
+  - Only use brief single-line `//` comments when explaining non-obvious business logic; omit comments entirely when the code is self-explanatory.
 - **Git safety**: NEVER `reset --hard`, `clean -fd`, `checkout -B`, force-push, push to `main`, or publish releases/deploys (human gate).
 - **Data safety**: NEVER mutate production data or edit merged migrations.
 

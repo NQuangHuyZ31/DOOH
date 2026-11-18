@@ -61,6 +61,7 @@ Merge module config in `<Module>ServiceProvider::register()`: `$this->mergeConfi
 ## 5. Code Style, Isolation & Cache Eviction
 
 - **Formatting & Naming (`Tab Size = 4`)**: PSR-12 with **4-space indentation** (NEVER 2 spaces). Module folder `PascalCase`; classes suffixed (`<Entity>Controller`, `<Entity>Service`, `<Entity>Repository`, `<Entity>RepositoryInterface`, `<Entity>Resource`, `Store<Entity>Request`, `<Action>Job`, `<Action>Mail`); PHP methods/variables `camelCase`; DB columns & JSON keys `snake_case`.
+- **Minimal Single-Line Comments (`//` Only — No PHPDoc Blocks)**: NEVER write `/** ... */` docblocks (`@param`, `@return`, `@var`, class/method descriptions). Rely on native PHP 8.3 parameter and return type hints, and use concise single-line `//` comments ONLY for non-obvious business logic.
 - **Cross-Module Isolation**: Module A MUST NEVER query or mutate Module B's Eloquent Models directly; inject Module B's Service or RepositoryInterface via DI, or dispatch an Event/Job. `Core` MUST NEVER depend on feature modules.
 - **Playlist Cache Invalidation**: Any create/update/delete/status change on `Venue`, `Campaign`, `LineItem`, or `Creative` MUST evict `DEL playlist:venue:{venue_id}` in Redis for affected venues.
 - **Size & Robustness**: Keep Controllers/Services ≤ ~300 lines and ≤ 7 dependencies. Jobs (`src/Jobs/`) idempotent and retry-safe (`ShouldQueue`). External HTTP: explicit timeout + retry backoff.
