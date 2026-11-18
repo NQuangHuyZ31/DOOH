@@ -1,89 +1,68 @@
-# API Routing & Contract Standards
+# API Routing & Contracts
 
-This document describes the dynamic API routing engine, controller action resolution, response structures, and HTTP error contracts.
-
----
-
-## 1. Dynamic Route Resolution Engine (`DynamicRouteResovle`)
-
-Unlike traditional Laravel applications where routes are statically defined in `routes/api.php`, the CMS uses a dynamic route resolution engine located in `Modules\Core\Support\DynamicRouteResovle`.
-
-### Supported URL Patterns
-
-| Pattern | URL Structure | Resolves To | Action Method |
-| :--- | :--- | :--- | :--- |
-| **Pattern 1** | `/{module}/{controller}/{id}/{action}` | `Modules\<Module>\Http\Controllers\<Controller>Controller` | Method matching `{action}` with `$id` |
-| **Pattern 2** | `/{module}/{controller}/{action}` | `Modules\<Module>\Http\Controllers\<Controller>Controller` | Method matching `{action}` without `$id` |
-| **Pattern 3** | `/{module}/{controller}/{id}` | `Modules\<Module>\Http\Controllers\<Controller>Controller` | RESTful `show` (GET), `update` (PUT/PATCH), `destroy` (DELETE) |
-| **Pattern 4** | `/{module}/{controller}` | `Modules\<Module>\Http\Controllers\<Controller>Controller` | RESTful `index` (GET) or `store` (POST) |
-| **Fallback** | `/{module}/{action}` | `Modules\<Module>\Http\Controllers\<Module>Controller` | Method matching `{action}` on default module controller |
-
-### Critical Security Rule
-**Every `public` method on a controller is directly reachable as an HTTP endpoint.**
-Any internal helper function or sub-routine on a controller class MUST be declared `protected` or `private`.
+Specifications for Node.js Delivery & Tracking API and CMS REST endpoints.
 
 ---
 
-## 2. Authorization & Middleware (`CheckModulePermission`)
+## 1. Node.js Delivery & Tracking API (Mirrored Modules)
 
-Dynamic routes are intercepted by `CheckModulePermission` middleware:
-1. Derives the requested module from the first URL segment.
-2. Resolves the permission action (`view`, `create`, `edit`, `delete`) based on the HTTP method and action name.
-3. Checks whether the authenticated user holds the required permission.
-4. Returns HTTP `403 Forbidden` if unauthorized.
-5. Modules listed under `'ignore_check_permission'` in `modules/Core/configs/modules.php` (such as `auth`) are exempt from permission verification.
-
----
-
-## 3. Standard Response Format (`ApiResponseTrait`)
-
-All JSON responses must conform to the standard structure defined by `Modules\Core\Traits\ApiResponseTrait`:
-
-### Success Response (`respondSuccess`)
-```json
-{
-  "success": true,
-  "message": "Resource retrieved successfully",
-  "data": { ... }
-}
+Modules in `api/` mirror domain modules in `cms/`:
+```text
+api/src/
+├── core/                        # Shared HTTP Router, crypto AES-256-GCM, DB pool, auth middleware
+├── modules/
+│   ├── Venue/                   # GET /api/v1/venue/:code, POST /api/v1/venue/heartbeat
+│   ├── Delivery/                # GET /api/v1/delivery/playlist?venue_id=... (Ad Loop 120s)
+│   └── Log/                     # GET /api/v1/log/imp/:hash & :complete/:hash (< 3ms) + Batch Worker
+├── app.ts                       # Aggregates module routes
+└── server.ts                    # Native node:http listen
 ```
 
-### Paginated Response (`respondPaginated`)
-```json
-{
-  "success": true,
-  "message": "Success",
-  "data": [ ... ],
-  "meta": {
-    "current_page": 1,
-    "per_page": 15,
-    "total": 120,
-    "last_page": 8
+### 1.1. Playlist Endpoint (`Delivery` Module)
+- **Request**: `GET /api/v1/delivery/playlist?venue_id={venue_id}`
+- **Header**: `X-DOOH-API-KEY: {key}`
+- **Cache**: Checked against Redis `playlist:venue:{venue_id}` (TTL 120s–300s).
+- **Response**:
+  ```json
+  {
+    "venue_id": "HN-CG-01",
+    "refresh_seconds": 300,
+    "playlist": [
+      {
+        "line_item_id": 105,
+        "type": "video",
+        "media_url": "https://cdn.example.com/videos/ad_coca_15s.mp4",
+        "duration": 15,
+        "tracking": {
+          "impression_url": "https://api.domain.com/api/v1/log/imp/eJyrVkpN...",
+          "complete_url": "https://api.domain.com/api/v1/log/complete/eJyrVkpN..."
+        }
+      }
+    ]
   }
-}
-```
+  ```
 
-### Error Response (`respondError`)
-```json
-{
-  "success": false,
-  "message": "Validation failed",
-  "errors": {
-    "name": ["The name field is required."]
-  }
-}
-```
+### 1.2. Opaque Token Tracking Endpoints (`Log` Module)
+- **Endpoints**:
+  - `GET /api/v1/log/imp/:hash` (Impression Beacon)
+  - `GET /api/v1/log/complete/:hash` (Complete 100% Beacon)
+- **Token Processing (< 3ms)**:
+  1. Decrypt `:hash` with `SERVER_SECRET_KEY` $\rightarrow$ `{ venue_id, line_item_id, exp }`.
+  2. Deduplication check: `SET dedup:{hash} 1 EX 30 NX`. If exists $\rightarrow$ drop silently, return `204`.
+  3. Increment counter: `HINCRBY stat:{date}:{line_item_id}:{venue_id} imp 1`.
+  4. Push raw event: `RPUSH queue:raw_tracking_logs <json>`.
+  5. Return `HTTP 204 No Content`.
 
 ---
 
-## 4. HTTP Status Code Conventions
+## 2. CMS Backend RESTful Routing (Laravel)
 
-- `200 OK`: Successful read or update.
-- `201 Created`: Successful creation of a new entity.
-- `202 Accepted`: Asynchronous task accepted for processing (e.g. crawl job dispatch).
-- `400 Bad Request`: Generic client error or malformed request parameters.
-- `401 Unauthorized`: Missing or invalid Sanctum Bearer token.
-- `403 Forbidden`: Insufficient user permissions for the module/action.
-- `404 Not Found`: Entity or dynamic endpoint does not exist.
-- `422 Unprocessable Entity`: FormRequest validation failure.
-- `500 Internal Server Error`: Unhandled application exception (logged to Laravel logs).
+- **Dynamic Routing**: Handled by `Modules\Core\Support\DynamicRouteResovle`:
+  `/{module}/{controller}/{id?}/{action?}` $\rightarrow$ `Modules\<Module>\Http\Controllers\<Studly>Controller`
+- **RBAC**: Protected by `CheckModulePermission` middleware.
+- **Key Modules**:
+  - `Venue`: `GET /api/venue`, `POST /api/venue`, `PUT /api/venue/{id}`
+  - `Creative`: `GET /api/creative`, `POST /api/creative/upload`
+  - `Delivery`: `GET /api/delivery/campaigns`, `POST /api/delivery/line-items`
+  - `Report`: `GET /api/report/aggregate` (queries MongoDB `daily_aggregated_reports`)
+  - `Log`: `GET /api/log/tracking` (queries MongoDB `tracking_logs`)

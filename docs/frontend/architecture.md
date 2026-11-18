@@ -1,140 +1,73 @@
-# Frontend Architecture & UI Guidelines
+# CMS Frontend Architecture (React + TS + Ant Design)
 
-This document details the Single Page Application (SPA) architecture, state management conventions, route registration, and UI component design standards.
-
----
-
-## 1. Technology Stack
-
-- **Core Framework**: React 19 (`react`, `react-dom`)
-- **Language**: TypeScript (`strict: false` in `tsconfig.json` with ongoing strict typing for new code)
-- **UI Component Library**: Ant Design v6 (`antd`, `@ant-design/icons`)
-- **Styling**: Tailwind CSS v4 (`@tailwindcss/vite`, `@tailwindcss/postcss`)
-- **State Management**: Redux Toolkit (`@reduxjs/toolkit`, `react-redux`)
-- **Routing**: React Router DOM v7 (`react-router-dom`)
-- **HTTP Client**: Axios with Bearer token interceptor (`@core/Action/api`)
-- **Charts & Metrics**: Recharts (`recharts`)
-- **Date Handling**: Day.js (`dayjs`)
+Architecture standards for the CMS single-page application. Built on the **Modular Pattern** where **`Core` is itself a Module** containing all shared logic.
 
 ---
 
-## 2. Directory Structure of a Frontend Module
+## 1. Core Module Invariants
 
-Each module in `cms-tiktok-crawler/modules/<ModuleName>/resources/js/` follows this layout:
+1. **`Core` is a First-Class Module (`modules/Core/`)**:
+   - Contains all reusable infrastructure, base components, HTTP interceptors, layouts, common hooks, and utilities.
+   - Other domain modules (`Venue`, `Delivery`, `Creative`, `Report`, `Log`, `Simulator`) import directly from `@core/*`.
+   - Domain modules MUST NOT cross-import private internals from sibling modules; shared logic MUST be promoted to `@core`.
+2. **Strict 150-Line Limit (Hard Invariant)**:
+   - Any TSX file approaching ~120 lines MUST be proactively decomposed:
+     - Static column/filter configs $\rightarrow$ `configs/*.ts`.
+     - Stateful logic & side-effects $\rightarrow$ custom hooks `hooks/use*.ts`.
+     - Layout compound sections $\rightarrow$ sub-components `components/*.tsx`.
+3. **100% English UI Text**: All user-facing text (labels, headers, buttons, alerts, toasts) MUST be in English.
+4. **No `any`**: TypeScript strict typing across all components and actions.
+5. **Ant Design System**: Standard Ant Design 5/6 components (`Table`, `Card`, `Modal`, `Select`, `DatePicker`) and design tokens.
+
+---
+
+## 2. Directory Layout: Module Core & Feature Modules
 
 ```text
-modules/<ModuleName>/resources/js/
-├── Action/             # Centralized API service functions using @core/Action/api
-│   └── <entity>.ts
-├── components/         # Feature-specific decomposed UI components
-│   ├── detail/         # Sub-tabs, metric sections, header cards
-│   └── form/           # Form sections, input blocks, modal bodies
-├── configs/            # Reusable static configurations
-│   ├── tableConfig.ts  # Column definitions, filter presets, dictionaries
-│   └── options.ts      # Select options, status tags mapping
-├── pages/              # Route-level page orchestrators
-│   ├── <Entity>ListPage.tsx
-│   ├── <Entity>DetailPage.tsx
-│   └── <Entity>FormPage.tsx
-├── routes/             # Route definitions
-│   └── route.ts        # Exports RouteDef[]
-├── store/              # Redux domain slice and thunks (if state is shared)
-│   └── <entity>/
-│       ├── <entity>Slice.ts
-│       └── <entity>Thunks.ts
-├── utils/              # Module-specific helper functions
-└── index.ts            # Entry point that registers routes upon script load
+cms/modules/ (or resources/js/modules/)
+├── Core/                        # MODULE CORE: All shared logic
+│   ├── Action/api.ts            # Centralized Axios client (Sanctum bearer token, 401 handling)
+│   ├── components/              # Generic UI (ListLayout, Table, CustomModal, StatusTag, CardKPI)
+│   ├── configs/                 # Common presets (pagination, theme tokens, date formats)
+│   ├── hooks/                   # Shared hooks (useAction, useFilter, usePagination, useModal)
+│   ├── layouts/                 # MainLayout (Sidebar, Header, Breadcrumb), SimulatorLayout
+│   ├── routes/                  # Dynamic route registry and route definition contracts
+│   ├── utils/                   # Helpers (formatters, date utilities, URL builders)
+│   └── index.ts                 # Export entry for @core alias
+├── Venue/                       # Feature Module: Screens inventory & hardware specs
+├── Creative/                    # Feature Module: Media upload (Image, Video) & VAST parser
+├── Delivery/                    # Feature Module: Campaigns, Line Items, Pacing & Caps
+├── Report/                      # Feature Module: Analytics dashboards & Ant Design Plots
+├── Log/                         # Feature Module: MongoDB tracking log lookup & audit
+└── Simulator/                   # Feature Module: Outdoor LED mockup & live player engine
 ```
 
 ---
 
-## 3. Strict English Requirement for Web UI
-
-100% of all user-facing text on the web interface MUST be written in **English**. Never use Vietnamese or mixed languages in:
-- Page titles, subtitles, headers, and breadcrumbs.
-- Form labels, input placeholders, validation warnings, and helper texts.
-- Table column headers, empty state text, and pagination summaries.
-- Button labels, action popconfirm dialogs, and modal headings.
-- Toast notifications and system alert banners.
-
----
-
-## 4. Route Registration Pattern
-
-The application uses dynamic route registration managed by `@core/routes/registry`.
-Each module declares its route definitions in `routes/route.ts` and exports an array of `RouteDef` objects:
-
-```typescript
-import type { RouteDef } from '@core/routes/registry';
-import { RobotOutlined } from '@ant-design/icons';
-import CrawlJobsPage from '../pages/CrawlJobsPage';
-
-const crawlerRoutes: RouteDef[] = [
-    {
-        path: '/crawler/crawl-job',
-        component: CrawlJobsPage,
-        layout: 'admin',
-        title: 'Crawl Jobs',
-        label: 'Crawl Jobs',
-        module: 'crawler',
-        action: 'view',
-        icon: RobotOutlined,
-        order: 10,
-    },
-];
-
-export default crawlerRoutes;
-```
-
-In `resources/js/index.ts`, register the routes into the central registry:
-```typescript
-import { registerRoutes } from '@core/routes/registry';
-import crawlerRoutes from './routes/route';
-
-registerRoutes(crawlerRoutes);
-```
-
-### Route Authentication & Layout
-- Routes configured with `layout: 'admin'` render inside `AdminLayout.tsx` (`@core/layouts/AdminLayout.tsx`).
-- `AdminLayout` verifies `isAuthenticated` from Redux auth state. If unauthenticated, it immediately redirects to `/auth/login`.
+## 3. Path Aliases & Imports
+Configured in `tsconfig.json` and `vite.config.ts`:
+- `@core/*` $\rightarrow$ `modules/Core/*` (or `resources/js/modules/Core/*`)
+- `@modules/*` $\rightarrow$ `modules/*`
+- Example usage in a feature module:
+  ```typescript
+  import { ListLayout, Table, StatusTag } from '@core/components';
+  import { http } from '@core/Action/api';
+  import { useFilter } from '@core/hooks';
+  ```
 
 ---
 
-## 5. State Management: Redux Toolkit vs. Local State
+## 4. State Management: Mandatory Redux Toolkit (RTK)
 
-Always evaluate state scope before implementation:
+Whenever API data or domain entities require global state or cross-component sharing, they **MUST** be placed in the store using **Redux Toolkit (`@reduxjs/toolkit`)**:
 
-### Redux Slice + Async Thunks (`store/<domain>/`)
-Use Redux when:
-- Data is a paginated entity list, filter set, or search query shared across tabs or views.
-- Data needs to persist across navigation between detail and list views.
-- Multiple independent components or sub-tabs need to read or trigger refreshes for the same entity data.
-
-```typescript
-// Example: Async Thunk pattern
-export const fetchCrawlJobs = createAsyncThunk(
-    'crawlJob/fetchCrawlJobs',
-    async (params: any, { rejectWithValue }) => {
-        try {
-            return await crawlJobAPI.getCrawlJobs(params);
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Failed to fetch crawl jobs');
-        }
-    }
-);
-```
-
-### Direct API + `useAction` Hook
-Use direct API calls with `@core/hooks/useAction` for:
-- Isolated entity mutations: delete record, pause/resume job, toggle active status.
-- Single modal form submissions.
-- File downloads or export triggers.
-- Local page view state that does not affect any other component.
-
----
-
-## 6. Component Decomposition Guidelines
-
-1. **Keep Pages Lean**: A page component should act as an orchestrator. It manages route params, triggers Redux thunks or initial fetches, and renders structured sub-components.
-2. **Decompose at ~150–200 Lines**: When a TSX file approaches 200 lines or mixes layout rendering with complex form controls, split it into sub-components under `components/`.
-3. **Move Constants Out of TSX**: Never define arrays of select options, filter presets, or static table column definitions inside render methods. Declare them in `configs/`.
+1. **Strict Separation of Slice & Thunk (Hard Invariant)**:
+   - Slices and Thunks **MUST NOT** be combined into one file.
+   - **Thunk File**: `modules/<ModuleName>/resources/js/store/<domain>Thunk.ts` (contains all `createAsyncThunk` functions calling API clients).
+   - **Slice File**: `modules/<ModuleName>/resources/js/store/<domain>Slice.ts` (contains `createSlice`, initial state, reducers, and `extraReducers(builder => ...)`).
+2. **Async Operations**: Built in `<domain>Thunk.ts` using `createAsyncThunk` invoking API clients or `http` from `@core/Action/api`.
+3. **Partitioning**:
+   - **Store (RTK)**: Shared entity lists, server pagination, cross-module caching, persistent filters.
+   - **Local State (`useState` / custom hook)**: Ephemeral UI state (modals, active dropdowns, simple form inputs).
+   - **Direct API (`useAction`)**: Single-row actions (toggle status, quick delete, export).
+4. **Forbidden**: Writing `createAsyncThunk` and `createSlice` in the same file, legacy raw Redux (manual action creators, switch-case reducers), or ad-hoc custom state containers.

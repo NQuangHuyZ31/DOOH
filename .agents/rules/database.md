@@ -1,23 +1,42 @@
-# Database & Data Integrity Rules (Laravel Migrations & Models)
+---
+trigger: glob
+description: MySQL migrations/models, MongoDB collections/indexes, Redis key standards.
+globs: cms/modules/**/database/migrations/**, cms/modules/**/src/Models/**, cms/modules/**/src/Repositories/**, api/src/**
+---
 
-Scope: `cms-tiktok-crawler/modules/*/database/migrations/` and `src/Models/`. Read when modifying schemas or models.
-Detailed Schema: [`docs/database/schema-and-migrations.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/database/schema-and-migrations.md) | Audit Guide: [`docs/backend/audit-logging.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/backend/audit-logging.md)
+# Database Rules (MySQL + MongoDB + Redis)
 
-## 1. Migration Invariants
-- **Additive & Backward Compatible**: Migrations MUST be additive (new nullable/defaulted columns, new indexes, new tables).
-- **NEVER Edit Merged Migrations**: Never modify an existing, committed migration file. Always create a new timestamped migration.
-- **Destructive Changes**: Dropping tables or renaming columns requires explicit human confirmation and rollback plans.
-- **Test Database Isolation**: Automated tests execute against in-memory SQLite (`:memory:` in `phpunit.xml`). Migrations must remain compatible with SQLite syntax.
-- **Zero Production Mutation**: Agents must NEVER delete or mutate production data in routine tasks.
+Deep dive: `docs/database/schema-and-migrations.md`.
 
-## 2. Naming Conventions & Schema Standards
-- **Tables**: Plural `snake_case` (e.g. `crawl_jobs`, `crawl_results`, `tiktok_accounts`).
-- **Foreign Keys**: Plural parent model singularized with `_id`: `$table->foreignId('crawl_job_id')->constrained()->cascadeOnDelete()`.
-- **Soft Deletes**: Use `$table->softDeletes()` when sibling tables in the domain use it.
-- **Indexes**: Add explicit indexes on columns used in WHERE filters, JOINs, or ORDER BY sorts (e.g. `status`, `username`, `crawled_at`).
-- **N+1 Prevention**: Repositories MUST eager-load relations via `with([...])`.
+## 1. Dual-DB Split
 
-## 3. Eloquent Models
-- **Mass Assignment**: Declare explicit `$fillable` arrays on all models. NEVER declare `$guarded = []`.
-- **Audit Logging**: Attach `LogsActivity` trait on models where audit tracking is required.
-- **Type Casting**: Declare explicit `$casts` for booleans, JSON columns, and dates (`datetime`).
+| Store | Connection | Use | Model base |
+|---|---|---|---|
+| MySQL | `mysql` | relational entities: `users, roles, permissions, venues, campaigns, line_items, line_item_venues, creatives, api_keys` | `Illuminate\Database\Eloquent\Model` |
+| MongoDB | `mongodb` | high-volume logs/stats: `tracking_logs`, `daily_aggregated_reports` | `MongoDB\Laravel\Eloquent\Model` |
+
+## 2. MySQL
+
+- Migrations additive only (new tables, nullable/defaulted columns, indexes). NEVER edit committed migrations. Drop/rename needs human approval + rollback plan.
+- Tables plural `snake_case`; FKs `foreignId('<parent>_id')->constrained()`; composite indexes for hot pairs (`['campaign_id','status']`, `['start_date','end_date']`).
+- Models: explicit `$fillable` (NEVER `$guarded = []`), explicit `$casts` (bool, datetime, json).
+
+## 3. MongoDB
+
+| Collection | Fields | Indexes |
+|---|---|---|
+| `tracking_logs` | `event_type (imp\|complete), venue_id, line_item_id, timestamp, epoch_ms, client_hash, ip, user_agent, created_at` | `{venue_id:1,timestamp:-1}`, `{line_item_id:1,timestamp:-1}`, `{client_hash:1}`, TTL `{timestamp:1}` 7776000s (90d) |
+| `daily_aggregated_reports` | `_id = "{YYYY-MM-DD}_{line_item_id}_{venue_id}"`, `date, line_item_id, campaign_id, venue_id, impressions_count, completes_count, hourly_breakdown` | `{date:-1,line_item_id:1,venue_id:1}` |
+
+- Query only on indexed fields with projections. Counters via atomic `$inc`.
+
+## 4. Redis Keys (single source of truth)
+
+| Purpose | Key | Type | TTL |
+|---|---|---|---|
+| Playlist cache | `playlist:venue:{venue_id}` | String JSON | 120–300s |
+| Beacon dedup | `dedup:{hash}` | String `1` (`SET NX EX 30`) | 30s |
+| Daily stat | `stat:{YYYY-MM-DD}:{line_item_id}:{venue_id}` | Hash `imp`, `complete` | 48h |
+| Ingest buffer | `queue:raw_tracking_logs` | List (RPUSH/LPOP) | until flushed |
+
+- On Venue/Line Item/Creative change in CMS → `DEL playlist:venue:{venue_id}` for affected venues.

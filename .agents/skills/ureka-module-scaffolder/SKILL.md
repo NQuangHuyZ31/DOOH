@@ -1,56 +1,47 @@
 ---
 name: ureka-module-scaffolder
-description: Scaffolds Ureka modular architecture boilerplate for Backend (Laravel 13) and Frontend (React 19).
+description: Use when creating a new domain module or a new backend entity (model, repository, service, controller, tests) under cms/modules. Step checklist; rules are in backend/frontend/testing rules.
 ---
 
-# Ureka Module Scaffolder Skill
+# Module / Entity Scaffolder
 
-Use this skill when scaffolding a new domain module in `cms-tiktok-crawler/modules/<ModuleName>/`.
+Follow `.agents/rules/backend.md`, `frontend.md`, `database.md`, `testing.md` — this file lists steps only. Reference module: `cms/modules/Venue/`.
 
-Rules: [`.agents/rules/backend.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/.agents/rules/backend.md) | [`.agents/rules/frontend.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/.agents/rules/frontend.md) | Architecture: [`docs/backend/architecture.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/backend/architecture.md)
+## 1. Layout
 
----
-
-## 1. Directory Structure (`modules/<ModuleName>/`)
 ```text
-modules/<ModuleName>/
-├── composer.json
-├── database/migrations/
-├── routes/api.php
-├── resources/js/ (Action/, components/, configs/, pages/, routes/, store/, index.ts)
-└── src/ (Http/Controllers/, Http/Requests/, Models/, Providers/, Repositories/Interfaces/, Services/, Resources/)
+cms/modules/<Module>/
+├── composer.json                # PSR-4: src/, database/seeders/
+├── configs/<module>.php         # module-scoped config (read env() only here)
+├── database/{migrations,seeders}/
+├── resources/js/                # see skill rtk-feature-slice (index.tsx + routes/route.tsx)
+├── routes/{web.php,api.php}
+├── src/{Http/Controllers,Http/Requests,Models,Providers,Repositories/Interfaces,Services,Resources,Jobs,Mail}/
+└── tests/{Feature,Unit}/
 ```
 
----
+## 2. Backend Steps (per entity)
 
-## 2. Step-by-Step Scaffolding Checklist
+1. Migration (additive) + Model (`$fillable`, `$casts`, `$hidden`; no `newFactory()` boilerplate).
+2. `Repositories/Interfaces/<Model>RepositoryInterface.php` + `Repositories/<Model>Repository.php` (extends `BaseRepository`).
+3. `Resources/<Model>Resource.php` (`toArray(Model): array`) for consistent API serialization.
+4. `Services/<Model>Service.php` (inject repository interface; no direct Eloquent/DB queries; no `env()` calls).
+5. `Http/Requests/Store<Model>Request.php` / `Update<Model>Request.php`.
+6. `Http/Controllers/<Model>Controller.php` (extends `BaseController`; explicit `: JsonResponse` return types; helpers `protected`/`private`).
+7. `Providers/<Module>ServiceProvider.php` → bind repository interface + `mergeConfigFrom` for `configs/<module>.php`.
+8. Seeder in `database/seeders/<Model>Seeder.php` (using `Model::firstOrCreate()` / `create()`, following `cms-tiktok-crawler`); register PSR-4 in module and `cms/composer.json` → `composer dump-autoload`.
+9. Tests: `<Model>ApiTest`, `<Model>RepositoryTest`, `<Model>ServiceTest` inside `cms/modules/<Module>/tests/`.
 
-### Step 1: Backend Layer
-1. **Model & Migration**: Plural table name, explicit `$fillable` array. Attach `LogsActivity` if auditable.
-2. **Repository & Interface**:
-   - Interface: `src/Repositories/Interfaces/<Model>RepositoryInterface.php`.
-   - Implementation: `src/Repositories/<Model>Repository.php` extending `BaseRepository`.
-3. **Service Layer**: `src/Services/<Model>Service.php`. Injects repository interface. **NO Model queries in Service**. Handles `DB::transaction()`.
-4. **FormRequest & Controller**:
-   - `src/Http/Requests/Store<Model>Request.php`.
-   - `src/Http/Controllers/<Model>Controller.php` extending `BaseController`.
-5. **ServiceProvider**: `src/Providers/<ModuleName>ServiceProvider.php`. Binds repository interface to implementation.
+## 3. New Module Only
 
-### Step 2: System Registration
-1. In `modules/Core/configs/modules.php`: Add slug to `'routes'` and module name to `'modules'`.
-2. In `package.json`: Add mix build script `"mix:<module>": "node scripts/mix-module.cjs <ModuleName>"`.
+- Add name to `'modules'` and slug to `'routes'` in `cms/modules/Core/configs/modules.php`.
+- Add `mix:<module>` script in `cms/package.json` (`node scripts/mix-module.cjs <Module>`).
+- Do NOT touch `bootstrap/providers.php` (auto-discovered by `CoreServiceProvider`).
 
-### Step 3: Frontend Layer
-1. **API Client**: `resources/js/Action/<name>.ts` using `http` from `@core/Action/api`.
-2. **Configs**: Declare column configs and filter presets in `resources/js/configs/`.
-3. **Pages**: Create page orchestrator in `resources/js/pages/`. Reuse `@core/components/{ListLayout, Table}`.
-4. **Routes**: Declare `RouteDef[]` in `resources/js/routes/route.ts` and register via `registerRoutes()` in `resources/js/index.ts`.
+## 4. Frontend
 
----
+Run skill `rtk-feature-slice`.
 
-## 3. Verification
-```powershell
-# From cms-tiktok-crawler/
-npm.cmd run check-types
-php artisan test --filter <ModuleName>Test
-```
+## 5. Verify (from `cms/`)
+
+`php artisan test --filter <Model>` · `npm.cmd run check-types` · `npm.cmd run mix:<module>`

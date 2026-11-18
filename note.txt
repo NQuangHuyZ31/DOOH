@@ -47,6 +47,12 @@ Update LSh au:
 			Filter: theo line item, theo venne id, theo ngày, số implement
 
 API: viết bằng nodeJS
+venne -> post, get
+delivery: get
 Auth: key -> cấu hình env hask key env bên cms lưu vào database
-
+log: tự sinh 
 Redis, log stack -> log imp và compplele -> hash venneid, line item, timestamp, thêm thời gian 
+
+khi call api delivery vào cms -> {
+	
+}

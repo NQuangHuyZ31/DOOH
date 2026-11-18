@@ -1,42 +1,58 @@
-# Frontend Engineering Rules (React 19 + TypeScript + Ant Design 6)
+---
+trigger: glob
+description: React + TypeScript + Ant Design + Redux Toolkit rules for cms/modules/*/resources/js.
+globs: cms/modules/**/resources/js/**
+---
 
-Scope: `cms-tiktok-crawler/modules/*/resources/js/`. Read when editing frontend code.
-Detailed Architecture: [`docs/frontend/architecture.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/frontend/architecture.md) | SOLID Principles: [`docs/development/solid-principles.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/development/solid-principles.md) | Component Catalog: [`docs/frontend/core-components.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/frontend/core-components.md)
+# Frontend Rules (React 19, TS, AntD, RTK)
 
-## 1. Component Placement & Architecture
-- **Layers**: `pages/` (orchestration, route params, layout) -> feature `components/` (decomposed UI) -> `@core/components/` (generic, 2+ modules).
-- **Page Responsibility**: Pages MUST NOT contain large inline SVGs, raw data transformations, or inline table column arrays (>40 lines). Extract to sub-components or `configs/`.
-- **Strict 150-Line Limit (Hard Invariant)**: TSX files (pages, components) MUST NEVER exceed 150 lines. Any component approaching ~120-130 lines MUST be decomposed proactively:
-  1. Extract static column definitions, presets, and select options to `configs/*.ts`.
-  2. Extract complex state, handlers, and side effects into custom hooks (`hooks/use*.ts`).
-  3. Extract sub-sections or compound layout pieces into sub-components (`components/*.tsx`).
-  4. Extract data mapping/formatters to `utils/*.ts`.
-- **Core First**: Generic UI components belong in `@core`. Core components MUST NOT import from feature modules or contain domain business logic.
+Deep dive: `docs/frontend/architecture.md`. New entity flow: skill `rtk-feature-slice`.
 
-## 2. TypeScript Invariants
-- **No `any`**: New or modified code MUST NOT introduce `any`. Use strict interfaces, generics, or `unknown` with type narrowing. (`tsconfig.json` has `strict: false`; do not mass-refactor legacy types unprompted).
-- **Typing Payloads**: Define request/response types in API clients (`Action/`) or module types. Do not re-declare in multiple components.
-- **Component Props**: Every component MUST declare a typed interface for props with sensible defaults for optionals.
+## 1. Structure, Decomposition (SRP) & Naming
 
-## 3. UI, Language & Ant Design Standards
-- **Strict English**: 100% of all user-facing web text (titles, buttons, labels, placeholders, toasts, errors, table headers, empty states) MUST be in English. Vietnamese is strictly prohibited in web UI.
-- **Design System**: Use Ant Design v6 tokens and components.
-- **Reuse Core Components**: Always check [`docs/frontend/core-components.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/frontend/core-components.md) for tables (`ListLayout`, `Table`, `TiktokVideoTable`), forms (`ResourceForm`, `CustomModal`, `ConfirmDialog`), and metrics (`CardKPI`, `GrowthChart`, `StatusTag`).
+- **Formatting (`Tab Size = 4`)**: MUST use **tab size 4** (`tabWidth: 4`, `useTabs: true`, `singleQuote: true`, `semi: true`, `trailingComma: 'all'`, `arrowParens: 'always'` per `cms/.prettierrc`). NEVER use 2-space indentation.
+- Per module: `Action/` (`<entity>Api.ts`) · `configs/` (`<name>Columns.tsx`, `<name>Config.ts`) · `hooks/` (`use<Name>.ts`) · `components/` (`<PascalCase>.tsx`) · `pages/` (`<Entity>ListPage.tsx`) · `routes/route.tsx` · `store/` (`<domain>Thunk.ts`, `<domain>Slice.ts`) · `types/` (`<entity>.ts`) · `utils/` (`<camelCase>.ts`).
+- **Component Decomposition by Responsibility (SRP — do not wait until 150 lines to split)**:
+  - **Pages (`pages/*Page.tsx`)**: Strictly orchestrate layout, hooks, and child components (target ≤ 80 lines; NEVER define inline table column arrays, complex forms, or business state calculations inside a Page).
+  - **Components (`components/*.tsx`)**: Single-responsibility UI blocks (e.g., `LoginForm`, `OtpVerificationForm`, `LoginHeaderBadge`, `<Entity>Table`, `<Entity>FormModal`). Split distinct visual sections or modals into separate components, but NEVER create pass-through wrapper components that add no layout or logic.
+  - **Hooks (`hooks/use*.ts`)**: Extract stateful workflows, `useEffect` lifecycles, API orchestration, and form/table handlers out of `.tsx` files so components remain declarative.
+  - **Configs (`configs/*.ts(x)`)**: Extract table column factories (`get<Entity>Columns`), filter schemas, select options, and static constants (no magic numbers/strings in JSX).
+  - **Hard Limit**: Every `.tsx` file MUST be **≤ 150 lines**.
+- **Core-First Reuse & Promotion** (`modules/Core/resources/js/`):
+  - **Always search and reuse `@core` first** before writing any new component, hook, or utility:
+    - `components/`: `ListLayout`, `Table`, `CustomModal`, `StatusTag`, `AuthGuard`, `GuestGuard`, `NotFoundPage`
+    - `hooks/`: `useAction`, `useFilter`, `usePagination`, `useAuthInit`
+    - `utils/` & `configs/`: `utils/formatters`, `utils/error`, `utils/tokenStorage`, `configs/pagination`, `configs/status`, `configs/theme`, `layouts/MainLayout`, `routes/registry`
+  - **Evaluate for `@core` promotion**: If a new component, hook, or helper function is domain-agnostic (e.g., date/currency formatter, error extractor, generic modal/filter control, status badge), place it in `@core` (or extend an existing `@core` file via optional props) instead of writing a module-local copy.
+  - Feature Module A NEVER imports internal components/hooks/slices from Feature Module B.
 
-## 4. State Management & API Integration
-- **State Partition**:
-  - **Redux Slice + Thunk** (`store/<domain>/`): Shared entity lists, server pagination, search filters, and multi-tab state.
-  - **Direct API + `useAction`**: Single row mutations (delete, toggle status, submit modal, export).
-  - NEVER store the exact same entity dataset in both Redux and local React state.
-- **HTTP Client**: Use `http` from `@core/Action/api` (Sanctum bearer token, 401 handling). Never use raw `fetch()` or custom axios instances.
-- **URL Query Parameters**: Use `useSearchParams` only when filter/pagination state must be shareable via link.
+## 2. TypeScript
 
-## 5. Imports & Configs
-- **Path Aliases**: Use `@core/...` and `@modules/<Module>/...`. Sibling relative imports (`./`, `../`) are allowed. NEW imports MUST NOT use `../../` or deeper.
-- **Static Configs**: Move column definitions, presets, and select options to `configs/` (e.g. `configs/tableConfig.ts`). Do not inline in TSX.
+- NEVER `any` (use interfaces, generics, `unknown` + narrowing). Typed props interface for every component.
+- Request/response types declared once (`Action/` or `types/`); ISP: pass only the fields a component needs.
 
-## 6. SOLID & God Component Prevention
-- **SRP & God Components**: Enforce the <= 150 lines hard limit. Decompose any oversized components into sub-components (`<Toolbar />`, `<FormDrawer />`). Separate view rendering from stateful logic (custom hooks).
-- **ISP (Prop Segregation)**: Components must accept only the exact props they require. Never pass monolithic entity objects when only 2-3 fields are rendered.
-- **DIP**: Rely on abstracted HTTP clients (`@core/Action/api`) and custom hooks. Never make direct fetch calls from presentation components.
-- **OCP & LSP**: Extend containers via composition (`children`) and optional props. Custom UI wrappers must honor standard AntD component contracts. See [`docs/development/solid-principles.md`](file:///E:/Urekamedia/TIKTOK-CRAWLER/docs/development/solid-principles.md).
+## 3. UI & Ant Design v5
+
+- 100% English user-facing text. AntD v5 components/tokens; charts via `@ant-design/plots`.
+- **AntD v5 APIs only**: MUST use `open` on `Modal`/`Drawer`, `items` array prop on `Menu`/`Tabs`/`Dropdown`/`Breadcrumb`, and `<Input.OTP />` for OTP inputs. NEVER use deprecated v4 APIs (`visible`, `<Menu.Item>`, `<Tabs.TabPane>`).
+
+## 4. State & HTTP
+
+- HTTP only via `http` from `@core/Action/api` (bearer token + 401 redirect) using relative resource paths (`'/auth/login'`, `'/venue'`). NEVER prepend `/admin/api` manually, and NEVER use raw `fetch()` or new axios instances.
+- Shared/server-paginated/cross-page data → RTK. Single mutations & transient UI → `useAction` + local state. NEVER hold the same dataset in both.
+- **Thunk & Slice in separate files (hard)**: `store/<domain>Thunk.ts` (`createAsyncThunk` + `rejectWithValue`) and `store/<domain>Slice.ts` (state, reducers, `extraReducers`). Slices NEVER re-export thunks. Reducers registered in `@core/store/store.ts`.
+- `useSearchParams` only for shareable filter/pagination state.
+
+## 5. Imports, Routing & Build Pipeline (Laravel Mix + Webpack 5)
+
+- Always import via explicit paths (`@core/Action/api`, `@core/components/ListLayout`, `@core/routes/registry`, `@modules/<Module>/...`); `./` and `../` OK; NEVER `../../` or deeper.
+- **NEVER create barrel `index.ts` files** (neither in `@core` root nor in any subfolder) that re-export components, hooks, types, or utilities.
+- **Decentralized Route & Menu Registry**:
+  - NEVER create centralized route/menu config files (`ROUTING_CONFIG`, `navigation.tsx`, `moduleRoutes.tsx`, `autoRegister.ts`) in `Core`.
+  - Every module defines its own `AppRoute[]` in `resources/js/routes/route.tsx` (supporting sidebar `menu: { key, label, icon, order, parentPath }`, nested `subMenu: AppRoute[]`, and `guard: 'auth' | 'guest' | 'none'`).
+  - Feature module root `resources/js/index.tsx` (or `index.ts`) is strictly a Webpack entry script that calls `registerRoutes(...)` — NEVER export/re-export routes, reducers, actions, thunks, components, or configs from `index.{ts,tsx}`.
+- **Webpack 5 / Laravel Mix Invariants**:
+  - NEVER use Vite-only runtime APIs (`import.meta.env`, `import.meta.glob`) in module code.
+  - `ModuleRegistry::renderJs()` outputs `<script>` tags in strict order: `1. /modules/Core/vendor.js` → `2. /modules/<Module>/index.js` → `3. /modules/Core/index.js` (so `registerRoutes` executes before `Core` mounts `AppRouter`).
+  - When introducing a new shared package or Ant Design component in a feature module, verify `cms/build/vendor-preload.js` includes it so single-module builds (`npm.cmd run mix:<module>`) keep `public/modules/Core/vendor.js` complete.
+  - Always run `npm.cmd run check-types` and `npm.cmd run mix:<module>` (or `npm.cmd run mix`) after frontend changes.
