@@ -6,20 +6,13 @@ import { useAppDispatch, useAppSelector } from '@core/store/hooks';
 import type { FilterFieldConfig } from '@core/types/filter';
 import { UserFormModal } from '../components/UserFormModal';
 import { UserTable } from '../components/UserTable';
-import {
-	closeUserModal,
-	openCreateUserModal,
-	openEditUserModal,
-	setUserFilters,
-	setUserPagination,
-} from '../store/userSlice';
-import { createUser, deleteUser, fetchRoles, fetchUsers, updateUser } from '../store/userThunk';
+import { closeUserModal, openCreateUserModal, openEditUserModal, setUserFilters, setUserPagination } from '../store/userSlice';
+import { createUser, deleteUser, fetchPermissions, fetchRoles, fetchUsers, updateUser } from '../store/userThunk';
 import type { UserFilterParams, UserFormData } from '../types/user';
 
 export const UserListPage: React.FC = () => {
 	const dispatch = useAppDispatch();
-	const { users, roles, loading, submitting, filters, pagination, modalOpen, editingUser } =
-		useAppSelector((state) => state.user);
+	const { users, roles, permissions, loading, submitting, filters, pagination, modalOpen, editingUser } = useAppSelector((state) => state.user);
 
 	const loadUsers = useCallback(() => {
 		dispatch(
@@ -33,6 +26,7 @@ export const UserListPage: React.FC = () => {
 
 	useEffect(() => {
 		dispatch(fetchRoles());
+		dispatch(fetchPermissions());
 	}, [dispatch]);
 
 	useEffect(() => {
@@ -44,9 +38,7 @@ export const UserListPage: React.FC = () => {
 	};
 
 	const handleCreateOrUpdate = async (values: UserFormData) => {
-		const action = editingUser
-			? await dispatch(updateUser({ id: editingUser.id, payload: values }))
-			: await dispatch(createUser(values));
+		const action = editingUser ? await dispatch(updateUser({ id: editingUser.id, payload: values })) : await dispatch(createUser(values));
 
 		if (updateUser.fulfilled.match(action) || createUser.fulfilled.match(action)) {
 			message.success(editingUser ? 'User updated successfully' : 'User created successfully');
@@ -74,7 +66,7 @@ export const UserListPage: React.FC = () => {
 				type: 'select',
 				placeholder: 'Filter by Role',
 				width: 160,
-				options: roles.map((r) => ({ label: r.display_name, value: r.name })),
+				options: roles.map((r) => ({ label: r.display_name || r.name, value: r.name })),
 			},
 			{
 				name: 'permission_type',
@@ -106,21 +98,12 @@ export const UserListPage: React.FC = () => {
 				users={users}
 				loading={loading}
 				pagination={pagination}
-				onTableChange={(p) =>
-					dispatch(setUserPagination({ current: p.current || 1, pageSize: p.pageSize || 15 }))
-				}
+				onTableChange={(p) => dispatch(setUserPagination({ current: p.current || 1, pageSize: p.pageSize || 15 }))}
 				onEdit={(u) => dispatch(openEditUserModal(u))}
 				onDelete={handleDelete}
 			/>
 
-			<UserFormModal
-				open={modalOpen}
-				editingUser={editingUser}
-				roles={roles}
-				submitting={submitting}
-				onCancel={() => dispatch(closeUserModal())}
-				onSubmit={handleCreateOrUpdate}
-			/>
+			<UserFormModal open={modalOpen} editingUser={editingUser} roles={roles} permissions={permissions} submitting={submitting} onCancel={() => dispatch(closeUserModal())} onSubmit={handleCreateOrUpdate} />
 		</ListLayout>
 	);
 };

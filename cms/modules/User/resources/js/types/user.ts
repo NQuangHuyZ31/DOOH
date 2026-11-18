@@ -1,17 +1,6 @@
-export interface RoleItem {
-	id: number;
-	name: string;
-	display_name: string;
-	description?: string;
-}
+import type { PermissionItem, RoleItem } from './role';
 
-export interface PermissionItem {
-	id: number;
-	name: string;
-	module: string;
-	display_name: string;
-	description?: string;
-}
+export type { PermissionItem, RoleItem };
 
 export interface UserItem {
 	id: number;
