@@ -18,8 +18,9 @@ Deep dive: `docs/database/schema-and-migrations.md`.
 ## 2. MySQL
 
 - Migrations additive only (new tables, nullable/defaulted columns, indexes). NEVER edit committed migrations. Drop/rename needs human approval + rollback plan.
+- **Mandatory Soft Deletes for Important Entities**: All primary business entity tables (`users`, `venues`, `campaigns`, `line_items`, `creatives`, etc.) MUST use `$table->softDeletes();` in migrations and `use Illuminate\Database\Eloquent\SoftDeletes;` in their Eloquent models. NEVER permanently hard-delete (`forceDelete()` or direct `DELETE FROM`) primary entity records in standard flows. Pivot tables (`user_permissions`, `role_permissions`, `line_item_venues`) and ephemeral tables (personal access tokens, OTPs) use standard hard detach/delete.
 - Tables plural `snake_case`; FKs `foreignId('<parent>_id')->constrained()`; composite indexes for hot pairs (`['campaign_id','status']`, `['start_date','end_date']`).
-- Models: explicit `$fillable` (NEVER `$guarded = []`), explicit `$casts` (bool, datetime, json).
+- Models: explicit `$fillable` (NEVER `$guarded = []`), explicit `$casts` (bool, datetime, json, `'deleted_at' => 'datetime'`), `SoftDeletes` on important entities.
 
 ## 3. MongoDB
 

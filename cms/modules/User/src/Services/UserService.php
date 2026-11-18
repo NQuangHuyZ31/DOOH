@@ -30,9 +30,9 @@ class UserService
     public function createUser(array $data): User
     {
         return DB::transaction(function () use ($data) {
-            $permissionType = $data['permission_type'] ?? User::PERMISSION_TYPE_ROLE;
+            $permissionType = $data['permission_type'] ?? $this->userRepository->getModel()::PERMISSION_TYPE_ROLE;
 
-            if ($permissionType === User::PERMISSION_TYPE_DIRECT) {
+            if ($permissionType === $this->userRepository->getModel()::PERMISSION_TYPE_DIRECT) {
                 $roleId = null;
                 $permissionIds = $this->resolvePermissionIds($data['direct_permissions'] ?? []);
             } else {
@@ -77,7 +77,7 @@ class UserService
             $permissionType = $data['permission_type'] ?? $user->permission_type;
             $updatePayload['permission_type'] = $permissionType;
 
-            if ($permissionType === User::PERMISSION_TYPE_DIRECT) {
+            if ($permissionType === $this->userRepository->getModel()::PERMISSION_TYPE_DIRECT) {
                 $updatePayload['role_id'] = null;
                 $permissionIds = $this->resolvePermissionIds($data['direct_permissions'] ?? []);
             } else {

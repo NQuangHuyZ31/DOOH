@@ -3,11 +3,12 @@
 namespace Modules\Venue\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Core\Traits\Filterable;
 
 class Venue extends Model
 {
-    use Filterable;
+    use Filterable, SoftDeletes;
 
     protected $table = 'venues';
 
@@ -36,5 +37,6 @@ class Venue extends Model
     protected $casts = [
         'width' => 'integer',
         'height' => 'integer',
+        'deleted_at' => 'datetime',
     ];
 }

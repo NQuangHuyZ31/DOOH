@@ -172,4 +172,25 @@ class UserApiTest extends TestCase
         $permResponse->assertStatus(200)
             ->assertJsonPath('status', 'success');
     }
+
+    public function test_delete_user_soft_deletes(): void
+    {
+        $this->authenticateAsSuperAdmin();
+
+        $user = User::create([
+            'name' => 'To Delete',
+            'email' => 'todelete@example.com',
+            'password' => 'secret123',
+            'permission_type' => User::PERMISSION_TYPE_ROLE,
+        ]);
+
+        $response = $this->deleteJson("/admin/api/user/{$user->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('status', 'success');
+
+        $this->assertSoftDeleted('users', [
+            'id' => $user->id,
+        ]);
+    }
 }

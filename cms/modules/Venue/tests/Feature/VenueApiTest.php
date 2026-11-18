@@ -208,7 +208,7 @@ class VenueApiTest extends TestCase
         $response->assertStatus(200)
                  ->assertJsonPath('status', 'success');
 
-        $this->assertDatabaseMissing('venues', [
+        $this->assertSoftDeleted('venues', [
             'id' => $venue->id,
         ]);
     }
