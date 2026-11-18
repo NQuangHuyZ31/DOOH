@@ -32,6 +32,7 @@ Envelope from `Modules\Core\Support\ApiResponseTrait` (NEVER hand-roll `response
 | 400 / 500 | business rule violation / unexpected (generic message) |
 
 - Fields `snake_case`; dates ISO-8601; ids numeric. Lists default `per_page` from `@core/configs/pagination`.
+- **Mandatory `JsonResource` Serialization**: Always format entity data (`single`, `collection`, and `paginator` items) through `src/Resources/<Entity>Resource.php` (`extends JsonResource`) before passing to `respondSuccess`, `respondCreated`, or `respondPaginated` — NEVER mutate models in Services (`setAttribute`/`unsetRelation`) or return unformatted Eloquent models.
 - Frontend: type responses once in `Action/` or `types/` mirroring the envelope (`status`, `message`, `data`, `pagination`); call via `http` from `@core/Action/api`.
 
 ## 2. Tracking API (Node) — `/api/v1`

@@ -22,9 +22,10 @@ HTTP Request ──► Controller Layer (BaseController, FormRequest, ApiRespons
 ```
 
 ### Layer Invariants
-1. **Controller Layer**: HTTP handling only. Never execute direct database queries or business mutations. Extract validation into dedicated `Http/Requests/*Request.php` (`FormRequest`) whenever validating `≥ 3` fields, entity `store`/`update` payloads, nested arrays, or custom normalization (`prepareForValidation()`); inline `$request->validate()` is permitted only for trivial `1–2` simple fields.
-2. **Service Layer**: Orchestrates domain logic and transactions (`DB::transaction`). Depends strictly on **Repository Interfaces**. STRICTLY FORBIDDEN from direct Model queries (`Model::where()`, `DB::table()`).
-3. **Repository Layer**: Encapsulates database queries. Extends `BaseRepository` (MySQL) or implements MongoDB aggregation interfaces.
+1. **Controller Layer**: HTTP handling only. Never execute direct database queries or business mutations. Extract validation into dedicated `Http/Requests/*Request.php` (`FormRequest`) whenever validating `≥ 3` fields, entity `store`/`update` payloads, nested arrays, or custom normalization (`prepareForValidation()`); inline `$request->validate()` is permitted only for trivial `1–2` simple fields. Format responses using `src/Resources/<Entity>Resource.php` (`JsonResource`) + `ApiResponseTrait`.
+2. **Service Layer**: Orchestrates domain logic and transactions (`DB::transaction`). Depends strictly on **Repository Interfaces**. STRICTLY FORBIDDEN from direct Model queries (`Model::where()`, `DB::table()`), calling `$repository->getModel()` to chain filter/query methods (`where`, `whereHas`, `with`, `orderBy`, `paginate`), or mutating models via ad-hoc `transform*()` helpers.
+3. **Repository Layer**: Encapsulates 100% of database queries, filtering (`paginateWithFilters`), sorting, eager-loading (`with`, `withCount`), and relation syncing. Extends `BaseRepository` (MySQL) or implements MongoDB aggregation interfaces.
+4. **Resource Layer (`src/Resources/<Entity>Resource.php`)**: Extends `Illuminate\Http\Resources\Json\JsonResource` to serialize and format single models, collections, and paginated datasets consistently.
 
 ---
 
