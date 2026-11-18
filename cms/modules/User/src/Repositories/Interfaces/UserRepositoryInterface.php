@@ -9,10 +9,5 @@ interface UserRepositoryInterface extends BaseRepositoryInterface
 {
     public function findByEmail(string $email): ?User;
 
-    public function assignRole(User $user, int|string $role): void;
-
-    /**
-     * @param int[]|string[] $permissionIdsOrNames
-     */
-    public function syncDirectPermissions(User $user, array $permissionIdsOrNames): void;
+    public function syncDirectPermissions(User|int $user, array $permissionIds): void;
 }

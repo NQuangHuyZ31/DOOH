@@ -8,16 +8,10 @@ use Modules\User\Repositories\Interfaces\RoleRepositoryInterface;
 
 class RoleRepository extends BaseRepository implements RoleRepositoryInterface
 {
-    /**
-     * @var string[]
-     */
     protected array $with = [
         'permissions:id,name,module,display_name',
     ];
 
-    /**
-     * @var string[]
-     */
     protected array $withCount = [
         'users',
     ];
@@ -27,9 +21,11 @@ class RoleRepository extends BaseRepository implements RoleRepositoryInterface
         parent::__construct($model);
     }
 
-    /**
-     * @param int[] $permissionIds
-     */
+    public function findByName(string $name): ?Role
+    {
+        return $this->newQuery()->where('name', $name)->first();
+    }
+
     public function syncPermissions(Role $role, array $permissionIds): void
     {
         $role->permissions()->sync($permissionIds);

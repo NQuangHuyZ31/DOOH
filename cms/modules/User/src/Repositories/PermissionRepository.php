@@ -13,9 +13,18 @@ class PermissionRepository extends BaseRepository implements PermissionRepositor
         parent::__construct($model);
     }
 
-    /**
-     * @return array<string, array<int, array<string, mixed>>>
-     */
+    public function getIdsByNames(array $names): array
+    {
+        if (empty($names)) {
+            return [];
+        }
+
+        return $this->newQuery()
+            ->whereIn('name', $names)
+            ->pluck('id')
+            ->all();
+    }
+
     public function getGroupedByModule(): array
     {
         $permissions = $this->all(['id', 'name', 'module', 'display_name', 'description']);

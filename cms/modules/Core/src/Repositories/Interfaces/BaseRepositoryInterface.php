@@ -10,13 +10,11 @@ interface BaseRepositoryInterface
 {
     /**
      * @param string[] $columns
-     * @param array<string, mixed> $filters
      */
     public function all(array $columns = ['*'], array $filters = []): Collection;
 
     /**
      * @param array<string, mixed> $filters
-     * @param string[] $columns
      */
     public function paginate(int $perPage = 15, array $filters = [], array $columns = ['*']): LengthAwarePaginator;
 

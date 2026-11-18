@@ -7,8 +7,7 @@ use Modules\User\Models\Role;
 
 interface RoleRepositoryInterface extends BaseRepositoryInterface
 {
-    /**
-     * @param int[] $permissionIds
-     */
+    public function findByName(string $name): ?Role;
+
     public function syncPermissions(Role $role, array $permissionIds): void;
 }

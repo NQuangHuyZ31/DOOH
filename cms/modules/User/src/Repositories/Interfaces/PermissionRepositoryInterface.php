@@ -6,8 +6,7 @@ use Modules\Core\Repositories\Interfaces\BaseRepositoryInterface;
 
 interface PermissionRepositoryInterface extends BaseRepositoryInterface
 {
-    /**
-     * @return array<string, array<int, array<string, mixed>>>
-     */
+    public function getIdsByNames(array $names): array;
+
     public function getGroupedByModule(): array;
 }

@@ -14,15 +14,11 @@ abstract class BaseRepository implements BaseRepositoryInterface
 
     /**
      * Default relations to eager-load.
-     *
-     * @var string[]
      */
     protected array $with = [];
 
     /**
      * Default relation counts to eager-load.
-     *
-     * @var string[]
      */
     protected array $withCount = [];
 
@@ -33,7 +29,6 @@ abstract class BaseRepository implements BaseRepositoryInterface
 
     /**
      * @param string[] $columns
-     * @param array<string, mixed> $filters
      */
     public function all(array $columns = ['*'], array $filters = []): Collection
     {
@@ -48,7 +43,6 @@ abstract class BaseRepository implements BaseRepositoryInterface
 
     /**
      * @param array<string, mixed> $filters
-     * @param string[] $columns
      */
     public function paginate(int $perPage = 15, array $filters = [], array $columns = ['*']): LengthAwarePaginator
     {

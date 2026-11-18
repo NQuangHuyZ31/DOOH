@@ -3,18 +3,20 @@
 namespace Modules\User\Services;
 
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Modules\User\Models\User;
+use Modules\User\Repositories\Interfaces\PermissionRepositoryInterface;
+use Modules\User\Repositories\Interfaces\RoleRepositoryInterface;
 use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
 
 class UserService
 {
     public function __construct(
-        protected UserRepositoryInterface $userRepository
+        protected UserRepositoryInterface $userRepository,
+        protected RoleRepositoryInterface $roleRepository,
+        protected PermissionRepositoryInterface $permissionRepository
     ) {}
 
-    /**
-     * @param array<string, mixed> $filters
-     */
     public function listUsers(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
         return $this->userRepository->paginate($perPage, $filters);
@@ -22,77 +24,118 @@ class UserService
 
     public function getUser(int $id): ?User
     {
-        /** @var User|null */
         return $this->userRepository->find($id);
     }
 
-    /**
-     * @param array<string, mixed> $data
-     */
     public function createUser(array $data): User
     {
-        $permissionType = $data['permission_type'] ?? User::PERMISSION_TYPE_ROLE;
-        $roleId = $data['role_id'] ?? null;
-        $directPermissions = $data['direct_permissions'] ?? [];
+        return DB::transaction(function () use ($data) {
+            $permissionType = $data['permission_type'] ?? User::PERMISSION_TYPE_ROLE;
 
-        /** @var User $user */
-        $user = $this->userRepository->create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => $data['password'],
-            'permission_type' => $permissionType,
-            'role_id' => $permissionType === User::PERMISSION_TYPE_ROLE ? $roleId : null,
-        ]);
+            if ($permissionType === User::PERMISSION_TYPE_DIRECT) {
+                $roleId = null;
+                $permissionIds = $this->resolvePermissionIds($data['direct_permissions'] ?? []);
+            } else {
+                $roleId = $this->resolveRoleId($data['role_id'] ?? null);
+                $permissionIds = [];
+            }
 
-        if ($permissionType === User::PERMISSION_TYPE_DIRECT) {
-            $this->userRepository->syncDirectPermissions($user, $directPermissions);
-        } elseif ($roleId !== null) {
-            $this->userRepository->assignRole($user, (int) $roleId);
-        }
+            $user = $this->userRepository->create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => $data['password'],
+                'permission_type' => $permissionType,
+                'role_id' => $roleId,
+            ]);
 
-        /** @var User */
-        return $this->userRepository->find($user->id);
+            $this->userRepository->syncDirectPermissions($user, $permissionIds);
+
+            /** @var User */
+            return $this->userRepository->find($user->id);
+        });
     }
 
-    /**
-     * @param array<string, mixed> $data
-     */
     public function updateUser(int $id, array $data): ?User
     {
-        /** @var User|null $user */
-        $user = $this->userRepository->find($id);
-        if (!$user) {
-            return null;
-        }
+        return DB::transaction(function () use ($id, $data) {
+            $user = $this->userRepository->find($id);
+            if (!$user) {
+                return null;
+            }
 
-        $updatePayload = [];
-        if (isset($data['name'])) {
-            $updatePayload['name'] = $data['name'];
-        }
-        if (isset($data['email'])) {
-            $updatePayload['email'] = $data['email'];
-        }
-        if (!empty($data['password'])) {
-            $updatePayload['password'] = $data['password'];
-        }
+            $updatePayload = [];
+            if (isset($data['name'])) {
+                $updatePayload['name'] = $data['name'];
+            }
+            if (isset($data['email'])) {
+                $updatePayload['email'] = $data['email'];
+            }
+            if (!empty($data['password'])) {
+                $updatePayload['password'] = $data['password'];
+            }
 
-        if ($updatePayload !== []) {
+            $permissionType = $data['permission_type'] ?? $user->permission_type;
+            $updatePayload['permission_type'] = $permissionType;
+
+            if ($permissionType === User::PERMISSION_TYPE_DIRECT) {
+                $updatePayload['role_id'] = null;
+                $permissionIds = $this->resolvePermissionIds($data['direct_permissions'] ?? []);
+            } else {
+                if (array_key_exists('role_id', $data)) {
+                    $updatePayload['role_id'] = $this->resolveRoleId($data['role_id']);
+                }
+                $permissionIds = [];
+            }
+
             $this->userRepository->update($id, $updatePayload);
-        }
+            $this->userRepository->syncDirectPermissions($user, $permissionIds);
 
-        $permissionType = $data['permission_type'] ?? $user->permission_type;
-        if ($permissionType === User::PERMISSION_TYPE_DIRECT) {
-            $this->userRepository->syncDirectPermissions($user, $data['direct_permissions'] ?? []);
-        } elseif (!empty($data['role_id'])) {
-            $this->userRepository->assignRole($user, (int) $data['role_id']);
-        }
-
-        /** @var User|null */
-        return $this->userRepository->find($id);
+            return $this->userRepository->find($id);
+        });
     }
 
     public function deleteUser(int $id): bool
     {
         return $this->userRepository->delete($id);
+    }
+
+    protected function resolveRoleId(int|string|null $role): ?int
+    {
+        if ($role === null) {
+            return null;
+        }
+
+        if (is_numeric($role)) {
+            return (int) $role;
+        }
+
+        $roleModel = $this->roleRepository->findByName($role);
+
+        return $roleModel?->id;
+    }
+
+    protected function resolvePermissionIds(array $permissionIdsOrNames): array
+    {
+        if (empty($permissionIdsOrNames)) {
+            return [];
+        }
+
+        $ids = [];
+        $names = [];
+
+        foreach ($permissionIdsOrNames as $item) {
+            if (is_numeric($item)) {
+                $ids[] = (int) $item;
+            } else {
+                $names[] = (string) $item;
+            }
+        }
+
+        if (!empty($names)) {
+            $resolvedIds = $this->permissionRepository->getIdsByNames($names);
+            $ids = array_merge($ids, $resolvedIds);
+        }
+
+        return array_values(array_unique($ids));
     }
 }
