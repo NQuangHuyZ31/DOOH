@@ -53,7 +53,20 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ collapsed, onCollapse })
 	};
 
 	return (
-		<Sider collapsible collapsed={collapsed} onCollapse={onCollapse} width={220}>
+		<Sider
+			collapsible
+			collapsed={collapsed}
+			onCollapse={onCollapse}
+			width={220}
+			style={{
+				height: '100vh',
+				overflowY: 'auto',
+				overflowX: 'hidden',
+				position: 'sticky',
+				top: 0,
+				left: 0,
+			}}
+		>
 			<style>{SUBMENU_ACTIVE_STYLE}</style>
 			<div style={{ padding: 16, textAlign: 'center' }}>
 				<Title level={4} style={{ color: '#fff', margin: 0, letterSpacing: -0.3 }}>
