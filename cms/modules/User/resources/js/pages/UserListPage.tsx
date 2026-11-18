@@ -9,7 +9,7 @@ import { extractErrorMessage } from '@core/utils/error';
 import { UserFormModal } from '../components/UserFormModal';
 import { UserTable } from '../components/UserTable';
 import { closeUserModal, openCreateUserModal, openEditUserModal, setUserFilters, setUserPagination } from '../store/userSlice';
-import { createUser, deleteUser, fetchPermissions, fetchRoles, fetchUsers, updateUser } from '../store/userThunk';
+import { createUser, deleteUser, fetchPermissions, fetchRoles, fetchUsers, sendUserResetPassword, updateUser } from '../store/userThunk';
 import type { UserFilterParams, UserFormData } from '../types/user';
 
 export const UserListPage: React.FC = () => {
@@ -65,6 +65,15 @@ export const UserListPage: React.FC = () => {
 		}
 	};
 
+	const handleResetPassword = async (id: number) => {
+		try {
+			await dispatch(sendUserResetPassword(id)).unwrap();
+			message.success('Password reset email sent successfully.');
+		} catch (err: unknown) {
+			message.error(extractErrorMessage(err, 'Failed to send password reset email.'));
+		}
+	};
+
 	const filterConfigs: FilterFieldConfig[] = useMemo(
 		() => [
 			{ name: 'search', type: 'search', placeholder: 'Search by name or email...', width: 260 },
@@ -109,6 +118,7 @@ export const UserListPage: React.FC = () => {
 				onTableChange={(p) => dispatch(setUserPagination({ current: p.current || 1, pageSize: p.pageSize || defaultPagination.pageSize }))}
 				onEdit={(u) => dispatch(openEditUserModal(u))}
 				onDelete={handleDelete}
+				onResetPassword={handleResetPassword}
 			/>
 
 			<UserFormModal open={modalOpen} editingUser={editingUser} roles={roles} permissions={permissions} submitting={submitting} onCancel={() => dispatch(closeUserModal())} onSubmit={handleCreateOrUpdate} />

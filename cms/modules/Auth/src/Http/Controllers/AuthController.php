@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Auth\Http\Requests\LoginRequest;
 use Modules\Auth\Http\Requests\ResendOtpRequest;
+use Modules\Auth\Http\Requests\ResetPasswordRequest;
 use Modules\Auth\Http\Requests\VerifyOtpRequest;
 use Modules\Auth\Services\AuthService;
 use Modules\Core\Http\Controllers\BaseController;
@@ -48,6 +49,18 @@ class AuthController extends BaseController
         $data = $this->authService->resendOtp($request->validated('temp_token'));
 
         return $this->respondSuccess($data, 'Fresh verification code dispatched.');
+    }
+
+    public function resetPassword(ResetPasswordRequest $request): JsonResponse
+    {
+        $data = $this->authService->resetPassword(
+            $request->validated('email'),
+            $request->validated('token'),
+            $request->validated('password'),
+            $request->validated('password_confirmation')
+        );
+
+        return $this->respondSuccess($data, 'Password has been reset successfully.');
     }
 
     public function me(Request $request): JsonResponse

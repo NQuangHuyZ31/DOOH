@@ -81,3 +81,14 @@ export const deleteUser = createAsyncThunk<number, number, { rejectValue: string
 		}
 	},
 );
+
+export const sendUserResetPassword = createAsyncThunk<void, number, { rejectValue: string }>(
+	'user/sendResetPassword',
+	async (id, { rejectWithValue }) => {
+		try {
+			await userApi.sendResetPassword(id);
+		} catch (err: unknown) {
+			return rejectWithValue(extractErrorMessage(err, 'Failed to send password reset email.'));
+		}
+	},
+);

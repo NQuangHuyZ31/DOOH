@@ -25,6 +25,10 @@ export const userApi = {
 		return http.delete<ApiResponse<null>>(`/user/${id}`);
 	},
 
+	sendResetPassword(id: number) {
+		return http.post<ApiResponse<null>>(`/user/${id}/reset-password`);
+	},
+
 	getRoles() {
 		return roleApi.getRoles();
 	},

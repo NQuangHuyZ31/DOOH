@@ -3,6 +3,8 @@
 namespace Modules\Auth\Services;
 
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Modules\Auth\Resources\UserResource;
 use Modules\User\Models\User;
@@ -91,6 +93,35 @@ class AuthService
         } else {
             $user->tokens()->delete();
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function resetPassword(string $email, string $token, string $password, string $passwordConfirmation): array
+    {
+        $status = Password::broker('users')->reset(
+            [
+                'email' => $email,
+                'token' => $token,
+                'password' => $password,
+                'password_confirmation' => $passwordConfirmation,
+            ],
+            function (User $user, string $pwd) {
+                $user->forceFill([
+                    'password' => Hash::make($pwd),
+                    'remember_token' => Str::random(60),
+                ])->save();
+            }
+        );
+
+        if ($status !== Password::PASSWORD_RESET) {
+            throw ValidationException::withMessages([
+                'token' => [__($status)],
+            ]);
+        }
+
+        return ['status' => 'success'];
     }
 
     /**

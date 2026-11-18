@@ -22,6 +22,9 @@ export const authApi = {
     logout: () =>
         http.post<ApiResponse<null>>('/auth/logout'),
 
+    resetPassword: (data: { email: string; token: string; password: string; password_confirmation: string }) =>
+        http.post<ApiResponse<null>>('/auth/reset-password', data),
+
     me: () =>
         http.get<ApiResponse<AuthUser>>('/auth/me'),
 };
