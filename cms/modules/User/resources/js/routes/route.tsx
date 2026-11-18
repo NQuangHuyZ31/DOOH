@@ -1,6 +1,7 @@
 import React from 'react';
 import { KeyOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons';
 import type { AppRoute } from '@core/routes/types';
+import PermissionListPage from '../pages/PermissionListPage';
 import RoleListPage from '../pages/RoleListPage';
 import UserListPage from '../pages/UserListPage';
 
@@ -38,7 +39,7 @@ export const userRoutes: AppRoute[] = [
 		module: 'user',
 		action: 'permissions',
 		parentPath: '/admin/user',
-		element: <UserListPage />,
+		element: <PermissionListPage />,
 	},
 ];
 

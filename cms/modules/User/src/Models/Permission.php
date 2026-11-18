@@ -5,10 +5,11 @@ namespace Modules\User\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Modules\Core\Traits\Filterable;
 
 class Permission extends Model
 {
-    use HasFactory;
+    use HasFactory, Filterable;
 
     protected $table = 'permissions';
 
@@ -17,6 +18,12 @@ class Permission extends Model
         'module',
         'display_name',
         'description',
+    ];
+
+    protected array $filterable = [
+        'search' => ['name', 'display_name', 'description'],
+        'module',
+        'name',
     ];
 
     /**

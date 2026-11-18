@@ -67,7 +67,15 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, editingUser,
 	return (
 		<Modal open={open} title={editingUser ? 'Edit User' : 'Add New User'} confirmLoading={submitting} onOk={handleOk} onCancel={onCancel} destroyOnClose>
 			<Form form={form} layout="vertical" preserve={false}>
-				<Form.Item name="name" label="Full Name" rules={[{ required: true, message: 'Please enter full name' }]}>
+				<Form.Item
+					name="name"
+					label="Full Name"
+					rules={[
+						{ required: true, message: 'Please enter full name' },
+						{ min: 2, message: 'Name must be at least 2 characters' },
+						{ max: 100, message: 'Name cannot exceed 100 characters' },
+					]}
+				>
 					<Input placeholder="e.g. John Doe" />
 				</Form.Item>
 
@@ -77,12 +85,20 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, editingUser,
 					rules={[
 						{ required: true, message: 'Please enter email' },
 						{ type: 'email', message: 'Please enter a valid email' },
+						{ max: 100, message: 'Email cannot exceed 100 characters' },
 					]}
 				>
 					<Input placeholder="e.g. john@example.com" disabled={Boolean(editingUser)} />
 				</Form.Item>
 
-				<Form.Item name="password" label={editingUser ? 'Password (leave blank to keep unchanged)' : 'Password'} rules={[{ required: !editingUser, message: 'Please enter password' }]}>
+				<Form.Item
+					name="password"
+					label={editingUser ? 'Password (leave blank to keep unchanged)' : 'Password'}
+					rules={[
+						{ required: !editingUser, message: 'Please enter password' },
+						{ min: 8, message: 'Password must be at least 8 characters' },
+					]}
+				>
 					<Input.Password placeholder="••••••••" />
 				</Form.Item>
 

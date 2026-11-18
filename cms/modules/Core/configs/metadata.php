@@ -26,5 +26,17 @@ return [
         ],
     ],
 
-    'enums' => [],
+    'enums' => [
+        'modules' => [
+            ['value' => 'core', 'label' => 'Core (System & Infrastructure)', 'color' => 'default'],
+            ['value' => 'auth', 'label' => 'Auth (Authentication & Security)', 'color' => 'gold'],
+            ['value' => 'user', 'label' => 'User (User Management & RBAC)', 'color' => 'blue'],
+            ['value' => 'venue', 'label' => 'Venue (Screen Venues & Hardware)', 'color' => 'geekblue'],
+            ['value' => 'creative', 'label' => 'Creative (Media & Content Assets)', 'color' => 'purple'],
+            ['value' => 'delivery', 'label' => 'Delivery (Pacing, Playlists & Campaigns)', 'color' => 'green'],
+            ['value' => 'report', 'label' => 'Report (Analytics & Metrics)', 'color' => 'orange'],
+            ['value' => 'log', 'label' => 'Log (Tracking Verification & Beacons)', 'color' => 'cyan'],
+            ['value' => 'simulator', 'label' => 'Simulator (Virtual Edge Player)', 'color' => 'magenta'],
+        ],
+    ],
 ];
