@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Layout, Menu, Typography } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { UREKA_COLORS } from '@core/configs/theme';
 import { useMenuRoutes } from '@core/routes/registry';
 import { buildSidebarMenuItems, resolveActiveMenuKeys } from './sidebarMenuBuilder';
 
@@ -9,11 +10,11 @@ const { Title } = Typography;
 
 const SUBMENU_ACTIVE_STYLE = `
 	.ant-menu-dark .ant-menu-submenu.ant-menu-submenu-title-selected > .ant-menu-submenu-title {
-		background-color: #1677ff !important;
+		background-color: ${UREKA_COLORS.primary} !important;
 		color: #ffffff !important;
 	}
 	.ant-menu-dark .ant-menu-submenu.ant-menu-submenu-title-selected > .ant-menu-submenu-title:hover {
-		background-color: #4096ff !important;
+		background-color: ${UREKA_COLORS.primaryHover} !important;
 	}
 `;
 
@@ -55,8 +56,14 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ collapsed, onCollapse })
 		<Sider collapsible collapsed={collapsed} onCollapse={onCollapse} width={220}>
 			<style>{SUBMENU_ACTIVE_STYLE}</style>
 			<div style={{ padding: 16, textAlign: 'center' }}>
-				<Title level={4} style={{ color: '#fff', margin: 0 }}>
-					{collapsed ? 'DOOH' : 'DOOH CMS'}
+				<Title level={4} style={{ color: '#fff', margin: 0, letterSpacing: -0.3 }}>
+					{collapsed ? (
+						<span style={{ color: UREKA_COLORS.primary }}>D</span>
+					) : (
+						<>
+							<span style={{ color: UREKA_COLORS.primary }}>Dooh</span> <span style={{ fontWeight: 600, fontSize: 13, letterSpacing: 2 }}>ureka media</span>
+						</>
+					)}
 				</Title>
 			</div>
 			<Menu theme="dark" mode="inline" selectedKeys={selectedKeys} openKeys={collapsed ? undefined : openKeys} onOpenChange={setOpenKeys} items={menuItems} onClick={handleMenuClick} />

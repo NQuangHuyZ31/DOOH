@@ -1,17 +1,11 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { RoleItem, UserFilterParams, UserItem } from '../types/user';
-import { createUser, deleteUser, fetchRoles, fetchUsers, updateUser } from './userThunk';
-
-const INITIAL_ROLES: RoleItem[] = [
-	{ id: 1, name: 'super_admin', display_name: 'Super Admin' },
-	{ id: 2, name: 'admin', display_name: 'Admin' },
-	{ id: 3, name: 'operator', display_name: 'Operator' },
-	{ id: 4, name: 'viewer', display_name: 'Viewer' },
-];
+import type { PermissionItem, RoleItem, UserFilterParams, UserItem } from '../types/user';
+import { createUser, deleteUser, fetchPermissions, fetchRoles, fetchUsers, updateUser } from './userThunk';
 
 export interface UserState {
 	users: UserItem[];
 	roles: RoleItem[];
+	permissions: PermissionItem[];
 	loading: boolean;
 	submitting: boolean;
 	error: string | null;
@@ -27,7 +21,8 @@ export interface UserState {
 
 const initialState: UserState = {
 	users: [],
-	roles: INITIAL_ROLES,
+	roles: [],
+	permissions: [],
 	loading: false,
 	submitting: false,
 	error: null,
@@ -87,9 +82,10 @@ export const userSlice = createSlice({
 				state.error = action.payload || null;
 			})
 			.addCase(fetchRoles.fulfilled, (state, action) => {
-				if (action.payload.length > 0) {
-					state.roles = action.payload;
-				}
+				state.roles = action.payload;
+			})
+			.addCase(fetchPermissions.fulfilled, (state, action) => {
+				state.permissions = action.payload;
 			})
 			.addCase(createUser.pending, (state) => {
 				state.submitting = true;
@@ -98,7 +94,6 @@ export const userSlice = createSlice({
 			.addCase(createUser.fulfilled, (state) => {
 				state.submitting = false;
 				state.modalOpen = false;
-				state.editingUser = null;
 			})
 			.addCase(createUser.rejected, (state, action) => {
 				state.submitting = false;
@@ -111,11 +106,13 @@ export const userSlice = createSlice({
 			.addCase(updateUser.fulfilled, (state) => {
 				state.submitting = false;
 				state.modalOpen = false;
-				state.editingUser = null;
 			})
 			.addCase(updateUser.rejected, (state, action) => {
 				state.submitting = false;
 				state.error = action.payload || null;
+			})
+			.addCase(deleteUser.pending, (state) => {
+				state.error = null;
 			})
 			.addCase(deleteUser.rejected, (state, action) => {
 				state.error = action.payload || null;

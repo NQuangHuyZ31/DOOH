@@ -2,7 +2,7 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import type { PaginatedResponse } from '@core/types/api';
 import { extractErrorMessage } from '@core/utils/error';
 import { userApi } from '../Action/userApi';
-import type { RoleItem, UserFilterParams, UserFormData, UserItem } from '../types/user';
+import type { PermissionItem, RoleItem, UserFilterParams, UserFormData, UserItem } from '../types/user';
 
 export const fetchUsers = createAsyncThunk<
 	PaginatedResponse<UserItem>,
@@ -22,9 +22,25 @@ export const fetchRoles = createAsyncThunk<RoleItem[], void, { rejectValue: stri
 	async (_, { rejectWithValue }) => {
 		try {
 			const response = await userApi.getRoles();
-			return response.data?.data || [];
+			const data = response.data;
+			if (data && 'data' in data && Array.isArray(data.data)) {
+				return data.data;
+			}
+			return [];
 		} catch (err: unknown) {
 			return rejectWithValue(extractErrorMessage(err, 'Failed to load roles.'));
+		}
+	},
+);
+
+export const fetchPermissions = createAsyncThunk<PermissionItem[], void, { rejectValue: string }>(
+	'user/fetchPermissions',
+	async (_, { rejectWithValue }) => {
+		try {
+			const response = await userApi.getPermissions();
+			return response.data?.data || [];
+		} catch (err: unknown) {
+			return rejectWithValue(extractErrorMessage(err, 'Failed to load permissions.'));
 		}
 	},
 );

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, Flex, Space, Typography } from 'antd';
 import { CheckCircleFilled, DesktopOutlined, SafetyCertificateFilled, ThunderboltFilled } from '@ant-design/icons';
+import { UREKA_COLORS } from '@core/configs/theme';
 import { AUTH_BRAND_CONFIG, LOGIN_HERO_FEATURES, LoginHeroFeature } from '../configs/authConfig';
 
 const { Title, Text, Paragraph } = Typography;
@@ -41,7 +42,7 @@ export const LoginHeroBanner: React.FC = () => {
 					width: 260,
 					height: 260,
 					borderRadius: '50%',
-					background: 'radial-gradient(circle, rgba(22, 119, 255, 0.25) 0%, transparent 70%)',
+					background: 'radial-gradient(circle, rgba(234, 8, 139, 0.25) 0%, transparent 70%)',
 					filter: 'blur(40px)',
 					pointerEvents: 'none',
 				}}
@@ -54,11 +55,11 @@ export const LoginHeroBanner: React.FC = () => {
 							width: 44,
 							height: 44,
 							borderRadius: 12,
-							background: 'linear-gradient(135deg, #1677ff 0%, #06b6d4 100%)',
+							background: UREKA_COLORS.gradientPrimary,
 							display: 'flex',
 							alignItems: 'center',
 							justifyContent: 'center',
-							boxShadow: '0 4px 14px rgba(22, 119, 255, 0.4)',
+							boxShadow: '0 4px 14px rgba(234, 8, 139, 0.4)',
 						}}
 					>
 						<DesktopOutlined style={{ color: '#ffffff', fontSize: 22 }} />

@@ -22,6 +22,7 @@ Deep dive: `docs/frontend/architecture.md`. New entity flow: skill `rtk-feature-
   - **Always search and reuse `@core` first** before writing any new component, hook, or utility:
     - `components/`: `ListLayout`, `Table`, `CustomModal`, `StatusTag`, `AuthGuard`, `GuestGuard`, `NotFoundPage`
     - `hooks/`: `useAction`, `useFilter`, `usePagination`, `useAuthInit`
+    - `store/` & `Action/`: `store/metadataSlice`, `store/metadataThunk` (`fetchMetadata`), `Action/metadataApi`, `types/metadata`
     - `utils/` & `configs/`: `utils/formatters`, `utils/error`, `utils/tokenStorage`, `configs/pagination`, `configs/status`, `configs/theme`, `layouts/MainLayout`, `routes/registry`
   - **Evaluate for `@core` promotion**: If a new component, hook, or helper function is domain-agnostic (e.g., date/currency formatter, error extractor, generic modal/filter control, status badge), place it in `@core` (or extend an existing `@core` file via optional props) instead of writing a module-local copy.
   - Feature Module A NEVER imports internal components/hooks/slices from Feature Module B.
@@ -31,9 +32,14 @@ Deep dive: `docs/frontend/architecture.md`. New entity flow: skill `rtk-feature-
 - NEVER `any` (use interfaces, generics, `unknown` + narrowing). Typed props interface for every component.
 - Request/response types declared once (`Action/` or `types/`); ISP: pass only the fields a component needs.
 
-## 3. UI & Ant Design v5
+## 3. UI, Ant Design v5 & Ureka Media Brand Theme
 
 - 100% English user-facing text. AntD v5 components/tokens; charts via `@ant-design/plots`.
+- **Ureka Media Brand Palette & Typography (`@core/configs/theme.ts`)**:
+  - **Primary Brand Color**: `#EA088B` (Magenta — hover `#F238A3`, active `#C40674`).
+  - **Brand Accent Palette**: Purple `#652E8D` · Info Cyan `#0999D6` · Success Green `#74BE44` · Warning Orange `#F79420` · Error Red `#ED3325` · Dark Charcoal `#221F1F` · Sidebar Dark `#1A161F`.
+  - **Font Family**: `'Plus Jakarta Sans', 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif` (loaded in `modules/Core/resources/views/app.blade.php` and configured in `doohTheme`).
+  - **No Hardcoded Default AntD Blue (`#1677ff`)**: Always use `UREKA_COLORS` from `@core/configs/theme` or AntD `theme.useToken()`. NEVER hardcode `#1677ff` or `#4096ff`.
 - **AntD v5 APIs only**: MUST use `open` on `Modal`/`Drawer`, `items` array prop on `Menu`/`Tabs`/`Dropdown`/`Breadcrumb`, and `<Input.OTP />` for OTP inputs. NEVER use deprecated v4 APIs (`visible`, `<Menu.Item>`, `<Tabs.TabPane>`).
 
 ## 4. State & HTTP (Mandatory RTK Slice + Thunk)
@@ -42,7 +48,12 @@ Deep dive: `docs/frontend/architecture.md`. New entity flow: skill `rtk-feature-
 - **All API Operations via RTK Thunk + Slice (Hard Rule)**:
   - Every API workflow (fetch list, detail, create, update, delete, status toggle) MUST flow through `Action/<entity>Api.ts` → `store/<domain>Thunk.ts` (`createAsyncThunk` + `rejectWithValue`) → `store/<domain>Slice.ts` (`createSlice` with `extraReducers`).
   - **Thunk & Slice in separate files (hard)**: `store/<domain>Thunk.ts` and `store/<domain>Slice.ts` MUST be separate files. Slices NEVER re-export thunks. Register reducers in `@core/store/store.ts`.
+  - **Dispatch Handling (`try / catch` + `.unwrap()` ONLY)**: When handling thunk results in components, pages, or hooks (e.g., showing toast notifications or refreshing after create/update/delete), MUST use `try { await dispatch(someThunk(...)).unwrap(); ... } catch (err: unknown) { message.error(extractErrorMessage(err, '...')); }`. NEVER use `if (someThunk.fulfilled.match(action))` or inspect `action.meta.requestStatus`.
   - Store all server data and async lifecycles (`items`, `selectedItem`, `pagination`, `loading`, `submitting`, `error`) inside the Redux slice — NEVER call API clients directly inside components/pages/hooks with local `useState` pairs (`const [data, setData]`, `const [loading, setLoading]`, `const [submitting, setSubmitting]`, `const [error, setError]`).
+- **Zero Hardcoded Backend/Database Reference Data & Metadata-First (Hard Rule)**:
+  - **Use `@core` Metadata First (`state.metadata.data` / `fetchMetadata`)**: All shared statuses (`statuses.common`, `venue`, `campaign`, `line_item`, `creative`, `tags`), domain enums (`enums.orientations`, `creative_types`, `pacing_modes`, `permission_types`), and pagination presets (`pagination.default_per_page`, `per_page_options`) MUST be read from `@core/store/metadataSlice` (`fetchMetadata` in `@core/store/metadataThunk`, backed by `cms/modules/Core/configs/metadata.php`).
+  - **Extend Metadata Instead of Local Constants**: NEVER define local status option arrays, enum lists, or status tag color maps in module `configs/*.ts`, components, or pages. If a needed status/enum/preset is not in `metadata` yet, MUST add it to `cms/modules/Core/configs/metadata.php` and `@core/types/metadata.ts` rather than creating a module-local constant.
+  - **Database Reference Entities**: NEVER hardcode arrays or fallback select options in components, configs, or slice `initialState` (e.g., `DEFAULT_PERMISSION_OPTIONS`, `INITIAL_ROLES`, venues, categories) when that data exists in the database or backend API — always initialize slice state as `[]` and fetch via `Action/<entity>Api.ts` → `store/<domain>Thunk.ts` → `store/<domain>Slice.ts`.
 - **Strict `useState` Minimization**:
   - NEVER spawn multiple `useState` hooks for API responses, loading flags, pagination, or form fields.
   - Form state MUST use Ant Design `Form.useForm()`.

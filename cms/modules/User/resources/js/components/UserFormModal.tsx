@@ -1,54 +1,51 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Form, Input, Modal, Radio, Select } from 'antd';
-import type { RoleItem, UserFormData, UserItem } from '../types/user';
+import type { PermissionItem, RoleItem, UserFormData, UserItem } from '../types/user';
 
 export interface UserFormModalProps {
 	open: boolean;
 	editingUser: UserItem | null;
 	roles: RoleItem[];
+	permissions: PermissionItem[];
 	submitting: boolean;
 	onCancel: () => void;
 	onSubmit: (values: UserFormData) => Promise<void>;
 }
 
-const DEFAULT_PERMISSION_OPTIONS = [
-	{ label: 'Venue: View', value: 'venue.view' },
-	{ label: 'Venue: Create', value: 'venue.create' },
-	{ label: 'Venue: Edit', value: 'venue.edit' },
-	{ label: 'Creative: View', value: 'creative.view' },
-	{ label: 'Creative: Upload', value: 'creative.upload' },
-	{ label: 'Delivery: View', value: 'delivery.view' },
-	{ label: 'Delivery: Create', value: 'delivery.create' },
-	{ label: 'Report: View', value: 'report.view' },
-	{ label: 'User: View', value: 'user.view' },
-	{ label: 'User: Manage Roles', value: 'user.roles' },
-];
+export const UserFormModal: React.FC<UserFormModalProps> = ({ open, editingUser, roles, permissions, submitting, onCancel, onSubmit }) => {
+	const [form] = Form.useForm();
+	const [permType, setPermType] = useState<'role' | 'direct'>('role');
 
-export const UserFormModal: React.FC<UserFormModalProps> = ({
-	open,
-	editingUser,
-	roles,
-	submitting,
-	onCancel,
-	onSubmit,
-}) => {
-	const [form] = Form.useForm<UserFormData>();
-	const permType = Form.useWatch('permission_type', form) || 'role';
+	const groupedPermissionOptions = useMemo(() => {
+		const groups: Record<string, { label: string; value: string }[]> = {};
+		for (const p of permissions) {
+			const mod = (p.module || 'general').toUpperCase();
+			if (!groups[mod]) groups[mod] = [];
+			groups[mod].push({
+				label: `${p.display_name || p.name} (${p.name})`,
+				value: p.name,
+			});
+		}
+		return Object.entries(groups).map(([group, options]) => ({
+			label: group,
+			options,
+		}));
+	}, [permissions]);
 
 	useEffect(() => {
 		if (open) {
 			if (editingUser) {
 				const currentType = editingUser.permission_type || 'role';
+				setPermType(currentType);
 				form.setFieldsValue({
 					name: editingUser.name,
 					email: editingUser.email,
 					permission_type: currentType,
-					role_id:
-						editingUser.role_id ??
-						(typeof editingUser.role === 'object' ? editingUser.role?.id : undefined),
+					role_id: editingUser.role_id ?? (typeof editingUser.role === 'object' ? editingUser.role?.id : undefined),
 					direct_permissions: editingUser.direct_permissions ?? editingUser.permissions ?? [],
 				});
 			} else {
+				setPermType('role');
 				form.resetFields();
 				form.setFieldsValue({
 					permission_type: 'role',
@@ -64,20 +61,9 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
 	};
 
 	return (
-		<Modal
-			open={open}
-			title={editingUser ? 'Edit User' : 'Add New User'}
-			confirmLoading={submitting}
-			onOk={handleOk}
-			onCancel={onCancel}
-			destroyOnClose
-		>
+		<Modal open={open} title={editingUser ? 'Edit User' : 'Add New User'} confirmLoading={submitting} onOk={handleOk} onCancel={onCancel} destroyOnClose>
 			<Form form={form} layout="vertical" preserve={false}>
-				<Form.Item
-					name="name"
-					label="Full Name"
-					rules={[{ required: true, message: 'Please enter full name' }]}
-				>
+				<Form.Item name="name" label="Full Name" rules={[{ required: true, message: 'Please enter full name' }]}>
 					<Input placeholder="e.g. John Doe" />
 				</Form.Item>
 
@@ -92,27 +78,19 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
 					<Input placeholder="e.g. john@example.com" disabled={Boolean(editingUser)} />
 				</Form.Item>
 
-				<Form.Item
-					name="password"
-					label={editingUser ? 'Password (leave blank to keep unchanged)' : 'Password'}
-					rules={[{ required: !editingUser, message: 'Please enter password' }]}
-				>
+				<Form.Item name="password" label={editingUser ? 'Password (leave blank to keep unchanged)' : 'Password'} rules={[{ required: !editingUser, message: 'Please enter password' }]}>
 					<Input.Password placeholder="••••••••" />
 				</Form.Item>
 
 				<Form.Item name="permission_type" label="Permission Mode" rules={[{ required: true }]}>
-					<Radio.Group>
+					<Radio.Group onChange={(e) => setPermType(e.target.value)}>
 						<Radio value="role">Role-based</Radio>
 						<Radio value="direct">Direct Permissions</Radio>
 					</Radio.Group>
 				</Form.Item>
 
 				{permType === 'role' ? (
-					<Form.Item
-						name="role_id"
-						label="Role"
-						rules={[{ required: true, message: 'Please select a role' }]}
-					>
+					<Form.Item name="role_id" label="Role" rules={[{ required: true, message: 'Please select a role' }]}>
 						<Select
 							placeholder="Select a role"
 							options={roles.map((r) => ({
@@ -122,17 +100,8 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
 						/>
 					</Form.Item>
 				) : (
-					<Form.Item
-						name="direct_permissions"
-						label="Direct Module Permissions"
-						rules={[{ required: true, message: 'Select at least one permission' }]}
-					>
-						<Select
-							mode="multiple"
-							placeholder="Select module permissions"
-							options={DEFAULT_PERMISSION_OPTIONS}
-							allowClear
-						/>
+					<Form.Item name="direct_permissions" label="Direct Module Permissions" rules={[{ required: true, message: 'Select at least one permission' }]}>
+						<Select mode="multiple" placeholder="Select module permissions" options={groupedPermissionOptions} allowClear />
 					</Form.Item>
 				)}
 			</Form>

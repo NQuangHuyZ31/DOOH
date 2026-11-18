@@ -1,6 +1,8 @@
 import http from '@core/Action/api';
 import type { ApiResponse, PaginatedResponse } from '@core/types/api';
-import type { PermissionItem, RoleItem, UserFilterParams, UserFormData, UserItem } from '../types/user';
+import type { UserFilterParams, UserFormData, UserItem } from '../types/user';
+import { roleApi } from './roleApi';
+import { permissionApi } from './permissionApi';
 
 export const userApi = {
 	getUsers(params?: UserFilterParams) {
@@ -24,11 +26,11 @@ export const userApi = {
 	},
 
 	getRoles() {
-		return http.get<ApiResponse<RoleItem[]>>('/user/roles');
+		return roleApi.getRoles();
 	},
 
 	getPermissions() {
-		return http.get<ApiResponse<PermissionItem[]>>('/user/permissions');
+		return permissionApi.getPermissions();
 	},
 };
 

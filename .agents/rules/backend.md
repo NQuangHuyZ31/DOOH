@@ -22,7 +22,8 @@ Merge module config in `<Module>ServiceProvider::register()`: `$this->mergeConfi
 ## 2. Service Decomposition & Core Reuse
 
 - **Split Services by Domain Capability (SRP)**: Whenever a module contains a distinct sub-domain or cohesive workflow (e.g., `OtpService` separate from `AuthService`, `RoleService` separate from `UserService`, `PacingService` separate from `PlaylistService`), extract it into a dedicated `<SubDomain>Service` immediately — do NOT wait for a single Service to grow past 300 lines.
-- **Reuse & Promote to `Core`**: Always reuse `BaseController`, `BaseRepository` (`find`, `findOrFail`, `all`, `paginate`, `create`, `update`, `delete`), and `ApiResponseTrait` from `Modules\Core`. If a new backend trait, middleware, or base repository method is generic across modules, place/extend it in `Modules\Core` rather than duplicating per module.
+- **Reuse & Promote to `Core`**: Always reuse `BaseController`, `BaseRepository` (`find`, `findOrFail`, `all`, `paginate`, `create`, `update`, `delete`), `ApiResponseTrait`, and `MetadataService` (`cms/modules/Core/configs/metadata.php`) from `Modules\Core`.
+- **Metadata-First (`cms/modules/Core/configs/metadata.php` & `MetadataService`)**: Shared statuses, status tag definitions, domain enums (`orientations`, `creative_types`, `pacing_modes`, `permission_types`, etc.), and pagination defaults MUST live in `cms/modules/Core/configs/metadata.php` and be served through `MetadataService` (`GET /admin/api/core/metadata`). NEVER duplicate status/enum option arrays across individual feature controllers or services — if a new enum or status set is needed, extend `cms/modules/Core/configs/metadata.php`.
 
 ## 3. Dynamic Routing & RBAC
 

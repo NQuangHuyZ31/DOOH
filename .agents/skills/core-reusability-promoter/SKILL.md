@@ -13,8 +13,8 @@ Before writing ANY new component, hook, utility, repository method, or service h
 |---|---|
 | Frontend Components (`@core/components/`) | `ListLayout`, `Table`, `CustomModal`, `StatusTag`, `AuthGuard`, `GuestGuard`, `NotFoundPage` |
 | Frontend Hooks (`@core/hooks/`) | `useAction`, `useFilter`, `usePagination`, `useAuthInit` |
-| Frontend Utils & Configs (`@core/utils/`, `@core/configs/`) | `formatters` (dates/numbers/currency), `error` (`extractErrorMessage`), `tokenStorage`, `pagination`, `status`, `theme`, `Action/api` (`http`), `routes/registry` (`registerRoutes`) |
-| Backend (`Modules\Core\`) | `BaseController`, `ApiResponseTrait` (`respondSuccess`, `respondCreated`, `respondPaginated`, `respondError`, `respondUnauthorized`, `respondForbidden`, `respondNotFound`), `BaseRepository` (`all`, `paginate`, `find`, `findOrFail`, `create`, `update`, `delete`), `CheckModulePermission`, `DynamicRouteResovle`, `ModuleRegistry` |
+| Frontend Utils, Metadata & Configs (`@core/`) | `store/metadataSlice`, `store/metadataThunk` (`fetchMetadata`), `Action/metadataApi`, `types/metadata`, `utils/formatters`, `utils/error` (`extractErrorMessage`), `utils/tokenStorage`, `configs/pagination`, `configs/status`, `configs/theme` (`UREKA_COLORS`), `Action/api` (`http`), `routes/registry` (`registerRoutes`) |
+| Backend (`Modules\Core\`) | `BaseController`, `ApiResponseTrait` (`respondSuccess`, `respondCreated`, `respondPaginated`, `respondError`, `respondUnauthorized`, `respondForbidden`, `respondNotFound`), `BaseRepository` (`all`, `paginate`, `find`, `findOrFail`, `create`, `update`, `delete`), `MetadataService` (`configs/metadata.php`), `CheckModulePermission`, `DynamicRouteResovle`, `ModuleRegistry` |
 
 ```powershell
 git grep -n "<keyword>" -- cms/modules

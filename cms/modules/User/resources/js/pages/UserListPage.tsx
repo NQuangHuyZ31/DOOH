@@ -4,22 +4,16 @@ import { PlusOutlined } from '@ant-design/icons';
 import { ListLayout } from '@core/components/ListLayout';
 import { useAppDispatch, useAppSelector } from '@core/store/hooks';
 import type { FilterFieldConfig } from '@core/types/filter';
+import { extractErrorMessage } from '@core/utils/error';
 import { UserFormModal } from '../components/UserFormModal';
 import { UserTable } from '../components/UserTable';
-import {
-	closeUserModal,
-	openCreateUserModal,
-	openEditUserModal,
-	setUserFilters,
-	setUserPagination,
-} from '../store/userSlice';
-import { createUser, deleteUser, fetchRoles, fetchUsers, updateUser } from '../store/userThunk';
+import { closeUserModal, openCreateUserModal, openEditUserModal, setUserFilters, setUserPagination } from '../store/userSlice';
+import { createUser, deleteUser, fetchPermissions, fetchRoles, fetchUsers, updateUser } from '../store/userThunk';
 import type { UserFilterParams, UserFormData } from '../types/user';
 
 export const UserListPage: React.FC = () => {
 	const dispatch = useAppDispatch();
-	const { users, roles, loading, submitting, filters, pagination, modalOpen, editingUser } =
-		useAppSelector((state) => state.user);
+	const { users, roles, permissions, loading, submitting, filters, pagination, modalOpen, editingUser } = useAppSelector((state) => state.user);
 
 	const loadUsers = useCallback(() => {
 		dispatch(
@@ -33,6 +27,7 @@ export const UserListPage: React.FC = () => {
 
 	useEffect(() => {
 		dispatch(fetchRoles());
+		dispatch(fetchPermissions());
 	}, [dispatch]);
 
 	useEffect(() => {
@@ -44,25 +39,27 @@ export const UserListPage: React.FC = () => {
 	};
 
 	const handleCreateOrUpdate = async (values: UserFormData) => {
-		const action = editingUser
-			? await dispatch(updateUser({ id: editingUser.id, payload: values }))
-			: await dispatch(createUser(values));
-
-		if (updateUser.fulfilled.match(action) || createUser.fulfilled.match(action)) {
-			message.success(editingUser ? 'User updated successfully' : 'User created successfully');
+		try {
+			if (editingUser) {
+				await dispatch(updateUser({ id: editingUser.id, payload: values })).unwrap();
+				message.success('User updated successfully');
+			} else {
+				await dispatch(createUser(values)).unwrap();
+				message.success('User created successfully');
+			}
 			loadUsers();
-		} else {
-			message.error((action.payload as string) || 'Operation failed');
+		} catch (err: unknown) {
+			message.error(extractErrorMessage(err, 'Operation failed'));
 		}
 	};
 
 	const handleDelete = async (id: number) => {
-		const action = await dispatch(deleteUser(id));
-		if (deleteUser.fulfilled.match(action)) {
+		try {
+			await dispatch(deleteUser(id)).unwrap();
 			message.success('User deleted successfully');
 			loadUsers();
-		} else {
-			message.error((action.payload as string) || 'Delete failed');
+		} catch (err: unknown) {
+			message.error(extractErrorMessage(err, 'Delete failed'));
 		}
 	};
 
@@ -106,21 +103,12 @@ export const UserListPage: React.FC = () => {
 				users={users}
 				loading={loading}
 				pagination={pagination}
-				onTableChange={(p) =>
-					dispatch(setUserPagination({ current: p.current || 1, pageSize: p.pageSize || 15 }))
-				}
+				onTableChange={(p) => dispatch(setUserPagination({ current: p.current || 1, pageSize: p.pageSize || 15 }))}
 				onEdit={(u) => dispatch(openEditUserModal(u))}
 				onDelete={handleDelete}
 			/>
 
-			<UserFormModal
-				open={modalOpen}
-				editingUser={editingUser}
-				roles={roles}
-				submitting={submitting}
-				onCancel={() => dispatch(closeUserModal())}
-				onSubmit={handleCreateOrUpdate}
-			/>
+			<UserFormModal open={modalOpen} editingUser={editingUser} roles={roles} permissions={permissions} submitting={submitting} onCancel={() => dispatch(closeUserModal())} onSubmit={handleCreateOrUpdate} />
 		</ListLayout>
 	);
 };
