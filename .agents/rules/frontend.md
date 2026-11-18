@@ -36,12 +36,18 @@ Deep dive: `docs/frontend/architecture.md`. New entity flow: skill `rtk-feature-
 - 100% English user-facing text. AntD v5 components/tokens; charts via `@ant-design/plots`.
 - **AntD v5 APIs only**: MUST use `open` on `Modal`/`Drawer`, `items` array prop on `Menu`/`Tabs`/`Dropdown`/`Breadcrumb`, and `<Input.OTP />` for OTP inputs. NEVER use deprecated v4 APIs (`visible`, `<Menu.Item>`, `<Tabs.TabPane>`).
 
-## 4. State & HTTP
+## 4. State & HTTP (Mandatory RTK Slice + Thunk)
 
 - HTTP only via `http` from `@core/Action/api` (bearer token + 401 redirect) using relative resource paths (`'/auth/login'`, `'/venue'`). NEVER prepend `/admin/api` manually, and NEVER use raw `fetch()` or new axios instances.
-- Shared/server-paginated/cross-page data → RTK. Single mutations & transient UI → `useAction` + local state. NEVER hold the same dataset in both.
-- **Thunk & Slice in separate files (hard)**: `store/<domain>Thunk.ts` (`createAsyncThunk` + `rejectWithValue`) and `store/<domain>Slice.ts` (state, reducers, `extraReducers`). Slices NEVER re-export thunks. Reducers registered in `@core/store/store.ts`.
-- `useSearchParams` only for shareable filter/pagination state.
+- **All API Operations via RTK Thunk + Slice (Hard Rule)**:
+  - Every API workflow (fetch list, detail, create, update, delete, status toggle) MUST flow through `Action/<entity>Api.ts` → `store/<domain>Thunk.ts` (`createAsyncThunk` + `rejectWithValue`) → `store/<domain>Slice.ts` (`createSlice` with `extraReducers`).
+  - **Thunk & Slice in separate files (hard)**: `store/<domain>Thunk.ts` and `store/<domain>Slice.ts` MUST be separate files. Slices NEVER re-export thunks. Register reducers in `@core/store/store.ts`.
+  - Store all server data and async lifecycles (`items`, `selectedItem`, `pagination`, `loading`, `submitting`, `error`) inside the Redux slice — NEVER call API clients directly inside components/pages/hooks with local `useState` pairs (`const [data, setData]`, `const [loading, setLoading]`, `const [submitting, setSubmitting]`, `const [error, setError]`).
+- **Strict `useState` Minimization**:
+  - NEVER spawn multiple `useState` hooks for API responses, loading flags, pagination, or form fields.
+  - Form state MUST use Ant Design `Form.useForm()`.
+  - Shareable filter/pagination query params use `useSearchParams` / `@core/hooks/useFilter` or Redux slice state.
+  - `useState` is restricted strictly to minimal, isolated ephemeral UI toggles (e.g., a single modal open state when not driven by slice `selectedItem`) and MUST NOT exceed 1–2 hooks per component/hook.
 
 ## 5. Imports, Routing & Build Pipeline (Laravel Mix + Webpack 5)
 
