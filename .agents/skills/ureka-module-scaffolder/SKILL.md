@@ -22,10 +22,10 @@ cms/modules/<Module>/
 
 ## 2. Backend Steps (per entity)
 
-1. Migration (additive) + Model (`$fillable`, `$casts`, `$hidden`; no `newFactory()` boilerplate).
-2. `Repositories/Interfaces/<Model>RepositoryInterface.php` + `Repositories/<Model>Repository.php` (extends `BaseRepository`; implement all filter/search/sort/eager-load queries such as `paginateWithFilters(array $filters, int $perPage)` here — NEVER in Service).
+1. Migration (additive) + Model (`$fillable`, `$casts`, `$hidden`; use `Modules\Core\Traits\Filterable` + `protected array $filterable = [...]` when filterable; relationships & pure in-memory helpers only — NEVER put `save()`/`sync()`/`detach()` or cross-model queries in a Model; no `newFactory()` boilerplate).
+2. `Repositories/Interfaces/<Model>RepositoryInterface.php` + `Repositories/<Model>Repository.php` (extends `BaseRepository`; declare `protected array $with = [...]` / `$withCount = [...]` and reuse `BaseRepository::paginate($perPage, $filters)`, `all($columns, $filters)`, `find($id)`, `create($data)`, `update($id, $data)`, `delete($id)`. NEVER write duplicate `findById`, `update<Model>`, `findWithRelations`, `getAllWithRelations`, or `paginateWithFilters` wrappers, and NEVER add methods with zero callers).
 3. `Resources/<Model>Resource.php` (extends `Illuminate\Http\Resources\Json\JsonResource`) for all API output formatting (single entity, collections, and paginated items — NEVER use ad-hoc `transform*()` helpers in Service).
-4. `Services/<Model>Service.php` (inject repository interface; pass `$filters` to Repository methods; NEVER call `$repository->getModel()`, `Model::where()`, `DB::table()`, or `env()`).
+4. `Services/<Model>Service.php` (inject repository interface; only define methods actually called by Controller/Job/Service; NEVER add `get<Model>Repository()` getters or unused methods; NEVER call `$repository->getModel()`, `Model::where()`, `DB::table()`, or `env()`).
 5. `Http/Requests/Store<Model>Request.php` / `Update<Model>Request.php`: mandatory for entity `store`/`update` and any endpoint with `≥ 3` fields, nested array rules, or `prepareForValidation()` (inline `$request->validate()` in a Controller is allowed only for trivial `1–2` simple fields).
 6. `Http/Controllers/<Model>Controller.php` (extends `BaseController`; type-hints `Store<Model>Request` / `Update<Model>Request` and passes `$request->validated()`; explicit `: JsonResponse` return types; helpers `protected`/`private`).
 7. `Providers/<Module>ServiceProvider.php` → bind repository interface + `mergeConfigFrom` for `configs/<module>.php`.
