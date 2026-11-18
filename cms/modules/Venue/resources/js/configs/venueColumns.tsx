@@ -32,7 +32,7 @@ export const getVenueColumns = ({ onEdit, onDelete, onPreview }: ColumnActions) 
 		title: 'Resolution',
 		key: 'resolution',
 		width: 140,
-		render: (_: any, record: VenueItem) => `${record.width} x ${record.height}`,
+		render: (_: unknown, record: VenueItem) => `${record.width} x ${record.height}`,
 	},
 	{
 		title: 'Orientation',
@@ -52,7 +52,7 @@ export const getVenueColumns = ({ onEdit, onDelete, onPreview }: ColumnActions) 
 		title: 'Actions',
 		key: 'actions',
 		width: 160,
-		render: (_: any, record: VenueItem) => (
+		render: (_: unknown, record: VenueItem) => (
 			<Space size="small">
 				<Button type="link" size="small" icon={<PlayCircleOutlined />} onClick={() => onPreview(record)} title="Screen Simulator" />
 				<Button type="link" size="small" icon={<EditOutlined />} onClick={() => onEdit(record)} />

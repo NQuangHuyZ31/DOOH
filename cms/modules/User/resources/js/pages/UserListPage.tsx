@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { Button, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { ListLayout } from '@core/components/ListLayout';
+import { defaultPagination } from '@core/configs/pagination';
 import { useAppDispatch, useAppSelector } from '@core/store/hooks';
 import type { FilterFieldConfig } from '@core/types/filter';
 import { extractErrorMessage } from '@core/utils/error';
@@ -13,6 +14,7 @@ import type { UserFilterParams, UserFormData } from '../types/user';
 
 export const UserListPage: React.FC = () => {
 	const dispatch = useAppDispatch();
+	const currentUser = useAppSelector((state) => state.auth.user);
 	const { users, roles, permissions, loading, submitting, filters, pagination, modalOpen, editingUser } = useAppSelector((state) => state.user);
 
 	const loadUsers = useCallback(() => {
@@ -101,9 +103,10 @@ export const UserListPage: React.FC = () => {
 		>
 			<UserTable
 				users={users}
+				currentUser={currentUser}
 				loading={loading}
 				pagination={pagination}
-				onTableChange={(p) => dispatch(setUserPagination({ current: p.current || 1, pageSize: p.pageSize || 15 }))}
+				onTableChange={(p) => dispatch(setUserPagination({ current: p.current || 1, pageSize: p.pageSize || defaultPagination.pageSize }))}
 				onEdit={(u) => dispatch(openEditUserModal(u))}
 				onDelete={handleDelete}
 			/>

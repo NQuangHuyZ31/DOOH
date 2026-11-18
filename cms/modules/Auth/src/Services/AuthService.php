@@ -47,7 +47,7 @@ class AuthService
     public function verifyOtp(string $tempToken, string $code): array
     {
         $userId = $this->otpService->verify($tempToken, $code);
-        $user = $this->userRepository->findById($userId);
+        $user = $this->userRepository->find($userId);
 
         if (!$user) {
             throw ValidationException::withMessages([
@@ -64,7 +64,7 @@ class AuthService
     public function resendOtp(string $tempToken): array
     {
         $userId = $this->otpService->getSessionUserId($tempToken);
-        $user = $this->userRepository->findById($userId);
+        $user = $this->userRepository->find($userId);
 
         if (!$user) {
             throw ValidationException::withMessages([

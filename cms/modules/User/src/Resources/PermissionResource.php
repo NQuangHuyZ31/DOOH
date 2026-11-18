@@ -1,0 +1,29 @@
+<?php
+
+namespace Modules\User\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\User\Models\Permission;
+
+/**
+ * @mixin Permission
+ */
+class PermissionResource extends JsonResource
+{
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'module' => $this->module,
+            'display_name' => $this->display_name,
+            'description' => $this->description,
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
+        ];
+    }
+}

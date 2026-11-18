@@ -37,12 +37,16 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, editingUser,
 			if (editingUser) {
 				const currentType = editingUser.permission_type || 'role';
 				setPermType(currentType);
+
+				const rawDirectPermissions = editingUser.direct_permissions ?? editingUser.permissions ?? [];
+				const directPermissionNames = rawDirectPermissions.map((item) => (typeof item === 'string' ? item : item.name));
+
 				form.setFieldsValue({
 					name: editingUser.name,
 					email: editingUser.email,
 					permission_type: currentType,
 					role_id: editingUser.role_id ?? (typeof editingUser.role === 'object' ? editingUser.role?.id : undefined),
-					direct_permissions: editingUser.direct_permissions ?? editingUser.permissions ?? [],
+					direct_permissions: directPermissionNames,
 				});
 			} else {
 				setPermType('role');
@@ -101,7 +105,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, editingUser,
 					</Form.Item>
 				) : (
 					<Form.Item name="direct_permissions" label="Direct Module Permissions" rules={[{ required: true, message: 'Select at least one permission' }]}>
-						<Select mode="multiple" placeholder="Select module permissions" options={groupedPermissionOptions} allowClear />
+						<Select mode="multiple" placeholder="Select module permissions" options={groupedPermissionOptions} allowClear maxTagCount="responsive" />
 					</Form.Item>
 				)}
 			</Form>

@@ -27,20 +27,6 @@ class PermissionService
      */
     public function getGroupedByModule(): array
     {
-        $permissions = $this->getAllPermissions();
-
-        $grouped = [];
-        foreach ($permissions as $perm) {
-            $module = $perm->module ?: 'other';
-            $grouped[$module][] = [
-                'id' => $perm->id,
-                'name' => $perm->name,
-                'module' => $perm->module,
-                'display_name' => $perm->display_name,
-                'description' => $perm->description,
-            ];
-        }
-
-        return $grouped;
+        return $this->permissionRepository->getGroupedByModule();
     }
 }

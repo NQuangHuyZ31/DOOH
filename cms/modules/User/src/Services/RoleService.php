@@ -13,57 +13,51 @@ class RoleService
         protected RoleRepositoryInterface $roleRepository
     ) {}
 
-    public function getAllRoles(): Collection
+    public function allRoles(): Collection
     {
-        return $this->roleRepository->getModel()
-            ->with(['permissions:id,name,module,display_name'])
-            ->withCount('users')
-            ->get();
+        return $this->roleRepository->all();
     }
 
-    public function getPaginatedRoles(int $perPage = 15): LengthAwarePaginator
+    /**
+     * @param array<string, mixed> $filters
+     */
+    public function paginateRoles(int $perPage = 15, array $filters = []): LengthAwarePaginator
     {
-        return $this->roleRepository->getModel()
-            ->with(['permissions:id,name,module,display_name'])
-            ->withCount('users')
-            ->paginate($perPage);
+        return $this->roleRepository->paginate($perPage, $filters);
     }
 
-    public function getRoleById(int $id): ?Role
+    public function getRole(int $id): ?Role
     {
-        /** @var Role|null $role */
-        $role = $this->roleRepository->getModel()
-            ->with(['permissions:id,name,module,display_name'])
-            ->withCount('users')
-            ->find($id);
-
-        return $role;
+        return $this->roleRepository->find($id);
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function createRole(array $data): Role
     {
         $permissions = $data['permissions'] ?? [];
         unset($data['permissions']);
 
-        /** @var Role $role */
         $role = $this->roleRepository->create($data);
 
         if (!empty($permissions)) {
-            $role->permissions()->sync($permissions);
+            $this->roleRepository->syncPermissions($role, $permissions);
         }
 
-        return $role->load(['permissions:id,name,module,display_name'])->loadCount('users');
+        return $this->roleRepository->find($role->id);
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function updateRole(int $id, array $data): ?Role
     {
-        /** @var Role|null $role */
         $role = $this->roleRepository->find($id);
         if (!$role) {
             return null;
         }
 
-        // Prevent renaming super_admin
         if ($role->name === 'super_admin' && isset($data['name']) && $data['name'] !== 'super_admin') {
             unset($data['name']);
         }
@@ -71,27 +65,19 @@ class RoleService
         $permissions = $data['permissions'] ?? null;
         unset($data['permissions']);
 
-        $role->update($data);
-
-        if ($permissions !== null) {
-            $role->permissions()->sync($permissions);
+        if ($data !== []) {
+            $this->roleRepository->update($id, $data);
         }
 
-        return $role->load(['permissions:id,name,module,display_name'])->loadCount('users');
+        if ($permissions !== null) {
+            $this->roleRepository->syncPermissions($role, $permissions);
+        }
+
+        return $this->roleRepository->find($id);
     }
 
     public function deleteRole(int $id): bool
     {
-        /** @var Role|null $role */
-        $role = $this->roleRepository->find($id);
-        if (!$role) {
-            return false;
-        }
-
-        if ($role->name === 'super_admin') {
-            return false;
-        }
-
-        return (bool) $role->delete();
+        return $this->roleRepository->delete($id);
     }
 }

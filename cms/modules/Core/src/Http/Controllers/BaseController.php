@@ -10,6 +10,11 @@ abstract class BaseController extends Controller
 {
     use ApiResponseTrait;
 
+    protected function getDefaultPerPage(int $fallback = 10): int
+    {
+        return (int) config('metadata.pagination.default_per_page', $fallback);
+    }
+
     protected function success(mixed $data = null, string $message = 'Success', int $code = 200): JsonResponse
     {
         return $this->respondSuccess($data, $message, $code);

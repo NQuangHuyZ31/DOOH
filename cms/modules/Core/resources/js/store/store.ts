@@ -1,11 +1,15 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '@modules/Auth/resources/js/store/authSlice';
+import roleReducer from '@modules/User/resources/js/store/roleSlice';
 import userReducer from '@modules/User/resources/js/store/userSlice';
+import metadataReducer from './metadataSlice';
 
 export const store = configureStore({
 	reducer: {
 		auth: authReducer,
 		user: userReducer,
+		role: roleReducer,
+		metadata: metadataReducer,
 	},
 	middleware: (getDefaultMiddleware) =>
 		getDefaultMiddleware({

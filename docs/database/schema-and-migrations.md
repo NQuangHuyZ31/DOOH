@@ -16,7 +16,7 @@ Dual-Database (MySQL + MongoDB) and Redis key hierarchy for the DOOH platform.
 | `line_item_venues` | `id` (bigint) | `line_item_id` (FK), `venue_id` (FK) | Unique `(line_item_id, venue_id)`. |
 | `api_keys` | `id` (bigint) | `user_id` (FK), `key_hash` (UK), `prefix`, `role`, `expires_at` | Authenticates player / system. |
 
-- **Invariants**: Migrations are strictly additive; explicit `$fillable` on all models; soft deletes where applicable.
+- **Invariants**: Migrations are strictly additive; explicit `$fillable` on all models; mandatory soft deletes (`$table->softDeletes()` in migrations + `SoftDeletes` trait on Eloquent models) on important entities (`users`, `venues`, `campaigns`, `line_items`, `creatives`).
 
 ---
 

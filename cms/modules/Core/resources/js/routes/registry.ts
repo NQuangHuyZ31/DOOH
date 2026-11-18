@@ -1,4 +1,7 @@
 import { useMemo, useSyncExternalStore } from 'react';
+import type { AuthUser } from '@modules/Auth/resources/js/types/auth';
+import { useAppSelector } from '../store/hooks';
+import { hasRoutePermission } from '../utils/permission';
 import { buildMenuTree } from './buildMenuTree';
 import { isAdminRoute, isMenuVisibleRoute, type AppRoute, type RouteDef } from './types';
 
@@ -90,26 +93,29 @@ export const useRegisteredRoutes = (): readonly AppRoute[] => {
     );
 };
 
-export const getMenuRoutes = (): AppRoute[] => {
-    return buildMenuTree(getGlobalState().routes);
+export const getMenuRoutes = (user?: AuthUser | null): AppRoute[] => {
+    return buildMenuTree(getGlobalState().routes, user);
 };
 
 export const useMenuRoutes = (): AppRoute[] => {
     const routes = useRegisteredRoutes();
-    return useMemo(() => buildMenuTree(routes), [routes]);
+    const user = useAppSelector((state) => state.auth.user);
+    return useMemo(() => buildMenuTree(routes, user), [routes, user]);
 };
 
-export const getDefaultRoutePath = (): string => {
+export const getDefaultRoutePath = (user?: AuthUser | null): string => {
     const routes = getGlobalState().routes;
+    const isAccessible = (r: AppRoute) => (user === undefined ? true : hasRoutePermission(user, r));
+
     const firstMenuRoute = routes.find(
-        (r) => isMenuVisibleRoute(r) && Boolean(r.element || r.component)
+        (r) => isMenuVisibleRoute(r) && Boolean(r.element || r.component) && isAccessible(r)
     );
     if (firstMenuRoute) {
         return firstMenuRoute.path;
     }
 
     const firstAdminRoute = routes.find(
-        (r) => isAdminRoute(r) && Boolean(r.element || r.component)
+        (r) => isAdminRoute(r) && Boolean(r.element || r.component) && isAccessible(r)
     );
 
     return firstAdminRoute?.path || '/admin/venues';

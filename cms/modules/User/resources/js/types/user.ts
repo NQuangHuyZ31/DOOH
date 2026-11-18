@@ -10,8 +10,8 @@ export interface UserItem {
 	role?: RoleItem | string | null;
 	roles?: string[];
 	permission_type: 'role' | 'direct';
-	direct_permissions?: string[];
-	permissions?: string[];
+	direct_permissions?: (string | PermissionItem)[];
+	permissions?: (string | PermissionItem)[];
 	created_at?: string;
 }
 

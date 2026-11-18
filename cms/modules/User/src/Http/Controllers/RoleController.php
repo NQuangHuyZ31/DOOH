@@ -5,6 +5,9 @@ namespace Modules\User\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Core\Http\Controllers\BaseController;
+use Modules\User\Http\Requests\StoreRoleRequest;
+use Modules\User\Http\Requests\UpdateRoleRequest;
+use Modules\User\Resources\RoleResource;
 use Modules\User\Services\RoleService;
 
 class RoleController extends BaseController
@@ -17,52 +20,40 @@ class RoleController extends BaseController
     {
         if ($request->boolean('paginate')) {
             $perPage = $request->integer('per_page', 15);
-            return $this->respondPaginated($this->roleService->getPaginatedRoles($perPage));
+            $filters = $request->only(['search']);
+            $paginated = $this->roleService->paginateRoles($perPage, $filters);
+
+            return $this->respondPaginated(RoleResource::collection($paginated));
         }
 
-        return $this->respondSuccess($this->roleService->getAllRoles());
+        return $this->respondSuccess(RoleResource::collection($this->roleService->allRoles()));
     }
 
     public function show(int $id): JsonResponse
     {
-        $role = $this->roleService->getRoleById($id);
+        $role = $this->roleService->getRole($id);
         if (!$role) {
             return $this->respondNotFound('Role not found.');
         }
 
-        return $this->respondSuccess($role);
+        return $this->respondSuccess(new RoleResource($role));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreRoleRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:50|unique:roles,name',
-            'display_name' => 'required|string|max:100',
-            'description' => 'nullable|string|max:255',
-            'permissions' => 'nullable|array',
-            'permissions.*' => 'exists:permissions,id',
-        ]);
+        $role = $this->roleService->createRole($request->validated());
 
-        $role = $this->roleService->createRole($validated);
-
-        return $this->respondCreated($role, 'Role created successfully.');
+        return $this->respondCreated(new RoleResource($role), 'Role created successfully.');
     }
 
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateRoleRequest $request, int $id): JsonResponse
     {
-        $validated = $request->validate([
-            'display_name' => 'sometimes|required|string|max:100',
-            'description' => 'nullable|string|max:255',
-            'permissions' => 'nullable|array',
-            'permissions.*' => 'exists:permissions,id',
-        ]);
-
-        $role = $this->roleService->updateRole($id, $validated);
+        $role = $this->roleService->updateRole($id, $request->validated());
         if (!$role) {
             return $this->respondNotFound('Role not found.');
         }
 
-        return $this->respondSuccess($role, 'Role updated successfully.');
+        return $this->respondSuccess(new RoleResource($role), 'Role updated successfully.');
     }
 
     public function destroy(int $id): JsonResponse

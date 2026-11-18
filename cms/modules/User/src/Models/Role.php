@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Core\Traits\Filterable;
 
 class Role extends Model
 {
-    use HasFactory;
+    use HasFactory, Filterable;
 
     protected $table = 'roles';
 
@@ -17,6 +18,12 @@ class Role extends Model
         'name',
         'display_name',
         'description',
+    ];
+
+    protected array $filterable = [
+        'search' => ['name', 'display_name', 'description'],
+        'name',
+        'display_name',
     ];
 
     /**

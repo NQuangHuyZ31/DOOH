@@ -8,18 +8,25 @@ use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
 
 class UserRepository extends BaseRepository implements UserRepositoryInterface
 {
+    protected array $with = [
+        'role:id,name,display_name,description',
+        'directPermissions:id,name,module,display_name',
+    ];
+
     public function __construct(User $model)
     {
         parent::__construct($model);
     }
 
-    public function findById(int|string $id): ?User
-    {
-        return $this->model->find($id);
-    }
-
     public function findByEmail(string $email): ?User
     {
-        return $this->model->where('email', $email)->first();
+        return $this->newQuery()->where('email', $email)->first();
+    }
+
+    public function syncDirectPermissions(User|int $user, array $permissionIds): void
+    {
+        /** @var User|null $userModel */
+        $userModel = $user instanceof User ? $user : $this->find($user);
+        $userModel?->directPermissions()->sync($permissionIds);
     }
 }

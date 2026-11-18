@@ -19,6 +19,11 @@ class CoreServiceProvider extends ServiceProvider
             $this->mergeConfigFrom($configFile, 'modules');
         }
 
+        $metadataConfigFile = "{$corePath}/configs/metadata.php";
+        if (file_exists($metadataConfigFile)) {
+            $this->mergeConfigFrom($metadataConfigFile, 'metadata');
+        }
+
         $this->app->scoped(ModuleRegistry::class, function () {
             return new ModuleRegistry(
                 base_path('modules'),

@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { defaultPagination } from '@core/configs/pagination';
 import type { PermissionItem, RoleItem, UserFilterParams, UserItem } from '../types/user';
 import { createUser, deleteUser, fetchPermissions, fetchRoles, fetchUsers, updateUser } from './userThunk';
 
@@ -28,9 +29,9 @@ const initialState: UserState = {
 	error: null,
 	filters: {},
 	pagination: {
-		current: 1,
-		pageSize: 15,
-		total: 0,
+		current: defaultPagination.current,
+		pageSize: defaultPagination.pageSize,
+		total: defaultPagination.total,
 	},
 	modalOpen: false,
 	editingUser: null,

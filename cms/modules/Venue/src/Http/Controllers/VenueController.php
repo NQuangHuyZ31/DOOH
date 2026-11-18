@@ -2,69 +2,72 @@
 
 namespace Modules\Venue\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Core\Http\Controllers\BaseController;
+use Modules\Venue\Http\Requests\StoreVenueRequest;
+use Modules\Venue\Http\Requests\UpdateVenueRequest;
+use Modules\Venue\Resources\VenueResource;
 use Modules\Venue\Services\VenueService;
 
 class VenueController extends BaseController
 {
-    protected VenueService $venueService;
+    public function __construct(
+        protected VenueService $venueService
+    ) {}
 
-    public function __construct(VenueService $venueService)
+    public function index(Request $request): JsonResponse
     {
-        $this->venueService = $venueService;
+        $perPage = $request->integer('per_page', $this->getDefaultPerPage(15));
+        $filters = $request->only(['search', 'orientation', 'status']);
+
+        $venues = $this->venueService->listVenues($filters, $perPage);
+
+        return $this->respondPaginated(
+            VenueResource::collection($venues),
+            'Venues retrieved successfully.'
+        );
     }
 
-    public function index(Request $request)
-    {
-        $perPage = (int) $request->input('per_page', 15);
-        $venues = $this->venueService->listVenues($perPage);
-        return $this->respondPaginated($venues);
-    }
-
-    public function show(int|string $id)
+    public function show(int|string $id): JsonResponse
     {
         $venue = $this->venueService->getVenue($id);
         if (!$venue) {
-            return $this->error('Venue not found', 404);
+            return $this->respondNotFound('Venue not found');
         }
-        return $this->success($venue);
+
+        return $this->respondSuccess(new VenueResource($venue));
     }
 
-    public function store(Request $request)
+    public function store(StoreVenueRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'code' => 'required|string|unique:venues,code',
-            'name' => 'required|string',
-            'location' => 'required|string',
-            'width' => 'required|integer',
-            'height' => 'required|integer',
-            'orientation' => 'nullable|string|in:landscape,portrait',
-            'status' => 'nullable|string|in:active,inactive,maintenance',
-        ]);
+        $venue = $this->venueService->createVenue($request->validated());
 
-        $venue = $this->venueService->createVenue($data);
-        return $this->success($venue, 'Venue created successfully', 201);
+        return $this->respondCreated(new VenueResource($venue), 'Venue created successfully.');
     }
 
-    public function update(Request $request, int|string $id)
+    public function update(UpdateVenueRequest $request, int|string $id): JsonResponse
     {
-        $data = $request->validate([
-            'name' => 'sometimes|string',
-            'location' => 'sometimes|string',
-            'width' => 'sometimes|integer',
-            'height' => 'sometimes|integer',
-            'orientation' => 'nullable|string|in:landscape,portrait',
-            'status' => 'nullable|string|in:active,inactive,maintenance',
-        ]);
+        $updated = $this->venueService->updateVenue($id, $request->validated());
+        if (!$updated) {
+            return $this->respondNotFound('Venue not found.');
+        }
 
-        $updated = $this->venueService->updateVenue($id, $data);
-        return $this->success(['updated' => $updated], 'Venue updated successfully');
+        $venue = $this->venueService->getVenue($id);
+
+        return $this->respondSuccess(
+            $venue ? new VenueResource($venue) : ['updated' => true],
+            'Venue updated successfully.'
+        );
     }
 
-    public function destroy(int|string $id)
+    public function destroy(int|string $id): JsonResponse
     {
         $deleted = $this->venueService->deleteVenue($id);
-        return $this->success(['deleted' => $deleted], 'Venue deleted successfully');
+        if (!$deleted) {
+            return $this->respondNotFound('Venue not found.');
+        }
+
+        return $this->respondSuccess(null, 'Venue deleted successfully.');
     }
 }

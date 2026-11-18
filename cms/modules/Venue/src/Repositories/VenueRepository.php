@@ -13,8 +13,8 @@ class VenueRepository extends BaseRepository implements VenueRepositoryInterface
         parent::__construct($model);
     }
 
-    public function findByCode(string $code)
+    public function findByCode(string $code): ?Venue
     {
-        return $this->model->where('code', $code)->first();
+        return $this->newQuery()->where('code', $code)->first();
     }
 }

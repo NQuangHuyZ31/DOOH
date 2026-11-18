@@ -3,7 +3,7 @@ import type { ApiResponse, PaginatedResponse } from '@core/types/api';
 import type { RoleFormData, RoleItem } from '../types/role';
 
 export const roleApi = {
-	getRoles(params?: { paginate?: boolean; per_page?: number }) {
+	getRoles(params?: { paginate?: boolean; per_page?: number; page?: number; search?: string }) {
 		return http.get<ApiResponse<RoleItem[]> | PaginatedResponse<RoleItem>>('/user/role', { params });
 	},
 
