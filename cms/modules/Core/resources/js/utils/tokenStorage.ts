@@ -1,13 +1,13 @@
-import { ROUTING_CONFIG } from '../configs/routing';
+const AUTH_TOKEN_KEY = 'auth_token';
 
 export function getAuthToken(): string | null {
-  return localStorage.getItem(ROUTING_CONFIG.auth.tokenKey);
+  return localStorage.getItem(AUTH_TOKEN_KEY);
 }
 
 export function setAuthToken(token: string): void {
-  localStorage.setItem(ROUTING_CONFIG.auth.tokenKey, token);
+  localStorage.setItem(AUTH_TOKEN_KEY, token);
 }
 
 export function clearAuthToken(): void {
-  localStorage.removeItem(ROUTING_CONFIG.auth.tokenKey);
+  localStorage.removeItem(AUTH_TOKEN_KEY);
 }

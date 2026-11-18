@@ -3,11 +3,10 @@
 namespace Modules\Auth\Services;
 
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Modules\Auth\Mail\OtpVerificationMail;
 use Modules\User\Models\User;
+use Modules\Auth\Jobs\SendMailOPT;
 
 class OtpService
 {
@@ -173,10 +172,6 @@ class OtpService
 
     protected function dispatchOtpMail(User $user, string $otp, int $ttlMinutes): void
     {
-        Mail::to($user->email)->queue(new OtpVerificationMail(
-            userName: $user->name,
-            otpCode: $otp,
-            ttlMinutes: $ttlMinutes
-        ));
+        SendMailOPT::dispatch($user->name, $otp, $user->email, $ttlMinutes);
     }
 }

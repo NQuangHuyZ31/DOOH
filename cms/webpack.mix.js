@@ -187,8 +187,13 @@ mix.babelConfig({
 });
 
 // 3. Register module entries
+const vendorPreload = path.join(root, 'build/vendor-preload.js');
 for (const m of selected) {
-    mix.js(m.entry, `${m.outDir}/index.js`);
+    const entryInput =
+        m.name.toLowerCase() === 'core' && fs.existsSync(vendorPreload)
+            ? [vendorPreload, m.entry]
+            : m.entry;
+    mix.js(entryInput, `${m.outDir}/index.js`);
 
     const cssPath = path.join(m.dir, 'resources/css/app.css');
     if (fs.existsSync(cssPath)) {

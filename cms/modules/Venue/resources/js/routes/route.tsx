@@ -1,13 +1,17 @@
 import React from 'react';
+import { DesktopOutlined } from '@ant-design/icons';
 import type { AppRoute } from '@core/routes/types';
-import { ROUTING_CONFIG } from '@core/configs/routing';
 import VenueListPage from '../pages/VenueListPage';
 
 export const venueRoutes: AppRoute[] = [
   {
-    path: ROUTING_CONFIG.modules.venues.path,
-    key: ROUTING_CONFIG.modules.venues.key,
-    title: ROUTING_CONFIG.modules.venues.label,
+    path: '/admin/venues',
+    key: 'venues',
+    title: 'Venues (Screens)',
+    label: 'Venues (Screens)',
+    icon: <DesktopOutlined />,
+    order: 10,
+    module: 'venue',
     element: <VenueListPage />,
   },
 ];

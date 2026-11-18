@@ -26,8 +26,9 @@ class AuthService
     public function login(string $email, string $password, ?string $ip = null, ?string $userAgent = null): array
     {
         $user = $this->userRepository->findByEmail($email);
+        $dummyHash = '$2y$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ012';
 
-        if (!$user || !Hash::check($password, $user->password)) {
+        if (!$user || !Hash::check($password, $user->password ?? $dummyHash)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials do not match our records.'],
             ]);

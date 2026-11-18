@@ -39,6 +39,13 @@ class UserSeeder extends Seeder
                 'email_verified_at' => now(),
                 'role' => 'viewer',
             ],
+            [
+                'email' => 'quanghuy.nguyen@urekamedia.vn',
+                'name' => 'Quang Huy Nguyen',
+                'password' => $defaultPassword,
+                'email_verified_at' => now(),
+                'role' => 'super_admin',
+            ]
         ];
 
         foreach ($roleUsers as $userData) {

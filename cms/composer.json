@@ -45,7 +45,6 @@
 			"Modules\\Auth\\": "modules/Auth/src/",
 			"Modules\\User\\": "modules/User/src/",
 			"Modules\\User\\Database\\Seeders\\": "modules/User/database/seeders/",
-			"Database\\Factories\\": "database/factories/",
 			"Database\\Seeders\\": "database/seeders/"
 		}
 	},
@@ -79,7 +78,7 @@
 			"@php artisan key:generate",
 			"@php artisan migrate --force",
 			"npm install --ignore-scripts",
-			"npm run build"
+			"npm run mix"
 		],
 		"dev": [
 			"Composer\\Config::disableProcessTimeout",

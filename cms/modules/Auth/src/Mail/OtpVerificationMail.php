@@ -3,18 +3,14 @@
 namespace Modules\Auth\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class OtpVerificationMail extends Mailable implements ShouldQueue
+class OtpVerificationMail extends Mailable
 {
     use Queueable, SerializesModels;
-
-    public int $tries = 3;
-    public int $timeout = 30;
 
     public function __construct(
         public string $userName,

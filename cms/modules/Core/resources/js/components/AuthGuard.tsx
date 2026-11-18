@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Spin } from 'antd';
-import { ROUTING_CONFIG } from '../configs/routing';
+import { getLoginRoutePath } from '../routes/registry';
 import { useAppSelector } from '../store/hooks';
 
 export interface AuthGuardProps {
@@ -21,7 +21,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   }
 
   if (!token || !isAuthenticated) {
-    return <Navigate to={ROUTING_CONFIG.auth.loginPath} state={{ from: location }} replace />;
+    return <Navigate to={getLoginRoutePath()} state={{ from: location }} replace />;
   }
 
   return <>{children}</>;

@@ -4,30 +4,36 @@ import { AuthGuard } from '../components/AuthGuard';
 import { GuestGuard } from '../components/GuestGuard';
 import { NotFoundPage } from '../components/NotFoundPage';
 import { MainLayout } from '../layouts/MainLayout';
-import { ROUTING_CONFIG } from '../configs/routing';
 import { useAuthInit } from '../hooks/useAuthInit';
-import { useRegisteredRoutes } from './registry';
-import './autoRegister';
+import { getDefaultRoutePath, useRegisteredRoutes } from './registry';
+
+const ADMIN_PREFIX = '/admin';
 
 export const AppRouter: React.FC = () => {
 	useAuthInit();
 	const routes = useRegisteredRoutes();
 
+	const routableEntries = routes.filter((r) => Boolean(r.element || r.component));
+	const defaultPath = getDefaultRoutePath();
+
 	return (
 		<BrowserRouter>
 			<Routes>
-				<Route path="/" element={<Navigate to={ROUTING_CONFIG.defaultPath} replace />} />
-				<Route path={ROUTING_CONFIG.adminPrefix} element={<Navigate to={ROUTING_CONFIG.defaultPath} replace />} />
+				<Route path="/" element={<Navigate to={defaultPath} replace />} />
+				<Route path={ADMIN_PREFIX} element={<Navigate to={defaultPath} replace />} />
 
-				{routes.map((route) => {
-					const content =
-						route.layout === 'guest' ? (
-							<GuestGuard>{route.element}</GuestGuard>
-						) : (
-							<AuthGuard>
-								<MainLayout>{route.element}</MainLayout>
-							</AuthGuard>
-						);
+				{routableEntries.map((route) => {
+					const pageNode = route.element ?? (route.component ? React.createElement(route.component) : null);
+
+					const isGuest = route.layout === 'guest' || route.layout === 'bare';
+					const content = isGuest ? (
+						<GuestGuard>{pageNode}</GuestGuard>
+					) : (
+						<AuthGuard>
+							<MainLayout>{pageNode}</MainLayout>
+						</AuthGuard>
+					);
+
 					return <Route key={route.path} path={route.path} element={content} />;
 				})}
 

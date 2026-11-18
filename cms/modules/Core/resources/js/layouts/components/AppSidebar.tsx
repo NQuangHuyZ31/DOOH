@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Layout, Menu, Typography } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ROUTING_CONFIG } from '@core/configs/routing';
-import { MAIN_MENU_ITEMS } from '@core/configs/navigation';
+import { useMenuRoutes } from '@core/routes/registry';
+import { buildSidebarMenuItems, resolveActiveMenuKeys } from './sidebarMenuBuilder';
 
 const { Sider } = Layout;
 const { Title } = Typography;
@@ -15,13 +15,22 @@ export interface AppSidebarProps {
 export const AppSidebar: React.FC<AppSidebarProps> = ({ collapsed, onCollapse }) => {
 	const location = useLocation();
 	const navigate = useNavigate();
+	const menuRoutes = useMenuRoutes();
 
-	const selectedKey = Object.values(ROUTING_CONFIG.modules).find((m) => location.pathname.startsWith(m.path))?.key || ROUTING_CONFIG.defaultModule;
+	const menuItems = useMemo(() => buildSidebarMenuItems(menuRoutes), [menuRoutes]);
+	const { selectedKeys, defaultOpenKeys } = useMemo(() => resolveActiveMenuKeys(menuRoutes, location.pathname), [menuRoutes, location.pathname]);
+
+	const [openKeys, setOpenKeys] = useState<string[]>(defaultOpenKeys);
+
+	useEffect(() => {
+		if (!collapsed && defaultOpenKeys.length > 0) {
+			setOpenKeys((prev) => Array.from(new Set([...prev, ...defaultOpenKeys])));
+		}
+	}, [collapsed, defaultOpenKeys]);
 
 	const handleMenuClick = ({ key }: { key: string }) => {
-		const targetModule = Object.values(ROUTING_CONFIG.modules).find((m) => m.key === key);
-		if (targetModule) {
-			navigate(targetModule.path);
+		if (key.startsWith('/')) {
+			navigate(key);
 		}
 	};
 
@@ -32,7 +41,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ collapsed, onCollapse })
 					{collapsed ? 'DOOH' : 'DOOH CMS'}
 				</Title>
 			</div>
-			<Menu theme="dark" selectedKeys={[selectedKey]} mode="inline" items={MAIN_MENU_ITEMS} onClick={handleMenuClick} />
+			<Menu theme="dark" mode="inline" selectedKeys={selectedKeys} openKeys={collapsed ? undefined : openKeys} onOpenChange={setOpenKeys} items={menuItems} onClick={handleMenuClick} />
 		</Sider>
 	);
 };

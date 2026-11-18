@@ -101,7 +101,7 @@ class AuthApiTest extends TestCase
         $tempToken = $response->json('data.temp_token');
         $this->assertNotEmpty($tempToken);
 
-        Mail::assertQueued(OtpVerificationMail::class, function ($mail) {
+        Mail::assertSent(OtpVerificationMail::class, function ($mail) {
             return $mail->hasTo('admin@dooh.media');
         });
 

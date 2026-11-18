@@ -143,16 +143,28 @@ class ModuleRegistry
         return implode("\n    ", $html);
     }
 
+    /**
+     * Render HTML <script src="..."> tags in deterministic order:
+     * 1. Core vendor runtime (/modules/Core/vendor.js)
+     * 2. Feature module scripts (/modules/<Module>/index.js) which call registerRoutes(...)
+     * 3. Core bootstrap script (/modules/Core/index.js) which mounts React Router
+     */
     public function renderJs(?string $module = null): string
     {
         $targetModule = $module ?: 'all';
         $endpoints = $this->getEntrypoints();
 
-        $jsFiles = [];
-        if (isset($endpoints['Core']['js'])) {
+        $vendorFiles = [];
+        $coreAppFiles = [];
+        $moduleFiles = [];
+
+        if (isset($endpoints['Core']['js']) && is_array($endpoints['Core']['js'])) {
             foreach ($endpoints['Core']['js'] as $file) {
-                if (!in_array($file, $jsFiles, true)) {
-                    $jsFiles[] = $file;
+                $clean = explode('?', (string) $file)[0];
+                if (str_ends_with($clean, '/vendor.js')) {
+                    $vendorFiles[] = $file;
+                } else {
+                    $coreAppFiles[] = $file;
                 }
             }
         }
@@ -164,8 +176,8 @@ class ModuleRegistry
                 }
                 if (isset($modConfig['js']) && is_array($modConfig['js'])) {
                     foreach ($modConfig['js'] as $file) {
-                        if (!in_array($file, $jsFiles, true)) {
-                            $jsFiles[] = $file;
+                        if (!in_array($file, $moduleFiles, true)) {
+                            $moduleFiles[] = $file;
                         }
                     }
                 }
@@ -176,11 +188,13 @@ class ModuleRegistry
             isset($endpoints[$targetModule]['js'])
         ) {
             foreach ($endpoints[$targetModule]['js'] as $file) {
-                if (!in_array($file, $jsFiles, true)) {
-                    $jsFiles[] = $file;
+                if (!in_array($file, $moduleFiles, true)) {
+                    $moduleFiles[] = $file;
                 }
             }
         }
+
+        $jsFiles = array_merge($vendorFiles, $moduleFiles, $coreAppFiles);
 
         $html = [];
         foreach ($jsFiles as $file) {
