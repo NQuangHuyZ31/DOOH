@@ -15,7 +15,7 @@ globs: cms/modules/**/src/**, cms/modules/**/routes/**, cms/config/**, api/src/*
 - Tracking API: `X-DOOH-API-KEY` for delivery endpoints; beacons trusted only through valid, unexpired AES-256-GCM `:hash` (`exp` checked). Compare secrets with constant-time functions.
 
 ## Input & Output
-- All CMS input validated by `FormRequest` (types, lengths, `exists:`/`in:` rules). No raw SQL concatenation; use bindings/Eloquent.
+- All CMS input MUST be strictly validated (types, lengths, `exists:`/`in:` rules): use a dedicated `FormRequest` (`src/Http/Requests/*Request.php`) for `≥ 3` fields, entity `store`/`update` payloads, nested rules, or `prepareForValidation()`; inline `$request->validate()` in the Controller is permitted only for trivial `1–2` simple scalar fields. No raw SQL concatenation; use bindings/Eloquent.
 - NEVER return hidden fields (`password`, `secret_key`, tokens) — use `$hidden` / API Resources.
 - Errors to clients: generic message; details only in server logs.
 

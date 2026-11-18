@@ -22,7 +22,7 @@ HTTP Request ──► Controller Layer (BaseController, FormRequest, ApiRespons
 ```
 
 ### Layer Invariants
-1. **Controller Layer**: HTTP handling only. Never execute direct database queries or business mutations.
+1. **Controller Layer**: HTTP handling only. Never execute direct database queries or business mutations. Extract validation into dedicated `Http/Requests/*Request.php` (`FormRequest`) whenever validating `≥ 3` fields, entity `store`/`update` payloads, nested arrays, or custom normalization (`prepareForValidation()`); inline `$request->validate()` is permitted only for trivial `1–2` simple fields.
 2. **Service Layer**: Orchestrates domain logic and transactions (`DB::transaction`). Depends strictly on **Repository Interfaces**. STRICTLY FORBIDDEN from direct Model queries (`Model::where()`, `DB::table()`).
 3. **Repository Layer**: Encapsulates database queries. Extends `BaseRepository` (MySQL) or implements MongoDB aggregation interfaces.
 

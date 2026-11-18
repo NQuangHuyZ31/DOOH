@@ -12,12 +12,15 @@ Deep dive: `docs/backend/architecture.md`. DB rules: `database.md`. Tests: `test
 
 | Layer | Path | MUST | NEVER |
 |---|---|---|---|
-| Controller | `src/Http/Controllers/` | extend `Modules\Core\Http\Controllers\BaseController`; explicit `: JsonResponse` return type; validate & normalize input via `FormRequest` (`prepareForValidation()`); call Service only; respond via `ApiResponseTrait` (`respondSuccess`, `respondCreated`, `respondPaginated`, `respondError`, `respondUnauthorized`, `respondForbidden`, `respondNotFound`) | inject Repositories, run queries, hold business logic, validate/normalize inline, call `response()->json()` directly |
+| Controller | `src/Http/Controllers/` | extend `Modules\Core\Http\Controllers\BaseController`; explicit `: JsonResponse` return type; extract validation with `≥ 3` fields, entity `store`/`update` payloads, nested arrays, or `prepareForValidation()` into a dedicated `FormRequest` (`src/Http/Requests/*Request.php`, calling `$request->validated()`); inline `$request->validate()` is allowed ONLY for trivial `1–2` simple fields; call Service only; respond via `ApiResponseTrait` (`respondSuccess`, `respondCreated`, `respondPaginated`, `respondError`, `respondUnauthorized`, `respondForbidden`, `respondNotFound`) | inject Repositories, run queries, hold business logic, validate `≥ 3` fields or complex entity payloads inline in the Controller, call `response()->json()` directly |
 | Service | `src/Services/` | single-domain business logic, `DB::transaction()`, dispatch `src/Jobs/` & `src/Mail/`; depend on Repository **interfaces** or peer Services (DI); transform output via `src/Resources/<Entity>Resource.php` | `Model::where/create`, `DB::table()`, any persistence (Model imports for type hints are OK), call `env()` directly, create redundant `ServiceInterface` or `DTO` classes |
 | Repository | `src/Repositories/` | MySQL: extend `Modules\Core\Repositories\BaseRepository` + implement `Interfaces/<Model>RepositoryInterface`; eager-load relations (`with([...])`) to prevent N+1; use `paginate()` for lists; Mongo: dedicated interface | business logic, unbounded `all()`/`get()` on large tables |
 
 Bind in `<Module>ServiceProvider`: `$this->app->bind(<Model>RepositoryInterface::class, <Model>Repository::class)`.
 Merge module config in `<Module>ServiceProvider::register()`: `$this->mergeConfigFrom(__DIR__ . '/../../configs/<module>.php', '<module>')`. NEVER call `env()` outside `configs/*.php`.
+- **Request Validation Rule (`FormRequest` vs Inline Validate)**:
+  - **Dedicated `FormRequest` (`src/Http/Requests/<Action><Entity>Request.php`)**: MUST be used whenever validating `≥ 3` fields, entity CRUD `store`/`update` payloads, nested array rules (`*.field`), or custom input normalization (`prepareForValidation()`). Controllers type-hint the `FormRequest` and pass `$request->validated()` to the Service.
+  - **Inline `$request->validate([...])` Exception**: Allowed ONLY for trivial endpoints with `1–2` simple scalar fields (e.g., quick status toggle, single OTP code, or 1–2 basic query params) to avoid unnecessary file bloat.
 
 ## 2. Service Decomposition & Core Reuse
 
