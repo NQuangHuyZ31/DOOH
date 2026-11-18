@@ -5,9 +5,9 @@ description: Use when switching branches, staging, committing, or pushing in the
 
 # Git Workflow (DOOH)
 
-Invariants live in `AGENTS.md` §2–3. This is the procedure.
+Invariants live in `AGENTS.md` §2–3 and `.agents/rules/git.md`. This is the step-by-step procedure.
 
-## 1. Pick Branch
+## 1. Pick Branch (Flat Names Only — NEVER `feature/<name>`)
 
 | Intent | Branch | Commit type |
 |---|---|---|
@@ -18,24 +18,27 @@ Invariants live in `AGENTS.md` §2–3. This is the procedure.
 | Tests only | `test` | `test` |
 | Config, deps, docs, CI, agent rules | `chore` | `chore` / `docs` / `ci` |
 
-## 2. Steps
+## 2. Steps (With Mandatory User Approval Gate)
 
 ```powershell
-git status --short; git branch --show-current   # unrelated changes → STOP and ask
+git status --short; git branch --show-current   # unrelated changes → STOP and ask user first
 git checkout <branch>                            # or: git checkout -b <branch>
 git branch --show-current                        # verify before editing any file
-# ... implement + quality gates (AGENTS.md §5) ...
-git diff --stat                                  # review
-# WAIT for user approval to commit
-git add <explicit paths>                         # never `git add .`
-git commit -m "type(scope): english subject"
-git push -u origin <branch>                      # only when user asks; PR → main
+# ... implement approved Files: allowlist + run quality gates (AGENTS.md §5) ...
+git status --short                               # verify only approved files were touched
+git diff --stat                                  # review changes
+# STOP HERE: Present report + proposed commit message and ASK USER FOR COMMIT APPROVAL.
+# Only after explicit user confirmation:
+git add <explicit file paths>                    # NEVER `git add .`, `git add -A`, or `git commit -a`
+git commit -m "type(scope): imperative english subject"
+git push -u origin <branch>                      # ONLY when user explicitly asks to push
 ```
 
-Scope = module or area: `venue`, `core`, `auth`, `delivery`, `api`, `agents`…
+Allowed `scope`: `core`, `auth`, `user`, `venue`, `creative`, `delivery`, `report`, `log`, `simulator`, `api`, `build`, `agents`.
 
 ## 3. Pre-Commit Check
 
-- Staged list contains no `.env*`, secrets, `cms/public/build/`, `node_modules/`, `vendor/`, logs.
+- Explicit user approval to commit has been received in chat.
+- Staged list matches the task scope and contains no `.env*`, secrets, `.phpunit.result.cache`, `cms/public/modules/*` (unless requested), `node_modules/`, `vendor/`, or logs.
 - Quality gates passed for every touched area.
-- Never: `reset --hard`, `clean -fd`, `checkout -B`, force-push, `stash drop`, push to `main`, publish releases.
+- Never: `reset --hard`, `clean -fd`, `checkout -B`, `restore .`, force-push, `stash drop`, push to `main`, publish releases.

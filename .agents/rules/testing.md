@@ -14,10 +14,11 @@ Reference implementation: `cms/modules/Venue/tests/` (copy its structure).
 |---|---|---|---|
 | Feature API | `modules/<M>/tests/Feature/<Entity>ApiTest.php` | `Tests\TestCase` + `RefreshDatabase` | HTTP status, JSON envelope, validation, RBAC |
 | Repository | `modules/<M>/tests/Feature/<Entity>RepositoryTest.php` | `Tests\TestCase` + `RefreshDatabase` | queries, scopes, pagination |
-| Service unit | `modules/<M>/tests/Unit/<Entity>ServiceTest.php` | `PHPUnit\Framework\TestCase` | business logic with `Mockery::mock(<Repo>Interface::class)`; `Mockery::close()` in `tearDown` |
+| Service unit | `modules/<M>/tests/Unit/<Entity>ServiceTest.php` | `PHPUnit\Framework\TestCase` | pure business logic with `Mockery::mock(<Repo>Interface::class)`; `Mockery::close()` in `tearDown` |
 
 - Namespace `Modules\<M>\Tests\{Feature|Unit}`. Methods `test_<behavior>_<expected>()`.
-- Suites auto-discovered by `phpunit.xml` (`modules/*/tests/{Unit,Feature}`); DB = SQLite `:memory:`.
+- Suites auto-discovered by `phpunit.xml` (`modules/*/tests/{Unit,Feature}`); DB = SQLite `:memory:`. Never place module tests under root `cms/tests/{Feature,Unit}/`.
+- **Unit vs Feature boundary**: Pure `PHPUnit\Framework\TestCase` unit tests do NOT boot the Laravel container — NEVER call unmocked Laravel facades (`Hash`, `Cache`, `Queue`, `Log`) or `ValidationException::withMessages()` inside pure Unit tests; test `ValidationException`/HTTP/DB behavior in `Feature` tests (`Tests\TestCase`).
 
 ## 2. Mandatory Coverage per Endpoint
 

@@ -23,6 +23,7 @@ api/src/
 
 ## Invariants
 
+- **Formatting (`Tab Size = 4`)**: MUST use **tab size 4** (`indent_size = 4` / `tabWidth: 4`), `singleQuote: true`, `semi: true`, strict TypeScript (NEVER `any`).
 - Pure Node (`node:http`, `node:crypto`); no web framework.
 - `Log` beacons respond **< 3ms** with `204`; NEVER touch MongoDB/disk in the request path (Redis only).
 - Delivery encrypts `{ venue_id, line_item_id, exp }` into opaque `:hash`; Log decrypts. Players do zero crypto.

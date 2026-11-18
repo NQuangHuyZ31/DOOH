@@ -12,27 +12,35 @@ Deep dive: `docs/backend/architecture.md`. DB rules: `database.md`. Tests: `test
 
 | Layer | Path | MUST | NEVER |
 |---|---|---|---|
-| Controller | `src/Http/Controllers/` | extend `Modules\Core\Http\Controllers\BaseController`; validate via `FormRequest` (`src/Http/Requests/`); call Service only; respond via `ApiResponseTrait` or `src/Resources/` | inject Repositories, run queries, hold business logic, validate inline |
-| Service | `src/Services/` | business logic, `DB::transaction()`, events, jobs; depend on Repository **interfaces** (DI) | `Model::where/create`, `DB::table()`, any persistence (Model imports for type hints are OK) |
-| Repository | `src/Repositories/` | MySQL: extend `Modules\Core\Repositories\BaseRepository` + implement `Interfaces/<Model>RepositoryInterface`; Mongo: dedicated interface | business logic |
+| Controller | `src/Http/Controllers/` | extend `Modules\Core\Http\Controllers\BaseController`; explicit `: JsonResponse` return type; validate & normalize input via `FormRequest` (`prepareForValidation()`); call Service only; respond via `ApiResponseTrait` (`respondSuccess`, `respondCreated`, `respondPaginated`, `respondError`, `respondUnauthorized`, `respondForbidden`, `respondNotFound`) | inject Repositories, run queries, hold business logic, validate/normalize inline, call `response()->json()` directly |
+| Service | `src/Services/` | single-domain business logic, `DB::transaction()`, dispatch `src/Jobs/` & `src/Mail/`; depend on Repository **interfaces** or peer Services (DI); transform output via `src/Resources/<Entity>Resource.php` | `Model::where/create`, `DB::table()`, any persistence (Model imports for type hints are OK), call `env()` directly, create redundant `ServiceInterface` or `DTO` classes |
+| Repository | `src/Repositories/` | MySQL: extend `Modules\Core\Repositories\BaseRepository` + implement `Interfaces/<Model>RepositoryInterface`; eager-load relations (`with([...])`) to prevent N+1; use `paginate()` for lists; Mongo: dedicated interface | business logic, unbounded `all()`/`get()` on large tables |
 
 Bind in `<Module>ServiceProvider`: `$this->app->bind(<Model>RepositoryInterface::class, <Model>Repository::class)`.
+Merge module config in `<Module>ServiceProvider::register()`: `$this->mergeConfigFrom(__DIR__ . '/../../configs/<module>.php', '<module>')`. NEVER call `env()` outside `configs/*.php`.
 
-## 2. Dynamic Routing
+## 2. Service Decomposition & Core Reuse
+
+- **Split Services by Domain Capability (SRP)**: Whenever a module contains a distinct sub-domain or cohesive workflow (e.g., `OtpService` separate from `AuthService`, `RoleService` separate from `UserService`, `PacingService` separate from `PlaylistService`), extract it into a dedicated `<SubDomain>Service` immediately — do NOT wait for a single Service to grow past 300 lines.
+- **Reuse & Promote to `Core`**: Always reuse `BaseController`, `BaseRepository` (`find`, `findOrFail`, `all`, `paginate`, `create`, `update`, `delete`), and `ApiResponseTrait` from `Modules\Core`. If a new backend trait, middleware, or base repository method is generic across modules, place/extend it in `Modules\Core` rather than duplicating per module.
+
+## 3. Dynamic Routing & RBAC
 
 - `Modules\Core\Support\DynamicRouteResovle`: `/{module}/{controller}/{id?}/{action?}` → `Modules\<Module>\Http\Controllers\<Studly>Controller`. Omitted/same-as-module controller → `<Module>Controller`.
 - Every `public` controller method is an endpoint → helpers MUST be `protected`/`private`.
 - NEVER create dummy `IndexController`. Check the dynamic router before adding explicit routes.
-- RBAC via `CheckModulePermission` (403 on deny).
+- RBAC via `CheckModulePermission` (supports web session and Sanctum bearer token `$request->user() ?? auth('sanctum')->user()`; maps HTTP verbs `GET→<module>.view`, `POST→<module>.create`, `PUT/PATCH→<module>.edit`, `DELETE→<module>.delete`; returns 401/403).
 
-## 3. Seeders & Entity Creation (tiktok-crawler pattern)
+## 4. Seeders & Entity Creation (tiktok-crawler pattern)
 
 - Seeders live in `modules/<Module>/database/seeders/<Entity>Seeder.php` (namespace `Modules\<Module>\Database\Seeders`), autoloaded via PSR-4 in `composer.json`.
 - `database/seeders/DatabaseSeeder.php` calls module seeders via `$this->call([RolePermissionSeeder::class, UserSeeder::class, ...])`.
 - In tests & fixtures, create records directly using Eloquent (`User::create()`, `User::firstOrCreate()`) or call seeders (`$this->seed(...)`).
 - NEVER add speculative `guessFactoryNamesUsing` closures in `CoreServiceProvider` or write boilerplate `newFactory()` in models. Keep it simple and aligned with `cms-tiktok-crawler`.
 
-## 4. Size & Robustness
+## 5. Code Style, Isolation & Cache Eviction
 
-- Split Controllers/Services > ~300 lines or > 7 dependencies into focused sub-services.
-- Jobs (`src/Jobs/`) idempotent and retry-safe. External HTTP: explicit timeout + retry backoff.
+- **Formatting & Naming (`Tab Size = 4`)**: PSR-12 with **4-space indentation** (NEVER 2 spaces). Module folder `PascalCase`; classes suffixed (`<Entity>Controller`, `<Entity>Service`, `<Entity>Repository`, `<Entity>RepositoryInterface`, `<Entity>Resource`, `Store<Entity>Request`, `<Action>Job`, `<Action>Mail`); PHP methods/variables `camelCase`; DB columns & JSON keys `snake_case`.
+- **Cross-Module Isolation**: Module A MUST NEVER query or mutate Module B's Eloquent Models directly; inject Module B's Service or RepositoryInterface via DI, or dispatch an Event/Job. `Core` MUST NEVER depend on feature modules.
+- **Playlist Cache Invalidation**: Any create/update/delete/status change on `Venue`, `Campaign`, `LineItem`, or `Creative` MUST evict `DEL playlist:venue:{venue_id}` in Redis for affected venues.
+- **Size & Robustness**: Keep Controllers/Services ≤ ~300 lines and ≤ 7 dependencies. Jobs (`src/Jobs/`) idempotent and retry-safe (`ShouldQueue`). External HTTP: explicit timeout + retry backoff.

@@ -17,6 +17,11 @@ Rules: `.agents/rules/frontend.md`, `api-contract.md`. References: `modules/Auth
 6. **Configs** `configs/<entity>Columns.tsx` / options: columns, filters, select options.
 7. **Hooks** `hooks/use<Entity>List.ts` (optional): dispatch/select, filters (`useFilter`), pagination (`usePagination`).
 8. **UI**: `pages/<Entity>ListPage.tsx` orchestrates; `components/<Entity>Table.tsx`, `<Entity>FormModal.tsx` (reuse `ListLayout`, `Table`, `CustomModal`, `StatusTag`). Each TSX ≤ 150 lines; English text only.
-9. **Routes** `routes/route.tsx` (`AppRoute[]`); module root `index.ts`: strictly call `registerRoutes(...)` using `@core/routes/registry` (NEVER re-export routes, reducers, or components; NEVER create barrel `index.ts` files).
-10. **Verify**: `npm.cmd run check-types` (from `cms/`); check line counts:
-    `Get-ChildItem cms/modules/<M>/resources/js -Recurse -Filter *.tsx | % { "{0} {1}" -f (Get-Content $_).Count, $_.Name }`
+9. **Routes & Sidebar Menu** `routes/route.tsx` (`AppRoute[]`):
+   - Declare `path`, `guard: 'auth'`, and `menu: { key, label, icon, order }` (use `subMenu: AppRoute[]` or child `menu.parentPath` for submenu items).
+   - Module root `resources/js/index.tsx`: strictly call `registerRoutes(routes)` using `@core/routes/registry` (NEVER re-export routes, reducers, or components; NEVER create barrel `index.ts` files; NEVER add routes to `Core`).
+10. **Verify** (from `cms/`):
+    - `npm.cmd run check-types`
+    - `npm.cmd run mix:<module>` (or `npm.cmd run mix`)
+    - Check line counts (must be ≤ 150 lines per `.tsx`):
+      `Get-ChildItem cms/modules/<M>/resources/js -Recurse -Filter *.tsx | % { "{0} {1}" -f (Get-Content $_).Count, $_.Name }`
