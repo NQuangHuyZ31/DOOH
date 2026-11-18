@@ -48,7 +48,7 @@ class AuthServiceTest extends TestCase
             ->with('temp_abc')
             ->andReturn(7);
 
-        $this->userRepository->shouldReceive('findById')
+        $this->userRepository->shouldReceive('find')
             ->once()
             ->with(7)
             ->andReturn($user);

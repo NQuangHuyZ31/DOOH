@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { Button, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { ListLayout } from '@core/components/ListLayout';
+import { defaultPagination } from '@core/configs/pagination';
 import { useAppDispatch, useAppSelector } from '@core/store/hooks';
 import type { FilterFieldConfig } from '@core/types/filter';
 import { extractErrorMessage } from '@core/utils/error';
@@ -103,7 +104,7 @@ export const UserListPage: React.FC = () => {
 				users={users}
 				loading={loading}
 				pagination={pagination}
-				onTableChange={(p) => dispatch(setUserPagination({ current: p.current || 1, pageSize: p.pageSize || 15 }))}
+				onTableChange={(p) => dispatch(setUserPagination({ current: p.current || 1, pageSize: p.pageSize || defaultPagination.pageSize }))}
 				onEdit={(u) => dispatch(openEditUserModal(u))}
 				onDelete={handleDelete}
 			/>

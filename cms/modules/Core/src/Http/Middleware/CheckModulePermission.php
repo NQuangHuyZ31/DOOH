@@ -20,6 +20,15 @@ class CheckModulePermission
         'auth',
     ];
 
+    /**
+     * Modules requiring authentication only (exempt from module-specific RBAC permission checks).
+     *
+     * @var string[]
+     */
+    protected array $authOnlyModules = [
+        'core',
+    ];
+
     public function handle(Request $request, Closure $next, ?string $module = null, ?string $permission = null): Response
     {
         $resolvedModule = $this->resolveModuleName($request, $module);
@@ -31,6 +40,10 @@ class CheckModulePermission
         $user = $this->resolveAuthenticatedUser($request);
         if (!$user) {
             return $this->respondUnauthorized('Unauthenticated.');
+        }
+
+        if (in_array($resolvedModule, $this->authOnlyModules, true)) {
+            return $next($request);
         }
 
         if (method_exists($user, 'hasRole') && $user->hasRole('super_admin')) {

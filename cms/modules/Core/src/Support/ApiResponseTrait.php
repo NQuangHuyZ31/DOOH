@@ -3,6 +3,8 @@
 namespace Modules\Core\Support;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\ResourceCollection;
+use Illuminate\Pagination\AbstractPaginator;
 
 trait ApiResponseTrait
 {
@@ -51,15 +53,27 @@ trait ApiResponseTrait
 
     public function respondPaginated(mixed $paginator, string $message = 'Success'): JsonResponse
     {
+        $rawPaginator = $paginator;
+        $items = null;
+
+        if ($paginator instanceof ResourceCollection && $paginator->resource instanceof AbstractPaginator) {
+            $rawPaginator = $paginator->resource;
+            $items = $paginator->collection;
+        } elseif (is_object($paginator) && method_exists($paginator, 'items')) {
+            $items = $paginator->items();
+        } else {
+            $items = $paginator;
+        }
+
         return response()->json([
             'status' => 'success',
             'message' => $message,
-            'data' => $paginator->items(),
+            'data' => $items,
             'pagination' => [
-                'current_page' => $paginator->currentPage(),
-                'last_page' => $paginator->lastPage(),
-                'per_page' => $paginator->perPage(),
-                'total' => $paginator->total(),
+                'current_page' => is_object($rawPaginator) && method_exists($rawPaginator, 'currentPage') ? $rawPaginator->currentPage() : 1,
+                'last_page' => is_object($rawPaginator) && method_exists($rawPaginator, 'lastPage') ? $rawPaginator->lastPage() : 1,
+                'per_page' => is_object($rawPaginator) && method_exists($rawPaginator, 'perPage') ? $rawPaginator->perPage() : 15,
+                'total' => is_object($rawPaginator) && method_exists($rawPaginator, 'total') ? $rawPaginator->total() : (is_countable($items) ? count($items) : 0),
             ],
         ]);
     }

@@ -4,8 +4,8 @@ namespace Modules\User\Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Modules\User\Models\Role;
 use Modules\User\Models\User;
+use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
 
 class UserSeeder extends Seeder
 {
@@ -14,6 +14,7 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
+        $userRepository = app(UserRepositoryInterface::class);
         $defaultPassword = Hash::make('password123');
 
         // 1. Users assigned by Role (Cách 1)
@@ -57,7 +58,7 @@ class UserSeeder extends Seeder
                 $userData
             );
 
-            $user->assignRole($roleName);
+            $userRepository->assignRole($user, $roleName);
         }
 
         // 2. User assigned by Direct Module Permissions (Cách 2)
@@ -71,7 +72,7 @@ class UserSeeder extends Seeder
         );
 
         // Assign explicit module permissions directly
-        $customUser->assignDirectPermissions([
+        $userRepository->syncDirectPermissions($customUser, [
             'venue.view',
             'venue.create',
             'creative.view',

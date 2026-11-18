@@ -5,6 +5,7 @@ namespace Modules\User\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Core\Http\Controllers\BaseController;
+use Modules\User\Resources\PermissionResource;
 use Modules\User\Services\PermissionService;
 
 class PermissionController extends BaseController
@@ -19,6 +20,6 @@ class PermissionController extends BaseController
             return $this->respondSuccess($this->permissionService->getGroupedByModule());
         }
 
-        return $this->respondSuccess($this->permissionService->getAllPermissions());
+        return $this->respondSuccess(PermissionResource::collection($this->permissionService->getAllPermissions()));
     }
 }

@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Modules\Core\Traits\Filterable;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, Filterable;
 
     public const PERMISSION_TYPE_ROLE = 'role';
     public const PERMISSION_TYPE_DIRECT = 'direct';
@@ -24,6 +25,15 @@ class User extends Authenticatable
         'password',
         'role_id',
         'permission_type',
+    ];
+
+    /**
+     * Columns & relationships enabled for dynamic filtering.
+     */
+    protected array $filterable = [
+        'search' => ['name', 'email'],
+        'role' => 'role.name',
+        'permission_type' => '=',
     ];
 
     protected $hidden = [
@@ -161,59 +171,5 @@ class User extends Authenticatable
         }
 
         return [];
-    }
-
-    /**
-     * Assign Role (Cách 1).
-     * Enforces mutual exclusivity: automatically clears direct permissions.
-     */
-    public function assignRole(Role|int|string $role): self
-    {
-        $roleModel = $role instanceof Role
-            ? $role
-            : (is_numeric($role) ? Role::find($role) : Role::where('name', $role)->first());
-
-        if (!$roleModel) {
-            throw new \InvalidArgumentException("Role not found.");
-        }
-
-        $this->role_id = $roleModel->id;
-        $this->permission_type = self::PERMISSION_TYPE_ROLE;
-        $this->save();
-
-        // Mutually exclusive: detach all direct permissions
-        $this->directPermissions()->detach();
-
-        return $this;
-    }
-
-    /**
-     * Assign Direct Module Permissions (Cách 2).
-     * Enforces mutual exclusivity: automatically unassigns role.
-     *
-     * @param int[]|string[] $permissionIdsOrNames
-     */
-    public function assignDirectPermissions(array $permissionIdsOrNames): self
-    {
-        $ids = [];
-        foreach ($permissionIdsOrNames as $item) {
-            if (is_numeric($item)) {
-                $ids[] = (int) $item;
-            } else {
-                $perm = Permission::where('name', $item)->first();
-                if ($perm) {
-                    $ids[] = $perm->id;
-                }
-            }
-        }
-
-        $this->role_id = null;
-        $this->permission_type = self::PERMISSION_TYPE_DIRECT;
-        $this->save();
-
-        // Mutually exclusive: sync direct permissions and ensure role is null
-        $this->directPermissions()->sync($ids);
-
-        return $this;
     }
 }

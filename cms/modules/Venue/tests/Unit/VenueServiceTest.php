@@ -19,16 +19,16 @@ class VenueServiceTest extends TestCase
 
     public function test_list_venues_delegates_to_repository(): void
     {
-        $paginator = new LengthAwarePaginator(collect(['item1', 'item2']), 2, 20);
+        $paginator = new LengthAwarePaginator(collect(['item1', 'item2']), 2, 20, 1);
 
         $repoMock = Mockery::mock(VenueRepositoryInterface::class);
         $repoMock->shouldReceive('paginate')
                  ->once()
-                 ->with(20)
+                 ->with(20, [])
                  ->andReturn($paginator);
 
         $service = new VenueService($repoMock);
-        $result = $service->listVenues(20);
+        $result = $service->listVenues([], 20);
 
         $this->assertEquals(2, $result->total());
         $this->assertCount(2, $result->items());

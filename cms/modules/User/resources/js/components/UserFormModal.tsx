@@ -37,12 +37,18 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, editingUser,
 			if (editingUser) {
 				const currentType = editingUser.permission_type || 'role';
 				setPermType(currentType);
+
+				const rawDirectPermissions = editingUser.direct_permissions ?? editingUser.permissions ?? [];
+				const directPermissionNames = rawDirectPermissions.map((item) =>
+					typeof item === 'string' ? item : item.name,
+				);
+
 				form.setFieldsValue({
 					name: editingUser.name,
 					email: editingUser.email,
 					permission_type: currentType,
 					role_id: editingUser.role_id ?? (typeof editingUser.role === 'object' ? editingUser.role?.id : undefined),
-					direct_permissions: editingUser.direct_permissions ?? editingUser.permissions ?? [],
+					direct_permissions: directPermissionNames,
 				});
 			} else {
 				setPermType('role');

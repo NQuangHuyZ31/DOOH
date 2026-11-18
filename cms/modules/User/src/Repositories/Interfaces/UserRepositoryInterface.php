@@ -7,7 +7,12 @@ use Modules\User\Models\User;
 
 interface UserRepositoryInterface extends BaseRepositoryInterface
 {
-    public function findById(int|string $id): ?User;
-
     public function findByEmail(string $email): ?User;
+
+    public function assignRole(User $user, int|string $role): void;
+
+    /**
+     * @param int[]|string[] $permissionIdsOrNames
+     */
+    public function syncDirectPermissions(User $user, array $permissionIdsOrNames): void;
 }

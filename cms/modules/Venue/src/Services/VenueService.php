@@ -2,42 +2,53 @@
 
 namespace Modules\Venue\Services;
 
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
+use Modules\Venue\Models\Venue;
 use Modules\Venue\Repositories\Interfaces\VenueRepositoryInterface;
 
 class VenueService
 {
-    protected VenueRepositoryInterface $venueRepo;
+    public function __construct(
+        protected VenueRepositoryInterface $venueRepo
+    ) {}
 
-    public function __construct(VenueRepositoryInterface $venueRepo)
+    /**
+     * @param array<string, mixed> $filters
+     */
+    public function listVenues(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $this->venueRepo = $venueRepo;
+        return $this->venueRepo->paginate($perPage, $filters);
     }
 
-    public function listVenues(int $perPage = 15)
+    public function getVenue(int|string $id): ?Venue
     {
-        return $this->venueRepo->paginate($perPage);
-    }
-
-    public function getVenue(int|string $id)
-    {
+        /** @var Venue|null */
         return $this->venueRepo->find($id);
     }
 
-    public function createVenue(array $data)
+    /**
+     * @param array<string, mixed> $data
+     */
+    public function createVenue(array $data): Venue
     {
         if (empty($data['secret_key'])) {
             $data['secret_key'] = 'sec_' . Str::random(32);
         }
+
+        /** @var Venue */
         return $this->venueRepo->create($data);
     }
 
-    public function updateVenue(int|string $id, array $data)
+    /**
+     * @param array<string, mixed> $data
+     */
+    public function updateVenue(int|string $id, array $data): bool
     {
         return $this->venueRepo->update($id, $data);
     }
 
-    public function deleteVenue(int|string $id)
+    public function deleteVenue(int|string $id): bool
     {
         return $this->venueRepo->delete($id);
     }

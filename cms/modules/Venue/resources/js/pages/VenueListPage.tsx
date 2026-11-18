@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Space, message } from 'antd';
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { ListLayout } from '@core/components/ListLayout';
+import { extractErrorMessage } from '@core/utils/error';
 import { VenueTable } from '../components/VenueTable';
 import { VenueFormModal } from '../components/VenueFormModal';
 import { venueApi, type VenueItem } from '../Action/venueApi';
@@ -51,8 +52,8 @@ export const VenueListPage: React.FC = () => {
 			setModalOpen(false);
 			setEditingItem(null);
 			fetchData(pagination.current, pagination.pageSize);
-		} catch (err: any) {
-			message.error(err.response?.data?.message || 'Operation failed');
+		} catch (err: unknown) {
+			message.error(extractErrorMessage(err, 'Operation failed'));
 		} finally {
 			setSubmitting(false);
 		}
@@ -63,8 +64,8 @@ export const VenueListPage: React.FC = () => {
 			await venueApi.deleteVenue(id);
 			message.success('Venue deleted successfully');
 			fetchData(pagination.current, pagination.pageSize);
-		} catch (err: any) {
-			message.error(err.response?.data?.message || 'Delete failed');
+		} catch (err: unknown) {
+			message.error(extractErrorMessage(err, 'Delete failed'));
 		}
 	};
 
@@ -78,9 +79,6 @@ export const VenueListPage: React.FC = () => {
 			description="Manage DOOH physical screens, resolutions, orientations and simulator endpoints"
 			extraActions={
 				<Space>
-					<Button icon={<ReloadOutlined />} onClick={() => fetchData()}>
-						Refresh
-					</Button>
 					<Button
 						type="primary"
 						icon={<PlusOutlined />}

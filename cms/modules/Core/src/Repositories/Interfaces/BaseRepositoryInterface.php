@@ -8,14 +8,31 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 interface BaseRepositoryInterface
 {
-    public function all(array $columns = ['*']): Collection;
+    /**
+     * @param string[] $columns
+     * @param array<string, mixed> $filters
+     */
+    public function all(array $columns = ['*'], array $filters = []): Collection;
 
-    public function paginate(int $perPage = 15, array $columns = ['*']): LengthAwarePaginator;
+    /**
+     * @param array<string, mixed> $filters
+     * @param string[] $columns
+     */
+    public function paginate(int $perPage = 15, array $filters = [], array $columns = ['*']): LengthAwarePaginator;
 
+    /**
+     * @param string[] $columns
+     */
     public function find(int|string $id, array $columns = ['*']): ?Model;
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function create(array $data): Model;
 
+    /**
+     * @param array<string, mixed> $data
+     */
     public function update(int|string $id, array $data): bool;
 
     public function delete(int|string $id): bool;
