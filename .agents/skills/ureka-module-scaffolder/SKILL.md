@@ -26,8 +26,8 @@ cms/modules/<Module>/
 2. `Repositories/Interfaces/<Model>RepositoryInterface.php` + `Repositories/<Model>Repository.php` (extends `BaseRepository`).
 3. `Resources/<Model>Resource.php` (`toArray(Model): array`) for consistent API serialization.
 4. `Services/<Model>Service.php` (inject repository interface; no direct Eloquent/DB queries; no `env()` calls).
-5. `Http/Requests/Store<Model>Request.php` / `Update<Model>Request.php`.
-6. `Http/Controllers/<Model>Controller.php` (extends `BaseController`; explicit `: JsonResponse` return types; helpers `protected`/`private`).
+5. `Http/Requests/Store<Model>Request.php` / `Update<Model>Request.php`: mandatory for entity `store`/`update` and any endpoint with `≥ 3` fields, nested array rules, or `prepareForValidation()` (inline `$request->validate()` in a Controller is allowed only for trivial `1–2` simple fields).
+6. `Http/Controllers/<Model>Controller.php` (extends `BaseController`; type-hints `Store<Model>Request` / `Update<Model>Request` and passes `$request->validated()`; explicit `: JsonResponse` return types; helpers `protected`/`private`).
 7. `Providers/<Module>ServiceProvider.php` → bind repository interface + `mergeConfigFrom` for `configs/<module>.php`.
 8. Seeder in `database/seeders/<Model>Seeder.php` (using `Model::firstOrCreate()` / `create()`, following `cms-tiktok-crawler`); register PSR-4 in module and `cms/composer.json` → `composer dump-autoload`.
 9. Tests: `<Model>ApiTest`, `<Model>RepositoryTest`, `<Model>ServiceTest` inside `cms/modules/<Module>/tests/`.

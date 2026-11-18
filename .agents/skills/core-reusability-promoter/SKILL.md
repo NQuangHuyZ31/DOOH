@@ -26,8 +26,8 @@ git grep -n "<keyword>" -- cms/modules
 |---|---|---|
 | **REUSE** | Existing piece in `Core` or current module fits as-is | Use it directly; NEVER create a duplicate or pass-through wrapper |
 | **EXTEND** | Existing `Core` piece fits with an optional prop/parameter | Add backward-compatible optional prop/param; verify all consumers via `git grep` |
-| **PROMOTE TO CORE** | New helper/hook/component is domain-agnostic (formatting, error parsing, generic modal/table/filter UI, base query helper) | Create it directly in `cms/modules/Core/` (typed, props-configurable, zero feature-module imports) so all modules benefit |
-| **CREATE LOCAL** | Strictly domain-specific to a single module (e.g., `OtpService`, `OtpVerificationForm`, `VenueFormModal`) | Justify in the Plan why `REUSE`/`EXTEND` did not apply; split into focused files by responsibility (SRP) |
+| **PROMOTE TO CORE** | New helper/hook/component/metadata is domain-agnostic or shared by `≥ 2` modules (formatting, error parsing, generic modal/table/filter UI, shared statuses/enums/pagination in `Core/configs/metadata.php`) | Create/extend it directly in `cms/modules/Core/` (typed, props-configurable, zero feature-module imports) so all modules benefit |
+| **CREATE LOCAL** | Strictly domain-specific to a single module (`1` module only — e.g., `OtpService`, `OtpVerificationForm`, `VenueFormModal`, or single-module enums/configs) | Keep inside the module (`modules/<Module>/configs/` or module components/services); NEVER put single-module-only options into `Core` metadata |
 
 ## 3. Zero-Bloat & Simplicity Check (before finishing)
 
