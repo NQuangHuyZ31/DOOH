@@ -3,6 +3,7 @@
 namespace Modules\Venue\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Modules\Core\Support\HmacKeyUtil;
 use Modules\Venue\Models\Screen;
 use Modules\Venue\Models\Venue;
 use Tests\TestCase;
@@ -82,9 +83,12 @@ class ScreenApiTest extends TestCase
         $this->assertNotEmpty($code);
         $this->assertStringStartsWith('SCR-HAN-NOIBAI', $code);
 
-        // Secret key was auto-generated
+        // Secret key was auto-generated via HMAC-SHA256
         $secretKey = $response->json('data.secret_key');
         $this->assertNotEmpty($secretKey);
+        $this->assertSame(64, strlen($secretKey));
+        $this->assertTrue(ctype_xdigit($secretKey));
+        $this->assertTrue(HmacKeyUtil::verifyScreenKey($secretKey, $code));
     }
 
     public function test_show_screen_success(): void
@@ -201,6 +205,9 @@ class ScreenApiTest extends TestCase
 
         $newKey = $response->json('data.secret_key');
         $this->assertNotEmpty($newKey);
+        $this->assertSame(64, strlen($newKey));
+        $this->assertTrue(ctype_xdigit($newKey));
         $this->assertNotEquals('old_secret_key_123', $newKey);
+        $this->assertTrue(HmacKeyUtil::verifyScreenKey($newKey, $screen->code));
     }
 }
