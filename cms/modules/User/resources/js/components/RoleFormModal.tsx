@@ -63,16 +63,30 @@ export const RoleFormModal: React.FC<RoleFormModalProps> = ({ open, editingRole,
 					rules={[
 						{ required: true, message: 'Please enter role identifier' },
 						{ pattern: /^[a-z0-9_]+$/, message: 'Only lowercase letters, numbers, and underscores' },
+						{ min: 2, message: 'Role identifier must be at least 2 characters' },
+						{ max: 50, message: 'Role identifier cannot exceed 50 characters' },
 					]}
 				>
 					<Input placeholder="e.g. content_manager" disabled={Boolean(editingRole)} />
 				</Form.Item>
 
-				<Form.Item name="display_name" label="Display Name" rules={[{ required: true, message: 'Please enter display name' }]}>
+				<Form.Item
+					name="display_name"
+					label="Display Name"
+					rules={[
+						{ required: true, message: 'Please enter display name' },
+						{ min: 2, message: 'Display name must be at least 2 characters' },
+						{ max: 100, message: 'Display name cannot exceed 100 characters' },
+					]}
+				>
 					<Input placeholder="e.g. Content Manager" />
 				</Form.Item>
 
-				<Form.Item name="description" label="Description">
+				<Form.Item
+					name="description"
+					label="Description"
+					rules={[{ max: 255, message: 'Description cannot exceed 255 characters' }]}
+				>
 					<Input.TextArea placeholder="Brief description of this role's purpose" rows={3} />
 				</Form.Item>
 

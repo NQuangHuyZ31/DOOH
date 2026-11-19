@@ -4,6 +4,8 @@ namespace Modules\User\Services;
 
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Password;
+use Modules\User\Jobs\SendResetPasswordMailJob;
 use Modules\User\Models\User;
 use Modules\User\Repositories\Interfaces\PermissionRepositoryInterface;
 use Modules\User\Repositories\Interfaces\RoleRepositoryInterface;
@@ -97,6 +99,45 @@ class UserService
     public function deleteUser(int $id): bool
     {
         return $this->userRepository->delete($id);
+    }
+
+    /**
+     * @return array{success: bool, message: string}
+     */
+    public function sendResetPasswordLink(int $id): array
+    {
+        $user = $this->userRepository->find($id);
+        if (!$user) {
+            return [
+                'success' => false,
+                'message' => 'User not found.',
+            ];
+        }
+
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return [
+                'success' => false,
+                'message' => 'Cannot reset password for Admin or Super Admin accounts.',
+            ];
+        }
+
+        $currentUserId = auth('sanctum')->id() ?? auth()->id();
+        if ($currentUserId && (int) $user->id === (int) $currentUserId) {
+            return [
+                'success' => false,
+                'message' => 'You cannot reset password for your own account.',
+            ];
+        }
+
+        $token = Password::broker('users')->createToken($user);
+        $resetUrl = url('/admin/login?reset-password=1&token=' . $token . '&email=' . urlencode($user->email));
+
+        SendResetPasswordMailJob::dispatch($user->name, $user->email, $resetUrl, 60);
+
+        return [
+            'success' => true,
+            'message' => 'Password reset email sent successfully.',
+        ];
     }
 
     protected function resolveRoleId(int|string|null $role): ?int

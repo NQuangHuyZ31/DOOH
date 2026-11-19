@@ -16,10 +16,11 @@ export interface UserTableProps {
 	onTableChange: (pagination: TablePaginationConfig) => void;
 	onEdit: (user: UserItem) => void;
 	onDelete: (id: number) => void;
+	onResetPassword: (id: number) => void;
 }
 
-export const UserTable: React.FC<UserTableProps> = ({ users, currentUser, loading, pagination, onTableChange, onEdit, onDelete }) => {
-	const columns = useMemo(() => getUserColumns(currentUser, onEdit, onDelete), [currentUser, onEdit, onDelete]);
+export const UserTable: React.FC<UserTableProps> = ({ users, currentUser, loading, pagination, onTableChange, onEdit, onDelete, onResetPassword }) => {
+	const columns = useMemo(() => getUserColumns(currentUser, onEdit, onDelete, onResetPassword), [currentUser, onEdit, onDelete, onResetPassword]);
 
 	return (
 		<Table<UserItem>

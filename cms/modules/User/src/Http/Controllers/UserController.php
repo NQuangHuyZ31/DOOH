@@ -65,4 +65,15 @@ class UserController extends BaseController
 
         return $this->respondSuccess(null, 'User deleted successfully.');
     }
+
+    public function resetPassword(int $id): JsonResponse
+    {
+        $result = $this->userService->sendResetPasswordLink($id);
+        if (!$result['success']) {
+            $status = $result['message'] === 'User not found.' ? 404 : 400;
+            return $this->respondError($result['message'], $status);
+        }
+
+        return $this->respondSuccess(null, $result['message']);
+    }
 }

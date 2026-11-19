@@ -8,6 +8,10 @@ use Modules\User\Repositories\Interfaces\PermissionRepositoryInterface;
 
 class PermissionRepository extends BaseRepository implements PermissionRepositoryInterface
 {
+    protected array $withCount = [
+        'roles',
+    ];
+
     public function __construct(Permission $model)
     {
         parent::__construct($model);

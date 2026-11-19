@@ -1,7 +1,7 @@
 import React from 'react';
 import type { ColumnsType } from 'antd/es/table';
 import { Avatar, Button, Popconfirm, Space, Tag, Tooltip, Typography } from 'antd';
-import { DeleteOutlined, EditOutlined, UserOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, KeyOutlined, UserOutlined } from '@ant-design/icons';
 import { UREKA_COLORS } from '@core/configs/theme';
 import type { UserItem } from '../types/user';
 
@@ -14,7 +14,7 @@ const ROLE_COLORS: Record<string, string> = {
 	viewer: 'orange',
 };
 
-export const getUserColumns = (currentUser: { id: number } | null | undefined, onEdit: (user: UserItem) => void, onDelete: (id: number) => void): ColumnsType<UserItem> => [
+export const getUserColumns = (currentUser: { id: number } | null | undefined, onEdit: (user: UserItem) => void, onDelete: (id: number) => void, onResetPassword: (id: number) => void): ColumnsType<UserItem> => [
 	{
 		title: 'User',
 		dataIndex: 'name',
@@ -57,13 +57,31 @@ export const getUserColumns = (currentUser: { id: number } | null | undefined, o
 	{
 		title: 'Actions',
 		key: 'actions',
-		width: 140,
+		width: 170,
 		align: 'center',
 		render: (_: unknown, record: UserItem) => {
 			const isCurrentUser = Boolean(currentUser?.id && record.id === currentUser.id);
+			const roleName = typeof record.role === 'object' && record.role !== null ? record.role.name : typeof record.role === 'string' ? record.role : '';
+			const isAdminOrSuperAdmin = roleName === 'admin' || roleName === 'super_admin' || Boolean(record.roles?.some((r) => r === 'admin' || r === 'super_admin'));
+			const isResetDisabled = isCurrentUser || isAdminOrSuperAdmin;
+			const resetTooltip = isCurrentUser ? 'You cannot reset password for your own account' : isAdminOrSuperAdmin ? 'Cannot reset password for Admin or Super Admin accounts' : 'Send password reset email';
 
 			return (
 				<Space size="small">
+					<Tooltip title={resetTooltip}>
+						<span>
+							<Popconfirm
+								title="Reset Password"
+								description={`Send a password reset email to ${record.name}?`}
+								onConfirm={() => onResetPassword(record.id)}
+								okText="Send Email"
+								cancelText="Cancel"
+								disabled={isResetDisabled}
+							>
+								<Button type="text" icon={<KeyOutlined style={{ color: isResetDisabled ? undefined : '#1890ff' }} />} size="small" disabled={isResetDisabled} />
+							</Popconfirm>
+						</span>
+					</Tooltip>
 					<Button type="text" icon={<EditOutlined />} size="small" onClick={() => onEdit(record)} />
 					<Tooltip title={isCurrentUser ? 'You cannot delete your own account' : undefined}>
 						<span>

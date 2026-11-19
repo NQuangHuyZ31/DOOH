@@ -5,13 +5,14 @@ import { LoginHeroBanner } from './LoginHeroBanner';
 import { LoginHeaderBadge } from './LoginHeaderBadge';
 
 export interface AuthCardLayoutProps {
-	otpMode: boolean;
+	otpMode?: boolean;
+	mode?: 'login' | 'otp' | 'reset-password';
 	error: string | null;
 	onCloseError: () => void;
 	children: React.ReactNode;
 }
 
-export const AuthCardLayout: React.FC<AuthCardLayoutProps> = ({ otpMode, error, onCloseError, children }) => {
+export const AuthCardLayout: React.FC<AuthCardLayoutProps> = ({ otpMode = false, mode = 'login', error, onCloseError, children }) => {
 	return (
 		<div style={AUTH_PAGE_WRAPPER_STYLE}>
 			<Card style={AUTH_CARD_STYLE} styles={{ body: { padding: 0 } }}>
@@ -29,7 +30,7 @@ export const AuthCardLayout: React.FC<AuthCardLayoutProps> = ({ otpMode, error, 
 							background: '#ffffff',
 						}}
 					>
-						<LoginHeaderBadge otpMode={otpMode} error={error} onCloseError={onCloseError} />
+						<LoginHeaderBadge otpMode={otpMode} mode={mode} error={error} onCloseError={onCloseError} />
 						{children}
 					</div>
 				</div>

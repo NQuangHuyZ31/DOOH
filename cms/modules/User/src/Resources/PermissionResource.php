@@ -22,6 +22,7 @@ class PermissionResource extends JsonResource
             'module' => $this->module,
             'display_name' => $this->display_name,
             'description' => $this->description,
+            'roles_count' => $this->whenCounted('roles'),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
