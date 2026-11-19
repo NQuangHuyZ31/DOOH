@@ -29,6 +29,10 @@ export const venueApi = {
 		});
 	},
 
+	getMediaOwners() {
+		return http.get<ApiResponse<Array<{ id: number; name: string; email: string }>>>('/venue/media-owners');
+	},
+
 	getScreens(params?: ScreenQueryParams) {
 		return http.get<PaginatedResponse<ScreenItem>>('/venue/screen', { params });
 	},

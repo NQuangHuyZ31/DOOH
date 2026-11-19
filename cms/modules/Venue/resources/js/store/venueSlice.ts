@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { VenueItem, ScreenItem } from '../types/venue';
+import type { VenueItem, ScreenItem, VenueQueryParams, ScreenQueryParams } from '../types/venue';
 import {
 	fetchVenues,
 	fetchScreens,
@@ -15,8 +15,10 @@ import {
 export interface VenueState {
 	venues: VenueItem[];
 	venuePagination: { current: number; pageSize: number; total: number };
+	venueFilters: VenueQueryParams;
 	screens: ScreenItem[];
 	screenPagination: { current: number; pageSize: number; total: number };
+	screenFilters: ScreenQueryParams;
 	loading: boolean;
 	submitting: boolean;
 	selectedVenue: VenueItem | null;
@@ -27,8 +29,10 @@ export interface VenueState {
 const initialState: VenueState = {
 	venues: [],
 	venuePagination: { current: 1, pageSize: 15, total: 0 },
+	venueFilters: {},
 	screens: [],
 	screenPagination: { current: 1, pageSize: 15, total: 0 },
+	screenFilters: {},
 	loading: false,
 	submitting: false,
 	selectedVenue: null,
@@ -45,6 +49,14 @@ export const venueSlice = createSlice({
 		},
 		setSelectedScreen(state, action: PayloadAction<ScreenItem | null>) {
 			state.selectedScreen = action.payload;
+		},
+		setVenueFilters(state, action: PayloadAction<VenueQueryParams>) {
+			state.venueFilters = action.payload;
+			state.venuePagination.current = 1;
+		},
+		setScreenFilters(state, action: PayloadAction<ScreenQueryParams>) {
+			state.screenFilters = action.payload;
+			state.screenPagination.current = 1;
 		},
 		clearVenueError(state) {
 			state.error = null;
@@ -145,5 +157,5 @@ export const venueSlice = createSlice({
 	},
 });
 
-export const { setSelectedVenue, setSelectedScreen, clearVenueError } = venueSlice.actions;
+export const { setSelectedVenue, setSelectedScreen, setVenueFilters, setScreenFilters, clearVenueError } = venueSlice.actions;
 export default venueSlice.reducer;

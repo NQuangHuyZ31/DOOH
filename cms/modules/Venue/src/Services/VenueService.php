@@ -4,13 +4,15 @@ namespace Modules\Venue\Services;
 
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
+use Modules\User\Services\UserService;
 use Modules\Venue\Models\Venue;
 use Modules\Venue\Repositories\Interfaces\VenueRepositoryInterface;
 
 class VenueService
 {
     public function __construct(
-        protected VenueRepositoryInterface $venueRepo
+        protected VenueRepositoryInterface $venueRepo,
+        protected UserService $userService
     ) {}
 
     public function listVenues(array $filters = [], int $perPage = 15): LengthAwarePaginator
@@ -77,5 +79,10 @@ class VenueService
         }
 
         return $code;
+    }
+
+    public function getMediaOwnersList(): array
+    {
+        return $this->userService->getMediaOwners();
     }
 }

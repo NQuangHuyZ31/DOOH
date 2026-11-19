@@ -29,4 +29,16 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         $userModel = $user instanceof User ? $user : $this->find($user);
         $userModel?->directPermissions()->sync($permissionIds);
     }
+
+    public function getUsersByRoles(array $roleNames): array
+    {
+        return $this->newQuery()
+            ->whereHas('role', fn ($q) => $q->whereIn('name', $roleNames))
+            ->orWhereNull('role_id')
+            ->select(['id', 'name', 'email'])
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'email' => $u->email])
+            ->all();
+    }
 }

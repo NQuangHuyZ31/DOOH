@@ -29,6 +29,11 @@ class UserService
         return $this->userRepository->find($id);
     }
 
+    public function getMediaOwners(): array
+    {
+        return $this->userRepository->getUsersByRoles(['media_owner', 'admin']);
+    }
+
     public function createUser(array $data): User
     {
         return DB::transaction(function () use ($data) {

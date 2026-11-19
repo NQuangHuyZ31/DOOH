@@ -19,7 +19,7 @@ class VenueController extends BaseController
     public function index(Request $request): JsonResponse
     {
         $perPage = $request->integer('per_page', $this->getDefaultPerPage(15));
-        $filters = $request->only(['search', 'venue_type', 'city_province', 'status']);
+        $filters = $request->only(['search', 'venue_type', 'city_province', 'status', 'media_owner_id']);
 
         $venues = $this->venueService->listVenues($filters, $perPage);
 
@@ -69,6 +69,13 @@ class VenueController extends BaseController
         }
 
         return $this->respondSuccess(['deleted' => true], 'Venue deleted successfully.');
+    }
+
+    public function mediaOwners(): JsonResponse
+    {
+        $owners = $this->venueService->getMediaOwnersList();
+
+        return $this->respondSuccess($owners);
     }
 
     public function generateCode(Request $request): JsonResponse

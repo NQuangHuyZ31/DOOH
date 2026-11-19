@@ -74,8 +74,11 @@ class CheckModulePermission
     {
         $user = $request->user() ?? auth('sanctum')->user();
 
-        if ($user && !$request->user()) {
-            $request->setUserResolver(fn () => $user);
+        if ($user) {
+            if (!$request->user()) {
+                $request->setUserResolver(fn () => $user);
+            }
+            auth()->setUser($user);
         }
 
         return $user;

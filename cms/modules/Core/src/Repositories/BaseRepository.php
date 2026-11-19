@@ -76,13 +76,13 @@ abstract class BaseRepository implements BaseRepositoryInterface
      */
     public function update(int|string $id, array $data): bool
     {
-        $record = $this->model->find($id);
+        $record = $this->find($id);
         return $record ? $record->update($data) : false;
     }
 
     public function delete(int|string $id): bool
     {
-        $record = $this->model->find($id);
+        $record = $this->find($id);
         return $record ? (bool) $record->delete() : false;
     }
 
@@ -94,6 +94,10 @@ abstract class BaseRepository implements BaseRepositoryInterface
     protected function newQuery(): Builder
     {
         $query = $this->model->newQuery();
+
+        if (method_exists($this->model, 'scopeForOwner')) {
+            $query->forOwner();
+        }
 
         if (!empty($this->with)) {
             $query->with($this->with);

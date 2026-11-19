@@ -15,6 +15,10 @@ class VenueResource extends JsonResource
             'name' => $this->name,
             'venue_type' => $this->venue_type,
             'media_owner_id' => $this->media_owner_id,
+            'media_owner' => $this->relationLoaded('mediaOwner') && $this->mediaOwner ? [
+                'id' => $this->mediaOwner->id,
+                'name' => $this->mediaOwner->name,
+            ] : null,
             'address' => $this->address,
             'ward' => $this->ward,
             'district' => $this->district,

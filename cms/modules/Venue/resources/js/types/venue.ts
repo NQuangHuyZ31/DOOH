@@ -19,6 +19,10 @@ export interface VenueItem {
 	contact_phone?: string;
 	status: 'active' | 'inactive' | 'maintenance';
 	screens_count?: number;
+	media_owner?: {
+		id: number;
+		name: string;
+	} | null;
 	created_at?: string;
 	updated_at?: string;
 }
@@ -66,6 +70,7 @@ export interface VenueQueryParams {
 	search?: string;
 	venue_type?: string;
 	city_province?: string;
+	media_owner_id?: number | string;
 	status?: string;
 }
 

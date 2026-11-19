@@ -7,12 +7,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Core\Traits\Filterable;
+use Modules\Core\Traits\HasOwner;
 
 class Screen extends Model
 {
-    use Filterable, SoftDeletes;
+    use Filterable, HasOwner, SoftDeletes;
 
     protected $table = 'screens';
+
+    protected ?string $ownerColumn = null;
+
+    protected string $ownerRelation = 'venue';
 
     protected $fillable = [
         'venue_id',

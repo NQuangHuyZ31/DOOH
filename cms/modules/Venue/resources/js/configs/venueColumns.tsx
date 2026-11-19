@@ -54,6 +54,12 @@ export const getVenueColumns = ({ onEdit, onDelete }: ColumnActions) => [
 		render: (_: unknown, record: VenueItem) => <Tag color="geekblue">{record.screens_count ?? 0}</Tag>,
 	},
 	{
+		title: 'Media Owner',
+		key: 'media_owner',
+		width: 150,
+		render: (_: unknown, record: VenueItem) => (record.media_owner?.name ? <Tag color="purple">{record.media_owner.name}</Tag> : <span style={{ color: '#bfbfbf', fontSize: 12 }}>Unassigned</span>),
+	},
+	{
 		title: 'Status',
 		dataIndex: 'status',
 		key: 'status',

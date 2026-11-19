@@ -17,9 +17,26 @@ interface VenueFormModalProps {
 export const VenueFormModal: React.FC<VenueFormModalProps> = ({ open, initialValues, loading, onCancel, onSubmit }) => {
 	const [form] = Form.useForm();
 	const [generating, setGenerating] = useState(false);
+	const [mediaOwners, setMediaOwners] = useState<Array<{ id: number; name: string; email: string }>>([]);
 	const metadata = useAppSelector((state) => state.metadata.data);
+	const currentUser = useAppSelector((state) => state.auth.user);
+	const isSuperAdminOrAdmin = currentUser?.role === 'super_admin' || currentUser?.role === 'admin';
+
 	const venueTypeOptions = metadata?.enums?.venue_types || [];
 	const statusOptions = metadata?.statuses?.venue || [];
+
+	useEffect(() => {
+		if (open && isSuperAdminOrAdmin) {
+			venueApi
+				.getMediaOwners()
+				.then((res) => {
+					if (res.data?.data) {
+						setMediaOwners(res.data.data);
+					}
+				})
+				.catch(() => {});
+		}
+	}, [open, isSuperAdminOrAdmin]);
 
 	useEffect(() => {
 		if (open) {
@@ -31,10 +48,11 @@ export const VenueFormModal: React.FC<VenueFormModalProps> = ({ open, initialVal
 					venue_type: 'shopping_mall',
 					country_code: 'VN',
 					status: 'active',
+					media_owner_id: currentUser?.id,
 				});
 			}
 		}
-	}, [open, initialValues, form]);
+	}, [open, initialValues, form, currentUser]);
 
 	const handleAutoGenerateCode = async () => {
 		const city = form.getFieldValue('city_province');
@@ -104,6 +122,18 @@ export const VenueFormModal: React.FC<VenueFormModalProps> = ({ open, initialVal
 						<Select options={statusOptions} />
 					</Form.Item>
 				</div>
+				{isSuperAdminOrAdmin && (
+					<Form.Item name="media_owner_id" label="Media Owner / Asset Partner">
+						<Select
+							allowClear
+							placeholder="Select Media Owner"
+							options={mediaOwners.map((owner) => ({
+								value: owner.id,
+								label: `${owner.name} (${owner.email})`,
+							}))}
+						/>
+					</Form.Item>
+				)}
 			</Form>
 		</CustomModal>
 	);

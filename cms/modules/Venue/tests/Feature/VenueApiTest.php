@@ -172,4 +172,50 @@ class VenueApiTest extends TestCase
                  ->assertJsonPath('status', 'success')
                  ->assertJsonPath('data.code', 'HAN-LOTTE-CENTER');
     }
+
+    public function test_media_owner_can_only_see_their_own_venues(): void
+    {
+        $role = \Modules\User\Models\Role::firstOrCreate(
+            ['name' => 'media_owner'],
+            ['display_name' => 'Media Owner']
+        );
+
+        $ownerA = \Modules\User\Models\User::create([
+            'name' => 'Media Owner A',
+            'email' => 'owner.a@dooh.media',
+            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+            'role_id' => $role->id,
+            'permission_type' => \Modules\User\Models\User::PERMISSION_TYPE_ROLE,
+        ]);
+
+        $ownerB = \Modules\User\Models\User::create([
+            'name' => 'Media Owner B',
+            'email' => 'owner.b@dooh.media',
+            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+            'role_id' => $role->id,
+            'permission_type' => \Modules\User\Models\User::PERMISSION_TYPE_ROLE,
+        ]);
+
+        Venue::create([
+            'code' => 'SGN-OWNER-A',
+            'name' => 'Venue Owner A',
+            'media_owner_id' => $ownerA->id,
+            'status' => 'active',
+        ]);
+
+        Venue::create([
+            'code' => 'HAN-OWNER-B',
+            'name' => 'Venue Owner B',
+            'media_owner_id' => $ownerB->id,
+            'status' => 'active',
+        ]);
+
+        \Laravel\Sanctum\Sanctum::actingAs($ownerA);
+
+        $response = $this->getJson('/admin/api/venue');
+        $response->assertStatus(200)
+                 ->assertJsonPath('status', 'success')
+                 ->assertJsonCount(1, 'data')
+                 ->assertJsonPath('data.0.code', 'SGN-OWNER-A');
+    }
 }

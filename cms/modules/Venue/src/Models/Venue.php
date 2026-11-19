@@ -3,15 +3,20 @@
 namespace Modules\Venue\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Core\Traits\Filterable;
+use Modules\Core\Traits\HasOwner;
+use Modules\User\Models\User;
 
 class Venue extends Model
 {
-    use Filterable, SoftDeletes;
+    use Filterable, HasOwner, SoftDeletes;
 
     protected $table = 'venues';
+
+    protected string $ownerColumn = 'media_owner_id';
 
     protected $fillable = [
         'code',
@@ -38,6 +43,7 @@ class Venue extends Model
         'search' => ['code', 'name', 'address', 'district', 'city_province'],
         'venue_type' => '=',
         'city_province' => '=',
+        'media_owner_id' => '=',
         'status' => '=',
     ];
 
@@ -52,5 +58,10 @@ class Venue extends Model
     public function screens(): HasMany
     {
         return $this->hasMany(Screen::class);
+    }
+
+    public function mediaOwner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'media_owner_id');
     }
 }
