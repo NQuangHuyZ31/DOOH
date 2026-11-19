@@ -22,6 +22,7 @@ export interface CmsPaginationMetadata {
 
 export interface CmsStatusesMetadata {
 	common: MetadataOption[];
+	venue?: MetadataOption[];
 	tags: Record<string, StatusTagMetaItem>;
 }
 
