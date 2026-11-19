@@ -80,21 +80,34 @@ class UserService
                 $updatePayload['password'] = $data['password'];
             }
 
+            $permissionTypeChanged = isset($data['permission_type']) && $data['permission_type'] !== $user->permission_type;
             $permissionType = $data['permission_type'] ?? $user->permission_type;
             $updatePayload['permission_type'] = $permissionType;
 
+            $shouldSyncDirectPermissions = false;
+            $permissionIds = [];
+
             if ($permissionType === $this->userRepository->getModel()::PERMISSION_TYPE_DIRECT) {
                 $updatePayload['role_id'] = null;
-                $permissionIds = $this->resolvePermissionIds($data['direct_permissions'] ?? []);
+                if (array_key_exists('direct_permissions', $data) || $permissionTypeChanged) {
+                    $shouldSyncDirectPermissions = true;
+                    $permissionIds = $this->resolvePermissionIds($data['direct_permissions'] ?? []);
+                }
             } else {
                 if (array_key_exists('role_id', $data)) {
                     $updatePayload['role_id'] = $this->resolveRoleId($data['role_id']);
                 }
-                $permissionIds = [];
+                if ($permissionTypeChanged) {
+                    $shouldSyncDirectPermissions = true;
+                    $permissionIds = [];
+                }
             }
 
             $this->userRepository->update($id, $updatePayload);
-            $this->userRepository->syncDirectPermissions($user, $permissionIds);
+
+            if ($shouldSyncDirectPermissions) {
+                $this->userRepository->syncDirectPermissions($user, $permissionIds);
+            }
 
             return $this->userRepository->find($id);
         });
