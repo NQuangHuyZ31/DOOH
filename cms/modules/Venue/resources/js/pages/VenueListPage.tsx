@@ -1,122 +1,128 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Space, message } from 'antd';
+import { Button, Space, Tabs, message } from 'antd';
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { ListLayout } from '@core/components/ListLayout';
+import { useAppDispatch, useAppSelector } from '@core/store/hooks';
 import { extractErrorMessage } from '@core/utils/error';
+import { VenueStatsBar } from '../components/VenueStatsBar';
+import { ScreenTable } from '../components/ScreenTable';
 import { VenueTable } from '../components/VenueTable';
 import { VenueFormModal } from '../components/VenueFormModal';
-import { venueApi, type VenueItem } from '../Action/venueApi';
+import { ScreenFormModal } from '../components/ScreenFormModal';
+import { ScreenCredentialsModal } from '../components/ScreenCredentialsModal';
+import { fetchVenues, fetchScreens, createVenue, updateVenue, deleteVenue, createScreen, updateScreen, deleteScreen } from '../store/venueThunk';
+import type { VenueItem, ScreenItem } from '../types/venue';
 
 export const VenueListPage: React.FC = () => {
-	const [data, setData] = useState<VenueItem[]>([]);
-	const [loading, setLoading] = useState(false);
-	const [modalOpen, setModalOpen] = useState(false);
-	const [editingItem, setEditingItem] = useState<VenueItem | null>(null);
-	const [submitting, setSubmitting] = useState(false);
-	const [pagination, setPagination] = useState({ current: 1, pageSize: 15, total: 0 });
+	const dispatch = useAppDispatch();
+	const { venues, venuePagination, screens, screenPagination, loading, submitting } = useAppSelector((state) => state.venue);
+	const [activeTab, setActiveTab] = useState<'screens' | 'venues'>('screens');
+	const [venueModalOpen, setVenueModalOpen] = useState(false);
+	const [screenModalOpen, setScreenModalOpen] = useState(false);
+	const [editingVenue, setEditingVenue] = useState<VenueItem | null>(null);
+	const [editingScreen, setEditingScreen] = useState<ScreenItem | null>(null);
+	const [credentialsScreenId, setCredentialsScreenId] = useState<number | null>(null);
 
-	const fetchData = useCallback(async (page = 1, pageSize = 15) => {
-		setLoading(true);
-		try {
-			const res = await venueApi.getVenues({ page, per_page: pageSize });
-			setData(res.data?.data || []);
-			if (res.data?.pagination) {
-				setPagination({
-					current: res.data.pagination.current_page,
-					pageSize: res.data.pagination.per_page,
-					total: res.data.pagination.total,
-				});
-			}
-		} catch {
-			// Fallback empty list on initial setup without db
-			setData([]);
-		} finally {
-			setLoading(false);
-		}
-	}, []);
+	const loadData = useCallback(() => {
+		dispatch(fetchVenues({ per_page: 50 }));
+		dispatch(fetchScreens({ per_page: 15 }));
+	}, [dispatch]);
 
 	useEffect(() => {
-		fetchData();
-	}, [fetchData]);
+		loadData();
+	}, [loadData]);
 
-	const handleCreateOrUpdate = async (values: Partial<VenueItem>) => {
-		setSubmitting(true);
+	const handleSaveVenue = async (values: Partial<VenueItem>) => {
 		try {
-			if (editingItem) {
-				await venueApi.updateVenue(editingItem.id, values);
-				message.success('Venue updated successfully');
+			if (editingVenue) {
+				await dispatch(updateVenue({ id: editingVenue.id, payload: values })).unwrap();
+				message.success('Venue updated successfully.');
 			} else {
-				await venueApi.createVenue(values);
-				message.success('Venue created successfully');
+				await dispatch(createVenue(values)).unwrap();
+				message.success('Venue created successfully.');
 			}
-			setModalOpen(false);
-			setEditingItem(null);
-			fetchData(pagination.current, pagination.pageSize);
+			setVenueModalOpen(false);
+			dispatch(fetchVenues({ per_page: 50 }));
 		} catch (err: unknown) {
-			message.error(extractErrorMessage(err, 'Operation failed'));
-		} finally {
-			setSubmitting(false);
+			message.error(extractErrorMessage(err, 'Failed to save venue.'));
 		}
 	};
 
-	const handleDelete = async (id: number) => {
+	const handleSaveScreen = async (values: Partial<ScreenItem>) => {
 		try {
-			await venueApi.deleteVenue(id);
-			message.success('Venue deleted successfully');
-			fetchData(pagination.current, pagination.pageSize);
+			if (editingScreen) {
+				await dispatch(updateScreen({ id: editingScreen.id, payload: values })).unwrap();
+				message.success('Screen updated successfully.');
+			} else {
+				await dispatch(createScreen(values)).unwrap();
+				message.success('Screen registered successfully.');
+			}
+			setScreenModalOpen(false);
+			dispatch(fetchScreens({ per_page: 15 }));
 		} catch (err: unknown) {
-			message.error(extractErrorMessage(err, 'Delete failed'));
+			message.error(extractErrorMessage(err, 'Failed to save screen.'));
 		}
 	};
 
-	const handlePreview = (item: VenueItem) => {
-		message.info(`Launching Simulator for screen: ${item.name} (${item.code})`);
-	};
+	const renderActions = (
+		<Space>
+			<Button icon={<ReloadOutlined />} onClick={loadData}>Refresh</Button>
+			<Button
+				type="primary"
+				icon={<PlusOutlined />}
+				onClick={() => {
+					if (activeTab === 'screens') {
+						setEditingScreen(null);
+						setScreenModalOpen(true);
+					} else {
+						setEditingVenue(null);
+						setVenueModalOpen(true);
+					}
+				}}
+			>
+				{activeTab === 'screens' ? 'Register Screen' : 'Add Venue'}
+			</Button>
+		</Space>
+	);
+
+	const tabItems = [
+		{
+			key: 'screens',
+			label: `Screens (${screens.length})`,
+			children: (
+				<ScreenTable
+					data={screens}
+					loading={loading}
+					pagination={{ ...screenPagination, onChange: (page, pageSize) => dispatch(fetchScreens({ page, per_page: pageSize })) }}
+					onEdit={(item) => { setEditingScreen(item); setScreenModalOpen(true); }}
+					onDelete={async (id) => { await dispatch(deleteScreen(id)).unwrap(); }}
+					onPreview={(item) => message.info(`Launch Simulator for ${item.name} (${item.code})`)}
+					onShowCredentials={(item) => setCredentialsScreenId(item.id)}
+				/>
+			),
+		},
+		{
+			key: 'venues',
+			label: `Venues (${venues.length})`,
+			children: (
+				<VenueTable
+					data={venues}
+					loading={loading}
+					pagination={{ ...venuePagination, onChange: (page, pageSize) => dispatch(fetchVenues({ page, per_page: pageSize })) }}
+					onEdit={(item) => { setEditingVenue(item); setVenueModalOpen(true); }}
+					onDelete={async (id) => { await dispatch(deleteVenue(id)).unwrap(); }}
+				/>
+			),
+		},
+	];
 
 	return (
-		<ListLayout
-			title="Screen Venues"
-			description="Manage DOOH physical screens, resolutions, orientations and simulator endpoints"
-			extraActions={
-				<Space>
-					<Button
-						type="primary"
-						icon={<PlusOutlined />}
-						onClick={() => {
-							setEditingItem(null);
-							setModalOpen(true);
-						}}
-					>
-						Add Screen
-					</Button>
-				</Space>
-			}
-		>
-			<VenueTable
-				data={data}
-				loading={loading}
-				pagination={{
-					...pagination,
-					onChange: (page, pageSize) => fetchData(page, pageSize),
-				}}
-				onEdit={(item) => {
-					setEditingItem(item);
-					setModalOpen(true);
-				}}
-				onDelete={handleDelete}
-				onPreview={handlePreview}
-			/>
-
-			<VenueFormModal
-				open={modalOpen}
-				initialValues={editingItem}
-				loading={submitting}
-				onCancel={() => {
-					setModalOpen(false);
-					setEditingItem(null);
-				}}
-				onSubmit={handleCreateOrUpdate}
-			/>
+		<ListLayout title="DOOH Screen & Venue Hub" description="Manage physical locations, screen display specs, Edge Player credentials and telemetry" extraActions={renderActions}>
+			<VenueStatsBar venues={venues} screens={screens} />
+			<Tabs activeKey={activeTab} onChange={(k) => setActiveTab(k as 'screens' | 'venues')} items={tabItems} />
+			<VenueFormModal open={venueModalOpen} initialValues={editingVenue} loading={submitting} onCancel={() => setVenueModalOpen(false)} onSubmit={handleSaveVenue} />
+			<ScreenFormModal open={screenModalOpen} venues={venues} initialValues={editingScreen} loading={submitting} onCancel={() => setScreenModalOpen(false)} onSubmit={handleSaveScreen} />
+			<ScreenCredentialsModal open={credentialsScreenId !== null} screenId={credentialsScreenId} onClose={() => setCredentialsScreenId(null)} />
 		</ListLayout>
 	);
 };

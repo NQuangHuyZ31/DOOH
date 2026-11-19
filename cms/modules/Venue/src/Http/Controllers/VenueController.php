@@ -19,7 +19,7 @@ class VenueController extends BaseController
     public function index(Request $request): JsonResponse
     {
         $perPage = $request->integer('per_page', $this->getDefaultPerPage(15));
-        $filters = $request->only(['search', 'orientation', 'status']);
+        $filters = $request->only(['search', 'venue_type', 'city_province', 'status']);
 
         $venues = $this->venueService->listVenues($filters, $perPage);
 
@@ -33,7 +33,7 @@ class VenueController extends BaseController
     {
         $venue = $this->venueService->getVenue($id);
         if (!$venue) {
-            return $this->respondNotFound('Venue not found');
+            return $this->respondNotFound('Venue not found.');
         }
 
         return $this->respondSuccess(new VenueResource($venue));
@@ -68,6 +68,15 @@ class VenueController extends BaseController
             return $this->respondNotFound('Venue not found.');
         }
 
-        return $this->respondSuccess(null, 'Venue deleted successfully.');
+        return $this->respondSuccess(['deleted' => true], 'Venue deleted successfully.');
+    }
+
+    public function generateCode(Request $request): JsonResponse
+    {
+        $city = $request->string('city_province')->trim()->value();
+        $name = $request->string('name')->trim()->value();
+        $code = $this->venueService->generateUniqueCode($city, $name ?: 'Venue');
+
+        return $this->respondSuccess(['code' => $code]);
     }
 }

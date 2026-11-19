@@ -24,13 +24,11 @@ class VenueRepositoryTest extends TestCase
     {
         $venue = $this->repository->create([
             'code' => 'REPO-01',
-            'name' => 'Repository Screen Test',
-            'location' => 'Zone B',
-            'width' => 1920,
-            'height' => 1080,
-            'orientation' => 'landscape',
+            'name' => 'Repository Venue Test',
+            'venue_type' => 'shopping_mall',
+            'address' => '123 Main St',
+            'city_province' => 'Ho Chi Minh City',
             'status' => 'active',
-            'secret_key' => 'sec_repo123',
         ]);
 
         $this->assertNotNull($venue->id);
@@ -39,70 +37,61 @@ class VenueRepositoryTest extends TestCase
 
         $this->assertNotNull($found);
         $this->assertEquals($venue->id, $found->id);
-        $this->assertEquals('Repository Screen Test', $found->name);
+        $this->assertEquals('Repository Venue Test', $found->name);
     }
 
     public function test_repository_paginate_returns_length_aware_paginator(): void
     {
         for ($i = 1; $i <= 5; $i++) {
             $this->repository->create([
-                'code' => "SCREEN-PAG-0{$i}",
-                'name' => "Screen {$i}",
-                'location' => "Floor {$i}",
-                'width' => 1920,
-                'height' => 1080,
+                'code' => "VENUE-PAG-0{$i}",
+                'name' => "Venue {$i}",
                 'status' => 'active',
-                'secret_key' => "sec_p{$i}",
             ]);
         }
 
-        $paginated = $this->repository->paginate(2);
+        $paginator = $this->repository->paginate(2, []);
 
-        $this->assertEquals(2, $paginated->perPage());
-        $this->assertEquals(5, $paginated->total());
-        $this->assertEquals(3, $paginated->lastPage());
-        $this->assertCount(2, $paginated->items());
+        $this->assertEquals(5, $paginator->total());
+        $this->assertCount(2, $paginator->items());
+        $this->assertEquals(1, $paginator->currentPage());
+        $this->assertEquals(3, $paginator->lastPage());
     }
 
-    public function test_repository_update_modifies_record(): void
+    public function test_repository_updates_venue(): void
     {
         $venue = $this->repository->create([
-            'code' => 'UPDATE-REPO',
-            'name' => 'Initial Name',
-            'location' => 'Initial Location',
-            'width' => 1920,
-            'height' => 1080,
+            'code' => 'UP-01',
+            'name' => 'Original Name',
             'status' => 'active',
-            'secret_key' => 'sec_up_repo',
         ]);
 
         $updated = $this->repository->update($venue->id, [
-            'name' => 'Changed Name',
+            'name' => 'Updated Venue Name',
             'status' => 'inactive',
         ]);
 
         $this->assertTrue($updated);
 
-        $refreshed = $this->repository->find($venue->id);
-        $this->assertEquals('Changed Name', $refreshed->name);
-        $this->assertEquals('inactive', $refreshed->status);
+        $fresh = $this->repository->find($venue->id);
+        $this->assertEquals('Updated Venue Name', $fresh->name);
+        $this->assertEquals('inactive', $fresh->status);
     }
 
-    public function test_repository_delete_removes_record(): void
+    public function test_repository_deletes_venue(): void
     {
         $venue = $this->repository->create([
-            'code' => 'DEL-REPO',
-            'name' => 'Delete Repo Screen',
-            'location' => 'To remove',
-            'width' => 1920,
-            'height' => 1080,
+            'code' => 'DEL-01',
+            'name' => 'To be deleted',
             'status' => 'active',
-            'secret_key' => 'sec_del_repo',
         ]);
 
         $deleted = $this->repository->delete($venue->id);
-
         $this->assertTrue($deleted);
-        $this->assertNull($this->repository->find($venue->id));
+
+        $found = $this->repository->find($venue->id);
+        $this->assertNull($found);
+
+        $this->assertSoftDeleted('venues', ['id' => $venue->id]);
     }
 }

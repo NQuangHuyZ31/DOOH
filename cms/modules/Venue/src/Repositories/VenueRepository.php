@@ -8,6 +8,8 @@ use Modules\Venue\Repositories\Interfaces\VenueRepositoryInterface;
 
 class VenueRepository extends BaseRepository implements VenueRepositoryInterface
 {
+    protected array $with = ['screens'];
+
     public function __construct(Venue $model)
     {
         parent::__construct($model);
