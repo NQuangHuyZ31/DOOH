@@ -35,6 +35,10 @@ Merge module config in `<Module>ServiceProvider::register()`: `$this->mergeConfi
 - **Mandatory `JsonResource` Data Formatting (`src/Resources/<Entity>Resource.php`)**:
   - Every entity, collection, or paginated list returned by an API endpoint MUST be formatted using a dedicated `JsonResource` class in `src/Resources/<Entity>Resource.php` (e.g., `new <Entity>Resource($item)`, `<Entity>Resource::collection($items)`, or mapping paginator items through `<Entity>Resource`).
   - NEVER write ad-hoc `transform<Entity>()` methods or mutate Eloquent model attributes/relations (`setAttribute()`, `unsetRelation()`) inside Services or Controllers to shape API output.
+- **Respect Database Nullability & Schema Defaults (Zero Magic Fallback Values)**:
+  - When a database column is `nullable` (or has a schema-level `default`), NEVER invent arbitrary hardcoded fallback values in Services, Repositories, or Resources (e.g., `$width = (int) ($data['resolution_width'] ?? 1920)` or `$name = $data['name'] ?? 'Venue'`).
+  - If a nullable field is omitted or `null`, keep it as `null`. For partial `update` operations (`sometimes` validation) that need an existing value to compute derived fields, read the existing record's attribute (`$data['field'] ?? $existing->field`), and only compute when non-null.
+  - In `JsonResource`, preserve `null` for nullable numeric/boolean columns (`$this->field !== null ? (int) $this->field : null`) — NEVER cast `(int) $this->nullable_field` directly (which silently turns `null` into `0`).
 
 ## 2. Service Decomposition & Core Reuse
 

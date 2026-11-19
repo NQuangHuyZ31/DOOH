@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Form, Input, InputNumber, Select, Button, Space, message } from 'antd';
-import { ThunderboltOutlined } from '@ant-design/icons';
+import { Form, Tabs, message } from 'antd';
+import dayjs from 'dayjs';
 import { CustomModal } from '@core/components/CustomModal';
 import { useAppSelector } from '@core/store/hooks';
 import { venueApi } from '../Action/venueApi';
 import type { VenueItem } from '../types/venue';
+import { VenueGeneralLocationTab } from './VenueGeneralLocationTab';
+import { VenueOperationsTab } from './VenueOperationsTab';
 
 interface VenueFormModalProps {
 	open: boolean;
@@ -21,6 +23,7 @@ export const VenueFormModal: React.FC<VenueFormModalProps> = ({ open, initialVal
 	const metadata = useAppSelector((state) => state.metadata.data);
 	const currentUser = useAppSelector((state) => state.auth.user);
 	const isSuperAdminOrAdmin = currentUser?.role === 'super_admin' || currentUser?.role === 'admin';
+	const is247 = Form.useWatch('is_24_7', form);
 
 	const venueTypeOptions = metadata?.enums?.venue_types || [];
 	const statusOptions = metadata?.statuses?.venue || [];
@@ -41,13 +44,20 @@ export const VenueFormModal: React.FC<VenueFormModalProps> = ({ open, initialVal
 	useEffect(() => {
 		if (open) {
 			if (initialValues) {
-				form.setFieldsValue(initialValues);
+				form.setFieldsValue({
+					...initialValues,
+					opening_time: initialValues.opening_time ? dayjs(initialValues.opening_time, 'HH:mm:ss') : dayjs('06:00:00', 'HH:mm:ss'),
+					closing_time: initialValues.closing_time ? dayjs(initialValues.closing_time, 'HH:mm:ss') : dayjs('23:00:00', 'HH:mm:ss'),
+				});
 			} else {
 				form.resetFields();
 				form.setFieldsValue({
 					venue_type: 'shopping_mall',
 					country_code: 'VN',
 					status: 'active',
+					is_24_7: false,
+					opening_time: dayjs('06:00:00', 'HH:mm:ss'),
+					closing_time: dayjs('23:00:00', 'HH:mm:ss'),
 					media_owner_id: currentUser?.id,
 				});
 			}
@@ -76,64 +86,43 @@ export const VenueFormModal: React.FC<VenueFormModalProps> = ({ open, initialVal
 	const handleOk = async () => {
 		try {
 			const values = await form.validateFields();
-			await onSubmit(values);
+			const payload: Partial<VenueItem> = {
+				...values,
+				opening_time: values.is_24_7
+					? '00:00:00'
+					: values.opening_time && dayjs.isDayjs(values.opening_time)
+						? values.opening_time.format('HH:mm:ss')
+						: values.opening_time,
+				closing_time: values.is_24_7
+					? '23:59:59'
+					: values.closing_time && dayjs.isDayjs(values.closing_time)
+						? values.closing_time.format('HH:mm:ss')
+						: values.closing_time,
+			};
+			await onSubmit(payload);
 		} catch {
 			// Form validation failure
 		}
 	};
 
 	return (
-		<CustomModal open={open} title={initialValues ? 'Edit Venue Location' : 'Create New Venue Location'} onOk={handleOk} onCancel={onCancel} confirmLoading={loading} width={640}>
+		<CustomModal open={open} title={initialValues ? 'Edit Venue Location' : 'Create New Venue Location'} onOk={handleOk} onCancel={onCancel} confirmLoading={loading} width={680}>
 			<Form form={form} layout="vertical">
-				<div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
-					<Form.Item name="name" label="Venue Name" rules={[{ required: true, message: 'Please enter venue name' }]}>
-						<Input placeholder="e.g. Landmark 81 Mall" />
-					</Form.Item>
-					<Form.Item name="venue_type" label="Environment Type">
-						<Select options={venueTypeOptions} />
-					</Form.Item>
-				</div>
-				<Form.Item label="Venue Code" required>
-					<Space.Compact style={{ width: '100%' }}>
-						<Form.Item name="code" noStyle rules={[{ required: true, message: 'Venue code is required' }]}>
-							<Input placeholder="e.g. SGN-LM81" style={{ textTransform: 'uppercase' }} />
-						</Form.Item>
-						<Button icon={<ThunderboltOutlined />} onClick={handleAutoGenerateCode} loading={generating} title="Auto generate standard code">
-							Auto Code
-						</Button>
-					</Space.Compact>
-				</Form.Item>
-				<Form.Item name="address" label="Street Address">
-					<Input placeholder="e.g. 720A Dien Bien Phu, Ward 22" />
-				</Form.Item>
-				<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-					<Form.Item name="city_province" label="City / Province">
-						<Input placeholder="e.g. Ho Chi Minh City" />
-					</Form.Item>
-					<Form.Item name="district" label="District">
-						<Input placeholder="e.g. Binh Thanh" />
-					</Form.Item>
-				</div>
-				<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-					<Form.Item name="daily_traffic" label="Daily Traffic (Est. OTS)">
-						<InputNumber style={{ width: '100%' }} min={0} placeholder="85000" />
-					</Form.Item>
-					<Form.Item name="status" label="Status">
-						<Select options={statusOptions} />
-					</Form.Item>
-				</div>
-				{isSuperAdminOrAdmin && (
-					<Form.Item name="media_owner_id" label="Media Owner / Asset Partner">
-						<Select
-							allowClear
-							placeholder="Select Media Owner"
-							options={mediaOwners.map((owner) => ({
-								value: owner.id,
-								label: `${owner.name} (${owner.email})`,
-							}))}
-						/>
-					</Form.Item>
-				)}
+				<Tabs
+					defaultActiveKey="general"
+					items={[
+						{
+							key: 'general',
+							label: 'General & Location',
+							children: <VenueGeneralLocationTab venueTypeOptions={venueTypeOptions} generating={generating} onAutoGenerateCode={handleAutoGenerateCode} />,
+						},
+						{
+							key: 'operations',
+							label: 'Operations & Contact',
+							children: <VenueOperationsTab is247={Boolean(is247)} statusOptions={statusOptions} isSuperAdminOrAdmin={isSuperAdminOrAdmin} mediaOwners={mediaOwners} />,
+						},
+					]}
+				/>
 			</Form>
 		</CustomModal>
 	);

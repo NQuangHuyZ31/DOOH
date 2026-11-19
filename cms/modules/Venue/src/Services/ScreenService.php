@@ -4,7 +4,7 @@ namespace Modules\Venue\Services;
 
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Redis;
-use Illuminate\Support\Str;
+use Modules\Core\Support\HmacKeyUtil;
 use Modules\Venue\Models\Screen;
 use Modules\Venue\Repositories\Interfaces\ScreenRepositoryInterface;
 use Modules\Venue\Repositories\Interfaces\VenueRepositoryInterface;
@@ -29,16 +29,16 @@ class ScreenService
 
     public function createScreen(array $data): Screen
     {
-        if (empty($data['secret_key'])) {
-            $data['secret_key'] = Str::random(40);
-        }
-
         if (empty($data['code'])) {
             $venue = $this->venueRepo->find($data['venue_id']);
             $venueCode = $venue ? $venue->code : 'VNU';
             $data['code'] = $this->generateUniqueScreenCode($venueCode);
         } else {
             $data['code'] = strtoupper(trim($data['code']));
+        }
+
+        if (empty($data['secret_key'])) {
+            $data['secret_key'] = HmacKeyUtil::generateScreenKey($data['code']);
         }
 
         $width = (int) ($data['resolution_width'] ?? 1920);
@@ -93,7 +93,7 @@ class ScreenService
             return null;
         }
 
-        $newKey = Str::random(40);
+        $newKey = HmacKeyUtil::generateScreenKey($screen->code);
         $this->screenRepo->update($id, ['secret_key' => $newKey]);
         $this->evictPlaylistCache($screen->venue_id);
 
