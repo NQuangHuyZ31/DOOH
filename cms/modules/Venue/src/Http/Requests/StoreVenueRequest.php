@@ -11,19 +11,27 @@ class StoreVenueRequest extends FormRequest
         return true;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     public function rules(): array
     {
         return [
-            'code' => ['required', 'string', 'unique:venues,code'],
-            'name' => ['required', 'string'],
-            'location' => ['required', 'string'],
-            'width' => ['required', 'integer'],
-            'height' => ['required', 'integer'],
-            'orientation' => ['nullable', 'string', 'in:landscape,portrait'],
-            'status' => ['nullable', 'string', 'in:active,inactive,maintenance'],
+            'code' => ['nullable', 'string', 'max:64', 'unique:venues,code'],
+            'name' => ['required', 'string', 'max:255'],
+            'venue_type' => ['nullable', 'string', 'max:64'],
+            'media_owner_id' => ['nullable', 'integer', 'exists:users,id'],
+            'address' => ['nullable', 'string', 'max:255'],
+            'ward' => ['nullable', 'string', 'max:100'],
+            'district' => ['nullable', 'string', 'max:100'],
+            'city_province' => ['nullable', 'string', 'max:100'],
+            'country_code' => ['nullable', 'string', 'size:2'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'opening_time' => ['nullable'],
+            'closing_time' => ['nullable'],
+            'is_24_7' => ['nullable', 'boolean'],
+            'daily_traffic' => ['nullable', 'integer', 'min:0'],
+            'contact_name' => ['nullable', 'string', 'max:100'],
+            'contact_phone' => ['nullable', 'string', 'max:20'],
+            'status' => ['nullable', 'in:active,inactive,maintenance'],
         ];
     }
 }

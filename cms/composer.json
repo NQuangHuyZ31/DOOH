@@ -45,6 +45,7 @@
 			"Modules\\Auth\\": "modules/Auth/src/",
 			"Modules\\User\\": "modules/User/src/",
 			"Modules\\User\\Database\\Seeders\\": "modules/User/database/seeders/",
+			"Modules\\Venue\\Database\\Seeders\\": "modules/Venue/database/seeders/",
 			"Database\\Seeders\\": "database/seeders/"
 		}
 	},

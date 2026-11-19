@@ -53,7 +53,7 @@ Modules (`cms/modules/`): `Core, Auth, User, Venue, Creative, Delivery, Report, 
 | API response & endpoint contracts | `.agents/rules/api-contract.md` |
 | Node tracking API | `.agents/rules/node-tracking-api.md` |
 
-Deep docs (read only when needed): `docs/architecture/`, `docs/backend/`, `docs/frontend/`, `docs/database/`, `docs/api/`.
+Deep docs (read only when needed): `docs/architecture/` (consult `stakeholder-operations-and-flow.md` for real-world DOOH stakeholder operations & flow), `docs/backend/`, `docs/frontend/`, `docs/database/`, `docs/api/`.
 
 ## 5. Quality Gates
 

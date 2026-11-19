@@ -1,45 +1,63 @@
 import React from 'react';
-import { Space, Button, Popconfirm } from 'antd';
-import { EditOutlined, DeleteOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import { Space, Button, Popconfirm, Tag } from 'antd';
+import { EditOutlined, DeleteOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { StatusTag } from '@core/components/StatusTag';
-import type { VenueItem } from '../Action/venueApi';
+import type { VenueItem } from '../types/venue';
 
 interface ColumnActions {
 	onEdit: (item: VenueItem) => void;
 	onDelete: (id: number) => void;
-	onPreview: (item: VenueItem) => void;
 }
 
-export const getVenueColumns = ({ onEdit, onDelete, onPreview }: ColumnActions) => [
+export const getVenueColumns = ({ onEdit, onDelete }: ColumnActions) => [
 	{
 		title: 'Code',
 		dataIndex: 'code',
 		key: 'code',
-		width: 130,
-		render: (code: string) => <strong>{code}</strong>,
+		width: 140,
+		render: (code: string) => <Tag color="blue">{code}</Tag>,
 	},
 	{
-		title: 'Screen Name',
+		title: 'Venue Name',
 		dataIndex: 'name',
 		key: 'name',
+		render: (name: string, record: VenueItem) => (
+			<div>
+				<strong>{name}</strong>
+				{record.address && (
+					<div style={{ fontSize: 12, color: '#8c8c8c' }}>
+						<EnvironmentOutlined style={{ marginRight: 4 }} />
+						{record.address}
+					</div>
+				)}
+			</div>
+		),
 	},
 	{
-		title: 'Location',
-		dataIndex: 'location',
-		key: 'location',
+		title: 'Type',
+		dataIndex: 'venue_type',
+		key: 'venue_type',
+		width: 150,
+		render: (val: string) => <Tag>{val?.replace(/_/g, ' ') || 'General'}</Tag>,
 	},
 	{
-		title: 'Resolution',
-		key: 'resolution',
-		width: 140,
-		render: (_: unknown, record: VenueItem) => `${record.width} x ${record.height}`,
+		title: 'City / Region',
+		key: 'region',
+		width: 160,
+		render: (_: unknown, record: VenueItem) => (record.city_province ? `${record.district ? record.district + ', ' : ''}${record.city_province}` : '—'),
 	},
 	{
-		title: 'Orientation',
-		dataIndex: 'orientation',
-		key: 'orientation',
-		width: 120,
-		render: (val: string) => (val === 'portrait' ? 'Portrait (9:16)' : 'Landscape (16:9)'),
+		title: 'Screens',
+		key: 'screens',
+		width: 90,
+		align: 'center' as const,
+		render: (_: unknown, record: VenueItem) => <Tag color="geekblue">{record.screens_count ?? 0}</Tag>,
+	},
+	{
+		title: 'Media Owner',
+		key: 'media_owner',
+		width: 150,
+		render: (_: unknown, record: VenueItem) => (record.media_owner?.name ? <Tag color="purple">{record.media_owner.name}</Tag> : <span style={{ color: '#bfbfbf', fontSize: 12 }}>Unassigned</span>),
 	},
 	{
 		title: 'Status',
@@ -51,12 +69,11 @@ export const getVenueColumns = ({ onEdit, onDelete, onPreview }: ColumnActions) 
 	{
 		title: 'Actions',
 		key: 'actions',
-		width: 160,
+		width: 110,
 		render: (_: unknown, record: VenueItem) => (
 			<Space size="small">
-				<Button type="link" size="small" icon={<PlayCircleOutlined />} onClick={() => onPreview(record)} title="Screen Simulator" />
 				<Button type="link" size="small" icon={<EditOutlined />} onClick={() => onEdit(record)} />
-				<Popconfirm title="Delete screen?" description="Are you sure you want to delete this venue?" onConfirm={() => onDelete(record.id)} okText="Yes" cancelText="No">
+				<Popconfirm title="Delete Venue" description="Delete this venue and its associated screens?" onConfirm={() => onDelete(record.id)} okText="Yes" cancelText="No">
 					<Button type="link" size="small" danger icon={<DeleteOutlined />} />
 				</Popconfirm>
 			</Space>

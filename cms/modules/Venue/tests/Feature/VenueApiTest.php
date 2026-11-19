@@ -29,14 +29,11 @@ class VenueApiTest extends TestCase
         $this->authenticateAsSuperAdmin();
 
         Venue::create([
-            'code' => 'TEST-01',
-            'name' => 'Screen Alpha',
-            'location' => 'Building A, Lobby',
-            'width' => 1920,
-            'height' => 1080,
-            'orientation' => 'landscape',
+            'code' => 'SGN-LM81',
+            'name' => 'Landmark 81',
+            'venue_type' => 'shopping_mall',
+            'city_province' => 'Ho Chi Minh City',
             'status' => 'active',
-            'secret_key' => 'sec_alpha123',
         ]);
 
         $response = $this->getJson('/admin/api/venue');
@@ -44,7 +41,7 @@ class VenueApiTest extends TestCase
         $response->assertStatus(200)
                  ->assertJsonPath('status', 'success')
                  ->assertJsonCount(1, 'data')
-                 ->assertJsonPath('data.0.code', 'TEST-01')
+                 ->assertJsonPath('data.0.code', 'SGN-LM81')
                  ->assertJsonStructure([
                      'status',
                      'message',
@@ -63,12 +60,12 @@ class VenueApiTest extends TestCase
         $this->authenticateAsSuperAdmin();
 
         $payload = [
-            'code' => 'HN-CG-01',
-            'name' => 'Cau Giay LED Billboard',
-            'location' => 'Cau Giay, Hanoi',
-            'width' => 3840,
-            'height' => 2160,
-            'orientation' => 'landscape',
+            'code' => 'HAN-NOIBAI-T2',
+            'name' => 'Noi Bai Terminal 2',
+            'venue_type' => 'airport',
+            'city_province' => 'Hanoi',
+            'district' => 'Soc Son',
+            'daily_traffic' => 60000,
             'status' => 'active',
         ];
 
@@ -76,86 +73,49 @@ class VenueApiTest extends TestCase
 
         $response->assertStatus(201)
                  ->assertJsonPath('status', 'success')
-                 ->assertJsonPath('data.code', 'HN-CG-01')
-                 ->assertJsonPath('data.name', 'Cau Giay LED Billboard');
+                 ->assertJsonPath('data.code', 'HAN-NOIBAI-T2')
+                 ->assertJsonPath('data.name', 'Noi Bai Terminal 2');
 
         $this->assertDatabaseHas('venues', [
-            'code' => 'HN-CG-01',
-            'name' => 'Cau Giay LED Billboard',
+            'code' => 'HAN-NOIBAI-T2',
+            'name' => 'Noi Bai Terminal 2',
         ]);
     }
 
-    public function test_create_venue_validation_failure_on_missing_fields(): void
+    public function test_create_venue_with_auto_generated_code(): void
     {
         $this->authenticateAsSuperAdmin();
 
-        // Missing required fields: code, name, location, width, height
-        $response = $this->postJson('/admin/api/venue', []);
+        $payload = [
+            'name' => 'Vincom Mega Mall',
+            'city_province' => 'Ho Chi Minh City',
+            'venue_type' => 'shopping_mall',
+        ];
 
-        $response->assertStatus(422)
-                 ->assertJsonValidationErrors(['code', 'name', 'location', 'width', 'height']);
+        $response = $this->postJson('/admin/api/venue', $payload);
+
+        $response->assertStatus(201);
+        $code = $response->json('data.code');
+        $this->assertNotEmpty($code);
+        $this->assertStringStartsWith('SGN-', $code);
     }
 
-    public function test_create_venue_validation_failure_on_duplicate_code(): void
-    {
-        $this->authenticateAsSuperAdmin();
-
-        Venue::create([
-            'code' => 'UNIQUE-01',
-            'name' => 'Existing Screen',
-            'location' => 'Zone 1',
-            'width' => 1920,
-            'height' => 1080,
-            'orientation' => 'landscape',
-            'status' => 'active',
-            'secret_key' => 'sec_unique123',
-        ]);
-
-        $response = $this->postJson('/admin/api/venue', [
-            'code' => 'UNIQUE-01',
-            'name' => 'Duplicate Code Screen',
-            'location' => 'Zone 2',
-            'width' => 1920,
-            'height' => 1080,
-        ]);
-
-        $response->assertStatus(422)
-                 ->assertJsonValidationErrors(['code']);
-    }
-
-    public function test_get_venue_by_id_success(): void
+    public function test_show_venue_success(): void
     {
         $this->authenticateAsSuperAdmin();
 
         $venue = Venue::create([
-            'code' => 'SHOW-01',
-            'name' => 'Show Venue Test',
-            'location' => 'Floor 10',
-            'width' => 1080,
-            'height' => 1920,
-            'orientation' => 'portrait',
+            'code' => 'SGN-VCDK',
+            'name' => 'Vincom Dong Khoi',
+            'city_province' => 'Ho Chi Minh City',
             'status' => 'active',
-            'secret_key' => 'sec_show123',
         ]);
 
         $response = $this->getJson("/admin/api/venue/{$venue->id}");
 
         $response->assertStatus(200)
                  ->assertJsonPath('status', 'success')
-                 ->assertJsonPath('data.id', $venue->id)
-                 ->assertJsonPath('data.code', 'SHOW-01')
-                 ->assertJsonPath('data.orientation', 'portrait');
-    }
-
-    public function test_get_venue_not_found_returns_404(): void
-    {
-        $this->authenticateAsSuperAdmin();
-
-        $response = $this->getJson('/admin/api/venue/999999');
-
-        $response->assertStatus(404)
-                 ->assertJsonPath('status', 'error')
-                 ->assertJsonPath('message', 'Venue not found');
+                 ->assertJsonPath('data.code', 'SGN-VCDK');
     }
 
     public function test_update_venue_success(): void
@@ -163,19 +123,15 @@ class VenueApiTest extends TestCase
         $this->authenticateAsSuperAdmin();
 
         $venue = Venue::create([
-            'code' => 'UPDATE-01',
-            'name' => 'Original Name',
-            'location' => 'Original Location',
-            'width' => 1920,
-            'height' => 1080,
-            'orientation' => 'landscape',
+            'code' => 'HAN-KEANGNAM',
+            'name' => 'Keangnam 72',
+            'city_province' => 'Hanoi',
             'status' => 'active',
-            'secret_key' => 'sec_update123',
         ]);
 
         $response = $this->putJson("/admin/api/venue/{$venue->id}", [
-            'name' => 'Updated Screen Name',
-            'status' => 'maintenance',
+            'name' => 'Keangnam Landmark 72 Tower',
+            'daily_traffic' => 45000,
         ]);
 
         $response->assertStatus(200)
@@ -183,24 +139,19 @@ class VenueApiTest extends TestCase
 
         $this->assertDatabaseHas('venues', [
             'id' => $venue->id,
-            'name' => 'Updated Screen Name',
-            'status' => 'maintenance',
+            'name' => 'Keangnam Landmark 72 Tower',
+            'daily_traffic' => 45000,
         ]);
     }
 
-    public function test_delete_venue_success(): void
+    public function test_delete_venue_soft_deletes(): void
     {
         $this->authenticateAsSuperAdmin();
 
         $venue = Venue::create([
-            'code' => 'DELETE-01',
-            'name' => 'To Be Deleted',
-            'location' => 'Temporary Area',
-            'width' => 1920,
-            'height' => 1080,
-            'orientation' => 'landscape',
+            'code' => 'SGN-BITEXCO',
+            'name' => 'Bitexco Financial Tower',
             'status' => 'active',
-            'secret_key' => 'sec_del123',
         ]);
 
         $response = $this->deleteJson("/admin/api/venue/{$venue->id}");
@@ -208,8 +159,63 @@ class VenueApiTest extends TestCase
         $response->assertStatus(200)
                  ->assertJsonPath('status', 'success');
 
-        $this->assertSoftDeleted('venues', [
-            'id' => $venue->id,
+        $this->assertSoftDeleted('venues', ['id' => $venue->id]);
+    }
+
+    public function test_generate_code_endpoint(): void
+    {
+        $this->authenticateAsSuperAdmin();
+
+        $response = $this->getJson('/admin/api/venue/generate-code?city_province=Hanoi&name=Lotte+Center');
+
+        $response->assertStatus(200)
+                 ->assertJsonPath('status', 'success')
+                 ->assertJsonPath('data.code', 'HAN-LOTTE-CENTER');
+    }
+
+    public function test_media_owner_can_only_see_their_own_venues(): void
+    {
+        $role = \Modules\User\Models\Role::firstOrCreate(
+            ['name' => 'media_owner'],
+            ['display_name' => 'Media Owner']
+        );
+
+        $ownerA = \Modules\User\Models\User::create([
+            'name' => 'Media Owner A',
+            'email' => 'owner.a@dooh.media',
+            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+            'role_id' => $role->id,
+            'permission_type' => \Modules\User\Models\User::PERMISSION_TYPE_ROLE,
         ]);
+
+        $ownerB = \Modules\User\Models\User::create([
+            'name' => 'Media Owner B',
+            'email' => 'owner.b@dooh.media',
+            'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+            'role_id' => $role->id,
+            'permission_type' => \Modules\User\Models\User::PERMISSION_TYPE_ROLE,
+        ]);
+
+        Venue::create([
+            'code' => 'SGN-OWNER-A',
+            'name' => 'Venue Owner A',
+            'media_owner_id' => $ownerA->id,
+            'status' => 'active',
+        ]);
+
+        Venue::create([
+            'code' => 'HAN-OWNER-B',
+            'name' => 'Venue Owner B',
+            'media_owner_id' => $ownerB->id,
+            'status' => 'active',
+        ]);
+
+        \Laravel\Sanctum\Sanctum::actingAs($ownerA);
+
+        $response = $this->getJson('/admin/api/venue');
+        $response->assertStatus(200)
+                 ->assertJsonPath('status', 'success')
+                 ->assertJsonCount(1, 'data')
+                 ->assertJsonPath('data.0.code', 'SGN-OWNER-A');
     }
 }

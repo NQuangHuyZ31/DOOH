@@ -1,0 +1,35 @@
+<?php
+
+namespace Modules\Venue\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class StoreScreenRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'venue_id' => ['required', 'integer', 'exists:venues,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['nullable', 'string', 'max:64', 'unique:screens,code'],
+            'sub_location' => ['nullable', 'string', 'max:255'],
+            'screen_type' => ['nullable', 'string', 'max:64'],
+            'resolution_width' => ['required', 'integer', 'min:100', 'max:15360'],
+            'resolution_height' => ['required', 'integer', 'min:100', 'max:8640'],
+            'physical_width_m' => ['nullable', 'numeric', 'min:0'],
+            'physical_height_m' => ['nullable', 'numeric', 'min:0'],
+            'pixel_pitch_mm' => ['nullable', 'numeric', 'min:0'],
+            'brightness_nits' => ['nullable', 'integer', 'min:0'],
+            'has_audio' => ['nullable', 'boolean'],
+            'loop_duration_seconds' => ['nullable', 'integer', 'min:10', 'max:3600'],
+            'default_slot_seconds' => ['nullable', 'integer', 'min:5', 'max:300'],
+            'hardware_device_uid' => ['nullable', 'string', 'max:128'],
+            'status' => ['nullable', 'in:active,inactive,maintenance'],
+        ];
+    }
+}

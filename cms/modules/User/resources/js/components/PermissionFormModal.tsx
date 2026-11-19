@@ -24,13 +24,7 @@ export const PermissionFormModal: React.FC<PermissionFormModalProps> = ({
 	const selectedModule = Form.useWatch('module', form);
 	const actionKey = Form.useWatch('action', form);
 
-	const moduleOptions = useMemo(() => {
-		if (metadata?.enums?.modules && metadata.enums.modules.length > 0) return metadata.enums.modules;
-		if (metadata?.app?.modules && metadata.app.modules.length > 0) {
-			return metadata.app.modules.map((m) => ({ label: m.toUpperCase(), value: m.toLowerCase() }));
-		}
-		return [];
-	}, [metadata]);
+	const moduleOptions = useMemo(() => metadata?.enums?.modules || [], [metadata]);
 
 	// Auto-format slug: ${module}.${action} when creating
 	useEffect(() => {

@@ -18,7 +18,7 @@ export const PermissionListPage: React.FC = () => {
 	const { permissions, loading, submitting, filters, pagination, modalOpen, editingPermission } = useAppSelector((state) => state.permission);
 
 	const moduleOptions = useMemo(() => {
-		const raw = metadata?.enums?.modules && metadata.enums.modules.length > 0 ? metadata.enums.modules : (metadata?.app?.modules || []).map((m) => ({ label: m.toUpperCase(), value: m.toLowerCase() }));
+		const raw = metadata?.enums?.modules || [];
 		return [{ label: 'All Modules', value: '' }, ...raw];
 	}, [metadata]);
 

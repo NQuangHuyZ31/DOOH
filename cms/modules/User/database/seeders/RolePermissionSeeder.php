@@ -31,6 +31,11 @@ class RolePermissionSeeder extends Seeder
                 'description' => 'Manages screens, playlists, schedules, simulator, and creative playback',
             ],
             [
+                'name' => 'media_owner',
+                'display_name' => 'Media Owner / Partner',
+                'description' => 'Owns and operates physical venues and screen hardware assets',
+            ],
+            [
                 'name' => 'viewer',
                 'display_name' => 'Report Viewer',
                 'description' => 'Read-only access to analytics, audit logs, and delivery metrics',
@@ -120,6 +125,15 @@ class RolePermissionSeeder extends Seeder
         ];
         $operatorPermIds = array_map(fn ($name) => $permissions[$name]->id, array_filter($operatorPermissions, fn ($n) => isset($permissions[$n])));
         $roles['operator']->permissions()->sync($operatorPermIds);
+
+        // media_owner -> manages own venues, screens, and view reports
+        $mediaOwnerPermissions = [
+            'venue.view', 'venue.create', 'venue.edit', 'venue.delete',
+            'report.view',
+            'simulator.view',
+        ];
+        $mediaOwnerPermIds = array_map(fn ($name) => $permissions[$name]->id, array_filter($mediaOwnerPermissions, fn ($n) => isset($permissions[$n])));
+        $roles['media_owner']->permissions()->sync($mediaOwnerPermIds);
 
         // viewer -> view only
         $viewerPermissions = [
