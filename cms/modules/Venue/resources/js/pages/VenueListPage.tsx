@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button, Space, Tabs, message } from 'antd';
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { PlusOutlined, ReloadOutlined, CompassOutlined } from '@ant-design/icons';
 import { DynamicFilterBar } from '@core/components/DynamicFilterBar';
 import { ListLayout } from '@core/components/ListLayout';
 import { useAppDispatch, useAppSelector } from '@core/store/hooks';
@@ -11,6 +11,7 @@ import { VenueTable } from '../components/VenueTable';
 import { VenueFormModal } from '../components/VenueFormModal';
 import { ScreenFormModal } from '../components/ScreenFormModal';
 import { ScreenCredentialsModal } from '../components/ScreenCredentialsModal';
+import { VenueMapModal } from '../components/VenueMapModal';
 import { getScreenFilterConfigs } from '../configs/screenFilterConfigs';
 import { getVenueFilterConfigs } from '../configs/venueFilterConfigs';
 import { setScreenFilters, setVenueFilters } from '../store/venueSlice';
@@ -27,6 +28,7 @@ export const VenueListPage: React.FC = () => {
 	const [editingVenue, setEditingVenue] = useState<VenueItem | null>(null);
 	const [editingScreen, setEditingScreen] = useState<ScreenItem | null>(null);
 	const [credentialsScreenId, setCredentialsScreenId] = useState<number | null>(null);
+	const [mapModalOpen, setMapModalOpen] = useState(false);
 
 	const loadData = useCallback(() => {
 		dispatch(fetchVenues({ ...venueFilters, per_page: venuePagination.pageSize || 15 }));
@@ -68,6 +70,9 @@ export const VenueListPage: React.FC = () => {
 
 	const renderActions = (
 		<Space>
+			<Button icon={<CompassOutlined />} onClick={() => setMapModalOpen(true)}>
+				View on Map
+			</Button>
 			<Button icon={<ReloadOutlined />} onClick={loadData}>Refresh</Button>
 			<Button type="primary" icon={<PlusOutlined />} onClick={() => {
 				activeTab === 'screens' ? (setEditingScreen(null), setScreenModalOpen(true)) : (setEditingVenue(null), setVenueModalOpen(true));
@@ -113,6 +118,7 @@ export const VenueListPage: React.FC = () => {
 			<VenueFormModal open={venueModalOpen} initialValues={editingVenue} loading={submitting} onCancel={() => setVenueModalOpen(false)} onSubmit={handleSaveVenue} />
 			<ScreenFormModal open={screenModalOpen} venues={venues} initialValues={editingScreen} loading={submitting} onCancel={() => setScreenModalOpen(false)} onSubmit={handleSaveScreen} />
 			<ScreenCredentialsModal open={credentialsScreenId !== null} screenId={credentialsScreenId} onClose={() => setCredentialsScreenId(null)} />
+			<VenueMapModal open={mapModalOpen} venues={venues} onCancel={() => setMapModalOpen(false)} />
 		</ListLayout>
 	);
 };
