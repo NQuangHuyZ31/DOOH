@@ -9,6 +9,7 @@ Welcome to the **DOOH (Digital Out-Of-Home)** platform engineering documentation
 | Topic | Document | Scope & Key Contents |
 |---|---|---|
 | **System Overview** | [`overview.md`](file:///E:/Urekamedia/DOOH/docs/architecture/overview.md) | High-level topology, Monorepo layout (`cms/`, `api/`), Dual-DB strategy. |
+| **Stakeholder Ops & Flow** | [`stakeholder-operations-and-flow.md`](file:///E:/Urekamedia/DOOH/docs/architecture/stakeholder-operations-and-flow.md) | Real-world operations, stakeholder responsibilities (Advertiser, Owner, Ops, Finance), API roles, and edge player behavior. |
 | **System & Data Flow** | [`system-flow.md`](file:///E:/Urekamedia/DOOH/docs/architecture/system-flow.md) | End-to-end activity diagrams, Playlist loop, Tracking beacon, Offline flow. |
 | **Business Specs** | [`business-requirements.md`](file:///E:/Urekamedia/DOOH/docs/architecture/business-requirements.md) | Venue, Delivery, Creative formats (VAST/MP4), Pacing & Proof of Play. |
 | **API & Tracking** | [`routing-and-contracts.md`](file:///E:/Urekamedia/DOOH/docs/api/routing-and-contracts.md) | Pure Node.js API, Playlist generation, Opaque token tracking (`:hash`). |

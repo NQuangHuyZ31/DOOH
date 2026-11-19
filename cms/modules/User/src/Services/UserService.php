@@ -52,7 +52,6 @@ class UserService
 
             $this->userRepository->syncDirectPermissions($user, $permissionIds);
 
-            /** @var User */
             return $this->userRepository->find($user->id);
         });
     }
