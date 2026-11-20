@@ -158,4 +158,21 @@ class CreativeController extends BaseController
 	{
 		return $this->status($request);
 	}
+
+	public function parseVast(Request $request): JsonResponse
+	{
+		$validated = $request->validate([
+			'url' => ['required_without:xml', 'nullable', 'string'],
+			'xml' => ['required_without:url', 'nullable', 'string'],
+		]);
+
+		$input = $validated['url'] ?? $validated['xml'];
+
+		try {
+			$parsed = $this->creativeService->parseVast($input);
+			return $this->respondSuccess($parsed, 'VAST XML parsed successfully.');
+		} catch (\DomainException $e) {
+			return $this->respondError($e->getMessage(), 422);
+		}
+	}
 }

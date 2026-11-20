@@ -1,8 +1,10 @@
-import React from 'react';
-import { Card, Input, InputNumber, Select, Button, Space, Tag, Radio } from 'antd';
+import React, { useState } from 'react';
+import { Card, Input, InputNumber, Select, Button, Space, Tag, Radio, message } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import { FileUpload } from '@core/components/FileUpload';
 import { useAppSelector } from '@core/store/hooks';
+import { extractErrorMessage } from '@core/utils/error';
+import { creativeApi } from '../Action/creativeApi';
 import type { CreativeRowItem, CreativeStatus, CreativeType } from '../types/creative';
 
 interface CreativeBatchRowProps {
@@ -31,14 +33,37 @@ const DEFAULT_TYPES = [
 
 export const CreativeBatchRow: React.FC<CreativeBatchRowProps> = ({ row, index, canDelete, canReview = false, onChange, onDelete, onFileUploaded }) => {
 	const metadata = useAppSelector((state) => state.metadata.data);
+	const [inspecting, setInspecting] = useState(false);
 	const typeOptions = metadata?.enums?.creative_types || DEFAULT_TYPES;
 	const statusOptions = (metadata?.statuses?.creative || []).filter((s) => s.value !== 'rejected');
 	const uploadCfg = TYPE_UPLOAD_CFG[row.type] || TYPE_UPLOAD_CFG.video;
 
+	const handleInspectVast = async () => {
+		if (!row.media_url?.trim()) return message.warning('Please enter VAST tag URL first.');
+		setInspecting(true);
+		try {
+			const res = await creativeApi.parseVast({ url: row.media_url.trim() });
+			const d = res.data?.data;
+			if (d) {
+				onChange(row.id, {
+					width: Number(d.width) || 1920,
+					height: Number(d.height) || 1080,
+					duration_seconds: d.duration_seconds ? Number(d.duration_seconds) : row.duration_seconds,
+					name: row.name || (d.ad_title as string) || row.name,
+				});
+				message.success(`VAST verified: ${d.version} (${d.width}×${d.height}, ${d.duration_seconds || 15}s)`);
+			}
+		} catch (e: unknown) {
+			message.error(extractErrorMessage(e, 'Failed to inspect VAST XML.'));
+		} finally {
+			setInspecting(false);
+		}
+	};
+
 	const handleTypeChange = (type: CreativeType) => {
 		const updates: Partial<CreativeRowItem> = {
 			type,
-			duration_seconds: type === 'image' ? null : (row.duration_seconds || 15),
+			duration_seconds: type === 'image' ? null : row.duration_seconds || 15,
 		};
 		if (type === 'vast') updates.sourceType = 'url';
 		onChange(row.id, updates);
@@ -72,11 +97,7 @@ export const CreativeBatchRow: React.FC<CreativeBatchRowProps> = ({ row, index, 
 			<div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 2.4fr 1.6fr 0.9fr', gap: 10, alignItems: 'center' }}>
 				<Input placeholder="Creative Name..." value={row.name} onChange={(e) => onChange(row.id, { name: e.target.value })} />
 
-				<Select
-					value={row.type}
-					onChange={handleTypeChange}
-					options={typeOptions}
-				/>
+				<Select value={row.type} onChange={handleTypeChange} options={typeOptions} />
 
 				{row.sourceType === 'file' && row.type !== 'vast' ? (
 					<FileUpload
@@ -88,7 +109,18 @@ export const CreativeBatchRow: React.FC<CreativeBatchRowProps> = ({ row, index, 
 						onChange={(url, data, file) => onFileUploaded(row.id, url, file)}
 					/>
 				) : (
-					<Input placeholder={row.type === 'vast' ? 'https://example.com/vast.xml' : 'https://cdn.example.com/asset.mp4'} value={row.media_url} onChange={(e) => onChange(row.id, { media_url: e.target.value })} />
+					<Input
+						placeholder={row.type === 'vast' ? 'https://example.com/vast.xml' : 'https://cdn.example.com/asset.mp4'}
+						value={row.media_url}
+						onChange={(e) => onChange(row.id, { media_url: e.target.value })}
+						addonAfter={
+							row.type === 'vast' ? (
+								<Button size="small" type="link" loading={inspecting} onClick={handleInspectVast} style={{ padding: 0 }}>
+									Verify
+								</Button>
+							) : undefined
+						}
+					/>
 				)}
 
 				<Space.Compact style={{ width: '100%' }}>

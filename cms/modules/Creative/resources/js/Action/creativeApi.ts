@@ -34,6 +34,10 @@ export const creativeApi = {
 	batchReview(ids: number[], payload: CreativeReviewPayload) {
 		return http.post<ApiResponse<{ updated_count: number }>>('/creative/batch-status', { ids, ...payload });
 	},
+
+	parseVast(payload: { url?: string; xml?: string }) {
+		return http.post<ApiResponse<Record<string, unknown>>>('/creative/parse-vast', payload);
+	},
 };
 
 export default creativeApi;

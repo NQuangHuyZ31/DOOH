@@ -23,6 +23,8 @@ export const CreativePreviewModal: React.FC<CreativePreviewModalProps> = ({ open
 	const canReview = isSuperAdmin(currentUser) || hasRole(currentUser, ['admin', 'operator', 'ads_ops']);
 	const isApproved = creative.status === 'approved';
 	const canTakeReviewAction = canReview && !isApproved;
+	const vastMeta = (creative.metadata as Record<string, any>)?.vast;
+	const videoUrl = creative.type === 'video' ? creative.media_url : creative.type === 'vast' && vastMeta?.primary_media_url ? vastMeta.primary_media_url : null;
 
 	const handleApprove = async () => {
 		await onReview(creative.id, { status: 'approved' });
@@ -73,8 +75,8 @@ export const CreativePreviewModal: React.FC<CreativePreviewModalProps> = ({ open
 			destroyOnClose
 		>
 			<div style={{ background: '#0f172a', borderRadius: 8, padding: 12, marginBottom: 16, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 260 }}>
-				{creative.type === 'video' ? (
-					<video src={creative.media_url} controls autoPlay muted style={{ maxWidth: '100%', maxHeight: 360, borderRadius: 4 }} />
+				{videoUrl ? (
+					<video src={videoUrl} controls autoPlay muted style={{ maxWidth: '100%', maxHeight: 360, borderRadius: 4 }} />
 				) : creative.type === 'image' ? (
 					<img src={creative.media_url} alt={creative.name} style={{ maxWidth: '100%', maxHeight: 360, objectFit: 'contain', borderRadius: 4 }} />
 				) : (
@@ -94,6 +96,11 @@ export const CreativePreviewModal: React.FC<CreativePreviewModalProps> = ({ open
 				</Descriptions.Item>
 				<Descriptions.Item label="Resolution">{`${creative.width}×${creative.height} (${creative.aspect_ratio})`}</Descriptions.Item>
 				<Descriptions.Item label="Duration">{creative.type === 'image' || !creative.duration_seconds ? '— (Static Image)' : `${creative.duration_seconds}s`}</Descriptions.Item>
+				{creative.type === 'vast' && (
+					<Descriptions.Item label="VAST Info" span={2}>
+						{vastMeta ? `VAST ${vastMeta.version || '3.0'} • ${vastMeta.impressions?.length || 0} Impression Beacon(s) • ${Object.keys(vastMeta.tracking_events || {}).length} Event(s)` : 'Raw VAST Tag (External)'}
+					</Descriptions.Item>
+				)}
 				<Descriptions.Item label="Created By">{creative.creator ? `${creative.creator.name} (${creative.created_at ? new Date(creative.created_at).toLocaleDateString() : 'N/A'})` : 'System'}</Descriptions.Item>
 				<Descriptions.Item label="Reviewed By">
 					{creative.approver ? `${creative.approver.name} (${creative.approved_at ? new Date(creative.approved_at).toLocaleDateString() : 'N/A'})` : 'Pending Review'}
