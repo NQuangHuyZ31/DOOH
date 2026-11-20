@@ -153,6 +153,42 @@ class ScreenApiTest extends TestCase
         ]);
     }
 
+    public function test_update_screen_single_dimension_preserves_existing_dimension(): void
+    {
+        $this->authenticateAsSuperAdmin();
+
+        $venue = Venue::create([
+            'code' => 'HAN-PORTRAIT',
+            'name' => 'Portrait Venue',
+            'status' => 'active',
+        ]);
+
+        $screen = Screen::create([
+            'venue_id' => $venue->id,
+            'code' => 'SCR-HAN-PORT-01',
+            'name' => 'Portrait Screen',
+            'resolution_width' => 1080,
+            'resolution_height' => 1920,
+            'orientation' => 'portrait',
+            'aspect_ratio' => '9:16',
+            'status' => 'active',
+        ]);
+
+        $response = $this->putJson("/admin/api/venue/screen/{$screen->id}", [
+            'resolution_width' => 1200,
+        ]);
+
+        $response->assertStatus(200)
+                 ->assertJsonPath('status', 'success');
+
+        $this->assertDatabaseHas('screens', [
+            'id' => $screen->id,
+            'resolution_width' => 1200,
+            'resolution_height' => 1920,
+            'orientation' => 'portrait',
+        ]);
+    }
+
     public function test_delete_screen_soft_deletes(): void
     {
         $this->authenticateAsSuperAdmin();

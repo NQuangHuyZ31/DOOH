@@ -4,6 +4,7 @@ import permissionReducer from '@modules/User/resources/js/store/permissionSlice'
 import roleReducer from '@modules/User/resources/js/store/roleSlice';
 import userReducer from '@modules/User/resources/js/store/userSlice';
 import venueReducer from '@modules/Venue/resources/js/store/venueSlice';
+import creativeReducer from '@modules/Creative/resources/js/store/creativeSlice';
 import metadataReducer from './metadataSlice';
 
 export const store = configureStore({
@@ -13,6 +14,7 @@ export const store = configureStore({
 		role: roleReducer,
 		permission: permissionReducer,
 		venue: venueReducer,
+		creative: creativeReducer,
 		metadata: metadataReducer,
 	},
 	middleware: (getDefaultMiddleware) =>

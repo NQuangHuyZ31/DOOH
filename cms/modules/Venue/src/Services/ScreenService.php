@@ -41,9 +41,9 @@ class ScreenService
             $data['secret_key'] = HmacKeyUtil::generateScreenKey($data['code']);
         }
 
-        $width = (int) ($data['resolution_width'] ?? 1920);
-        $height = (int) ($data['resolution_height'] ?? 1080);
-        $data = array_merge($data, $this->deriveDisplaySpecs($width, $height));
+        if (!empty($data['resolution_width']) && !empty($data['resolution_height'])) {
+            $data = array_merge($data, $this->deriveDisplaySpecs((int) $data['resolution_width'], (int) $data['resolution_height']));
+        }
 
         /** @var Screen */
         $screen = $this->screenRepo->create($data);
@@ -59,9 +59,12 @@ class ScreenService
         }
 
         if (isset($data['resolution_width']) || isset($data['resolution_height'])) {
-            $width = (int) ($data['resolution_width'] ?? 1920);
-            $height = (int) ($data['resolution_height'] ?? 1080);
-            $data = array_merge($data, $this->deriveDisplaySpecs($width, $height));
+            $existing = $this->getScreen($id);
+            $width = (int) ($data['resolution_width'] ?? $existing?->resolution_width);
+            $height = (int) ($data['resolution_height'] ?? $existing?->resolution_height);
+            if ($width > 0 && $height > 0) {
+                $data = array_merge($data, $this->deriveDisplaySpecs($width, $height));
+            }
         }
 
         $updated = $this->screenRepo->update($id, $data);

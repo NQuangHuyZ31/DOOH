@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { Button, DatePicker, Flex, Input, Select, Space } from 'antd';
+import React, { useState, useCallback } from 'react';
+import { Button, DatePicker, Flex, Input, Select } from 'antd';
 import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { useDebouncedCallback } from '../hooks/useDebounce';
 import type { FilterFieldConfig } from '../types/filter';
 
 const { RangePicker } = DatePicker;
@@ -9,13 +10,10 @@ export interface DynamicFilterBarProps {
 	filters: FilterFieldConfig[];
 	onChange: (values: Record<string, any>) => void;
 	initialValues?: Record<string, any>;
+	debounceDelay?: number;
 }
 
-export const DynamicFilterBar: React.FC<DynamicFilterBarProps> = ({
-	filters,
-	onChange,
-	initialValues = {},
-}) => {
+export const DynamicFilterBar: React.FC<DynamicFilterBarProps> = ({ filters, onChange, initialValues = {}, debounceDelay = 400 }) => {
 	const [values, setValues] = useState<Record<string, any>>(() => {
 		const defaults: Record<string, any> = { ...initialValues };
 		for (const f of filters) {
@@ -26,15 +24,21 @@ export const DynamicFilterBar: React.FC<DynamicFilterBarProps> = ({
 		return defaults;
 	});
 
+	const debouncedOnChange = useDebouncedCallback(onChange, debounceDelay);
+
 	const handleFieldChange = useCallback(
-		(name: string, val: any) => {
+		(name: string, val: any, isDebounced: boolean = false) => {
 			setValues((prev) => {
 				const next = { ...prev, [name]: val };
-				onChange(next);
+				if (isDebounced) {
+					debouncedOnChange(next);
+				} else {
+					onChange(next);
+				}
 				return next;
 			});
 		},
-		[onChange],
+		[onChange, debouncedOnChange],
 	);
 
 	const handleReset = useCallback(() => {
@@ -63,7 +67,7 @@ export const DynamicFilterBar: React.FC<DynamicFilterBarProps> = ({
 								allowClear
 								value={values[field.name] || ''}
 								style={fieldStyle}
-								onChange={(e) => handleFieldChange(field.name, e.target.value)}
+								onChange={(e) => handleFieldChange(field.name, e.target.value, true)}
 							/>
 						);
 					}
@@ -83,14 +87,7 @@ export const DynamicFilterBar: React.FC<DynamicFilterBarProps> = ({
 					}
 
 					if (field.type === 'date-range') {
-						return (
-							<RangePicker
-								key={field.name}
-								style={fieldStyle}
-								value={values[field.name]}
-								onChange={(dates) => handleFieldChange(field.name, dates)}
-							/>
-						);
+						return <RangePicker key={field.name} style={fieldStyle} value={values[field.name]} onChange={(dates) => handleFieldChange(field.name, dates)} />;
 					}
 
 					if (field.type === 'custom' && field.render) {

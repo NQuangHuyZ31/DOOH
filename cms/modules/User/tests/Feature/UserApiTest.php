@@ -158,6 +158,35 @@ class UserApiTest extends TestCase
             ->assertJsonPath('data.direct_permissions', ['creative.upload']);
     }
 
+    public function test_update_user_name_preserves_existing_direct_permissions(): void
+    {
+        $this->authenticateAsSuperAdmin();
+
+        $perm = Permission::create(['name' => 'venue.view', 'module' => 'venue', 'display_name' => 'View Venue']);
+
+        $user = User::create([
+            'name' => 'Direct User',
+            'email' => 'direct.user@example.com',
+            'password' => 'secret123',
+            'permission_type' => User::PERMISSION_TYPE_DIRECT,
+        ]);
+        $user->directPermissions()->sync([$perm->id]);
+
+        $response = $this->putJson("/admin/api/user/{$user->id}", [
+            'name' => 'Renamed Direct User',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.name', 'Renamed Direct User')
+            ->assertJsonPath('data.permission_type', 'direct')
+            ->assertJsonPath('data.direct_permissions.0', 'venue.view');
+
+        $this->assertDatabaseHas('user_permissions', [
+            'user_id' => $user->id,
+            'permission_id' => $perm->id,
+        ]);
+    }
+
     public function test_roles_and_permissions_endpoints(): void
     {
         $this->authenticateAsSuperAdmin();

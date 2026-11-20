@@ -16,12 +16,19 @@ return [
             ['value' => 'inactive', 'label' => 'Inactive', 'color' => 'error'],
             ['value' => 'maintenance', 'label' => 'Maintenance', 'color' => 'warning'],
         ],
+        'creative' => [
+            ['value' => 'draft', 'label' => 'Draft', 'color' => 'default'],
+            ['value' => 'pending_review', 'label' => 'Pending Review', 'color' => 'warning'],
+            ['value' => 'approved', 'label' => 'Approved', 'color' => 'success'],
+            ['value' => 'rejected', 'label' => 'Rejected', 'color' => 'error'],
+        ],
         'tags' => [
             'active' => ['color' => 'success', 'label' => 'Active'],
             'running' => ['color' => 'processing', 'label' => 'Running'],
             'paused' => ['color' => 'warning', 'label' => 'Paused'],
             'maintenance' => ['color' => 'warning', 'label' => 'Maintenance'],
             'pending' => ['color' => 'processing', 'label' => 'Pending'],
+            'pending_review' => ['color' => 'warning', 'label' => 'Pending Review'],
             'approved' => ['color' => 'success', 'label' => 'Approved'],
             'completed' => ['color' => 'default', 'label' => 'Completed'],
             'draft' => ['color' => 'default', 'label' => 'Draft'],
@@ -62,6 +69,12 @@ return [
             ['value' => 'online', 'label' => 'Online', 'color' => 'success'],
             ['value' => 'offline', 'label' => 'Offline', 'color' => 'error'],
             ['value' => 'degraded', 'label' => 'Degraded', 'color' => 'warning'],
+        ],
+        'creative_types' => [
+            ['value' => 'video', 'label' => 'Video (MP4)'],
+            ['value' => 'image', 'label' => 'Image (JPG/PNG/WebP)'],
+            ['value' => 'html5', 'label' => 'HTML5 Package'],
+            ['value' => 'vast', 'label' => 'VAST XML Tag'],
         ],
         'modules' => [
             ['value' => 'core', 'label' => 'Core (System & Infrastructure)', 'color' => 'default'],
