@@ -6,6 +6,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Modules\Core\Support\DisplaySpecHelper;
 use Modules\Creative\Models\Creative;
 use Modules\Creative\Repositories\Interfaces\CreativeRepositoryInterface;
 
@@ -17,12 +18,12 @@ class CreativeService
 
 	public function listCreatives(array $filters = [], int $perPage = 15): LengthAwarePaginator
 	{
-		return $this->creativeRepository->paginate($filters, $perPage);
+		return $this->creativeRepository->paginate($perPage, $filters);
 	}
 
-	public function getCreativeById(int $id): ?Creative
+	public function getCreativeById(int|string $id): ?Creative
 	{
-		return $this->creativeRepository->findById($id);
+		return $this->creativeRepository->find($id);
 	}
 
 	public function createCreative(array $data, ?int $userId = null, bool $canReview = false): Creative
@@ -33,7 +34,7 @@ class CreativeService
 		}
 
 		if (empty($data['aspect_ratio']) && !empty($data['width']) && !empty($data['height'])) {
-			$data['aspect_ratio'] = $this->deriveAspectRatio((int) $data['width'], (int) $data['height']);
+			$data['aspect_ratio'] = DisplaySpecHelper::deriveAspectRatio((int) $data['width'], (int) $data['height']);
 		}
 
 		// Only reviewers (admin/operator) can set custom status or directly approve on creation
@@ -63,42 +64,62 @@ class CreativeService
 		});
 	}
 
-	public function updateCreative(int $id, array $data): ?Creative
+	public function updateCreative(int|string $id, array $data, ?int $userId = null, bool $canReview = false): ?Creative
 	{
-		if (!empty($data['width']) && !empty($data['height'])) {
-			$data['aspect_ratio'] = $this->deriveAspectRatio((int) $data['width'], (int) $data['height']);
+		$existing = $this->getCreativeById($id);
+		if (!$existing) {
+			return null;
 		}
 
-		return $this->creativeRepository->update($id, $data);
+		$isMediaChanged = !empty($data['media_url']) && $data['media_url'] !== $existing->media_url;
+
+		if ($isMediaChanged) {
+			if ($canReview) {
+				if (($data['status'] ?? $existing->status) === 'approved') {
+					$data['status'] = 'approved';
+					$data['approved_by'] = $userId;
+					$data['approved_at'] = now();
+					$data['rejection_reason'] = null;
+				}
+			} else {
+				$data['status'] = 'pending_review';
+				$data['approved_by'] = null;
+				$data['approved_at'] = null;
+				$data['rejection_reason'] = null;
+			}
+		} elseif ($existing->status === 'approved') {
+			$data['status'] = 'approved';
+		}
+
+		if (!empty($data['width']) && !empty($data['height'])) {
+			$data['aspect_ratio'] = DisplaySpecHelper::deriveAspectRatio((int) $data['width'], (int) $data['height']);
+		}
+
+		$updated = $this->creativeRepository->update($id, $data);
+		return $updated ? $this->getCreativeById($id) : null;
 	}
 
-	public function deleteCreative(int $id): bool
+	public function deleteCreative(int|string $id): bool
 	{
 		return $this->creativeRepository->delete($id);
 	}
 
-	public function reviewCreative(int $id, string $status, ?string $rejectionReason = null, ?int $approverId = null): ?Creative
+	public function reviewCreative(int|string $id, string $status, ?string $rejectionReason = null, ?int $approverId = null): ?Creative
 	{
+		$existing = $this->getCreativeById($id);
+		if (!$existing) {
+			return null;
+		}
+
+		if ($existing->status === 'approved') {
+			throw new \DomainException('Approved creatives cannot have their status changed.');
+		}
+
 		return $this->creativeRepository->updateStatus($id, $status, $rejectionReason, $approverId);
 	}
 
-	public function deriveAspectRatio(int $width, int $height): string
+	public function batchReview(array $ids, string $status, ?string $rejectionReason = null, ?int $approverId = null): int
 	{
-		if ($height === 0) {
-			return 'custom';
-		}
-
-		$ratio = $width / $height;
-		if (abs($ratio - (16 / 9)) < 0.05) {
-			return '16:9';
-		}
-		if (abs($ratio - (9 / 16)) < 0.05) {
-			return '9:16';
-		}
-		if (abs($ratio - (4 / 3)) < 0.05) {
-			return '4:3';
-		}
-
-		return 'custom';
+		return $this->creativeRepository->batchUpdateStatus($ids, $status, $rejectionReason, $approverId);
 	}
 }

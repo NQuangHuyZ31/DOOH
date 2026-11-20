@@ -75,7 +75,15 @@ class CreativeController extends BaseController
 
 	public function update(int|string $id, UpdateCreativeRequest $request): JsonResponse
 	{
-		$creative = $this->creativeService->updateCreative((int) $id, $request->validated());
+		$user = $request->user();
+		$canReview = UserPermissionHelper::canReview($user);
+
+		$creative = $this->creativeService->updateCreative(
+			(int) $id,
+			$request->validated(),
+			$user?->id,
+			$canReview
+		);
 		if (!$creative) {
 			return $this->respondNotFound('Creative not found.');
 		}
@@ -96,28 +104,58 @@ class CreativeController extends BaseController
 		return $this->respondSuccess(['deleted' => true], 'Creative deleted successfully.');
 	}
 
-	public function status(int|string $id, ReviewCreativeRequest $request): JsonResponse
+	public function status(Request $request, int|string|null $id = null): JsonResponse
 	{
 		$user = $request->user();
 		if (!UserPermissionHelper::canReview($user)) {
 			return $this->respondForbidden('You are not authorized to review creatives.');
 		}
 
-		$validated = $request->validated();
-		$creative = $this->creativeService->reviewCreative(
-			(int) $id,
+		$validated = $request->validate([
+			'ids' => ['nullable', 'array'],
+			'ids.*' => ['integer'],
+			'status' => ['required', 'in:approved,rejected,pending_review,draft'],
+			'rejection_reason' => ['nullable', 'string', 'max:500'],
+		]);
+
+		$ids = $id ? [(int) $id] : ($validated['ids'] ?? []);
+		if (empty($ids)) {
+			return $this->respondError('No creatives selected for review.', 422);
+		}
+
+		if ($id) {
+			$existing = $this->creativeService->getCreativeById((int) $id);
+			if (!$existing) {
+				return $this->respondNotFound('Creative not found.');
+			}
+			if ($existing->status === 'approved') {
+				return $this->respondError('Approved creatives cannot have their status changed.', 422);
+			}
+		}
+
+		$count = $this->creativeService->batchReview(
+			$ids,
 			$validated['status'],
 			$validated['rejection_reason'] ?? null,
 			$user?->id
 		);
 
-		if (!$creative) {
-			return $this->respondNotFound('Creative not found.');
+		if ($id) {
+			$creative = $this->creativeService->getCreativeById((int) $id);
+			return $this->respondSuccess(
+				new CreativeResource($creative),
+				"Creative status updated to {$validated['status']}."
+			);
 		}
 
 		return $this->respondSuccess(
-			new CreativeResource($creative),
-			"Creative status updated to {$validated['status']}."
+			['updated_count' => $count],
+			"Successfully updated status for {$count} creative(s)."
 		);
+	}
+
+	public function batchStatus(Request $request): JsonResponse
+	{
+		return $this->status($request);
 	}
 }

@@ -71,10 +71,10 @@ return [
             ['value' => 'degraded', 'label' => 'Degraded', 'color' => 'warning'],
         ],
         'creative_types' => [
-            ['value' => 'video', 'label' => 'Video (MP4)'],
-            ['value' => 'image', 'label' => 'Image (JPG/PNG/WebP)'],
-            ['value' => 'html5', 'label' => 'HTML5 Package'],
-            ['value' => 'vast', 'label' => 'VAST XML Tag'],
+            ['value' => 'video', 'label' => 'Video (MP4)', 'color' => 'blue'],
+            ['value' => 'image', 'label' => 'Image (JPG/PNG/WebP)', 'color' => 'green'],
+            ['value' => 'html5', 'label' => 'HTML5 Package', 'color' => 'purple'],
+            ['value' => 'vast', 'label' => 'VAST XML Tag', 'color' => 'orange'],
         ],
         'modules' => [
             ['value' => 'core', 'label' => 'Core (System & Infrastructure)', 'color' => 'default'],

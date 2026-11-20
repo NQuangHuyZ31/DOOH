@@ -14,7 +14,10 @@ class UpdateVenueRequest extends FormRequest
 
     public function rules(): array
     {
-        $venueId = $this->route('id') ?? $this->route('venue');
+        $venueId = $this->route('id')
+            ?? $this->route('venue')
+            ?? (is_numeric($this->route('controller')) ? $this->route('controller') : null)
+            ?? (is_numeric($this->route('id_or_action')) ? $this->route('id_or_action') : null);
 
         return [
             'code' => ['nullable', 'string', 'max:64', Rule::unique('venues', 'code')->ignore($venueId)],

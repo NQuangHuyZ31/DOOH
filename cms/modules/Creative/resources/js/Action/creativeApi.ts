@@ -30,6 +30,10 @@ export const creativeApi = {
 	reviewCreative(id: number, payload: CreativeReviewPayload) {
 		return http.put<ApiResponse<CreativeItem>>(`/creative/${id}/status`, payload);
 	},
+
+	batchReview(ids: number[], payload: CreativeReviewPayload) {
+		return http.post<ApiResponse<{ updated_count: number }>>('/creative/batch-status', { ids, ...payload });
+	},
 };
 
 export default creativeApi;

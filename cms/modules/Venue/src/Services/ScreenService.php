@@ -4,6 +4,7 @@ namespace Modules\Venue\Services;
 
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Redis;
+use Modules\Core\Support\DisplaySpecHelper;
 use Modules\Core\Support\HmacKeyUtil;
 use Modules\Venue\Models\Screen;
 use Modules\Venue\Repositories\Interfaces\ScreenRepositoryInterface;
@@ -23,7 +24,6 @@ class ScreenService
 
     public function getScreen(int|string $id): ?Screen
     {
-        /** @var Screen|null */
         return $this->screenRepo->find($id);
     }
 
@@ -42,10 +42,9 @@ class ScreenService
         }
 
         if (!empty($data['resolution_width']) && !empty($data['resolution_height'])) {
-            $data = array_merge($data, $this->deriveDisplaySpecs((int) $data['resolution_width'], (int) $data['resolution_height']));
+            $data = array_merge($data, DisplaySpecHelper::deriveSpecs((int) $data['resolution_width'], (int) $data['resolution_height']));
         }
 
-        /** @var Screen */
         $screen = $this->screenRepo->create($data);
         $this->evictPlaylistCache($screen->venue_id);
 
@@ -63,7 +62,7 @@ class ScreenService
             $width = (int) ($data['resolution_width'] ?? $existing?->resolution_width);
             $height = (int) ($data['resolution_height'] ?? $existing?->resolution_height);
             if ($width > 0 && $height > 0) {
-                $data = array_merge($data, $this->deriveDisplaySpecs($width, $height));
+                $data = array_merge($data, DisplaySpecHelper::deriveSpecs($width, $height));
             }
         }
 
@@ -115,32 +114,6 @@ class ScreenService
         }
 
         return $code;
-    }
-
-    protected function deriveDisplaySpecs(int $width, int $height): array
-    {
-        $orientation = $width >= $height ? 'landscape' : 'portrait';
-
-        $gcd = function (int $a, int $b) use (&$gcd): int {
-            return $b === 0 ? $a : $gcd($b, $a % $b);
-        };
-        $divisor = $gcd($width, $height) ?: 1;
-        $ratioW = $width / $divisor;
-        $ratioH = $height / $divisor;
-        $aspectRatio = "{$ratioW}:{$ratioH}";
-
-        if ($width === 1920 && $height === 1080) {
-            $aspectRatio = '16:9';
-        } elseif ($width === 1080 && $height === 1920) {
-            $aspectRatio = '9:16';
-        } elseif ($width === 3840 && $height === 2160) {
-            $aspectRatio = '16:9';
-        }
-
-        return [
-            'orientation' => $orientation,
-            'aspect_ratio' => $aspectRatio,
-        ];
     }
 
     protected function evictPlaylistCache(int|string $venueId): void

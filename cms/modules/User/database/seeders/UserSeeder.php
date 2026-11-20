@@ -53,6 +53,13 @@ class UserSeeder extends Seeder
                 'role_id' => 'super_admin',
                 'permission_type' => User::PERMISSION_TYPE_ROLE,
             ],
+            [
+                'email' => 'mediaowner@dooh.media',
+                'name' => 'Media Owner',
+                'password' => $defaultPassword,
+                'role_id' => 'media_owner',
+                'permission_type' => User::PERMISSION_TYPE_ROLE,
+            ],
         ];
 
         foreach ($roleUsers as $userData) {

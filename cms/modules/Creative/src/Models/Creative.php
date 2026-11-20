@@ -5,13 +5,17 @@ namespace Modules\Creative\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\Core\Traits\Filterable;
+use Modules\Core\Traits\HasOwner;
 use Modules\User\Models\User;
 
 class Creative extends Model
 {
-	use SoftDeletes;
+	use Filterable, HasOwner, SoftDeletes;
 
 	protected $table = 'creatives';
+
+	protected string $ownerColumn = 'user_id';
 
 	protected $fillable = [
 		'user_id',
@@ -33,12 +37,21 @@ class Creative extends Model
 		'metadata',
 	];
 
+	protected array $filterable = [
+		'search' => ['name', 'code'],
+		'type' => '=',
+		'status' => '=',
+		'aspect_ratio' => '=',
+		'user_id' => '=',
+	];
+
 	protected $casts = [
 		'width' => 'integer',
 		'height' => 'integer',
 		'duration_seconds' => 'integer',
 		'file_size_bytes' => 'integer',
 		'approved_at' => 'datetime',
+		'deleted_at' => 'datetime',
 		'metadata' => 'array',
 	];
 

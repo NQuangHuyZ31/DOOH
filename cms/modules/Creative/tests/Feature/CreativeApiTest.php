@@ -199,4 +199,214 @@ class CreativeApiTest extends TestCase
 		$response->assertStatus(422)
 			->assertJsonValidationErrors(['media_url']);
 	}
+
+	public function test_review_reject_records_reviewer_and_reason(): void
+	{
+		$reviewer = $this->authenticateAsSuperAdmin();
+
+		$creative = Creative::create([
+			'code' => 'CR-REJECT-001',
+			'name' => 'Asset To Reject',
+			'type' => 'video',
+			'status' => 'pending_review',
+			'media_url' => 'https://example.com/reject.mp4',
+			'width' => 1920,
+			'height' => 1080,
+		]);
+
+		$response = $this->patchJson("/admin/api/creative/{$creative->id}/status", [
+			'status' => 'rejected',
+			'rejection_reason' => 'Video resolution is too low.',
+		]);
+
+		$response->assertStatus(200)
+			->assertJsonPath('status', 'success')
+			->assertJsonPath('data.status', 'rejected')
+			->assertJsonPath('data.approver.id', $reviewer->id)
+			->assertJsonPath('data.rejection_reason', 'Video resolution is too low.');
+
+		$this->assertDatabaseHas('creatives', [
+			'id' => $creative->id,
+			'status' => 'rejected',
+			'approved_by' => $reviewer->id,
+			'rejection_reason' => 'Video resolution is too low.',
+		]);
+	}
+
+	public function test_cannot_re_review_approved_creative(): void
+	{
+		$this->authenticateAsSuperAdmin();
+
+		$creative = Creative::create([
+			'code' => 'CR-LOCKED-001',
+			'name' => 'Locked Asset',
+			'type' => 'video',
+			'status' => 'approved',
+			'media_url' => 'https://example.com/locked.mp4',
+			'width' => 1920,
+			'height' => 1080,
+		]);
+
+		$response = $this->patchJson("/admin/api/creative/{$creative->id}/status", [
+			'status' => 'rejected',
+			'rejection_reason' => 'Trying to reject approved asset',
+		]);
+
+		$response->assertStatus(422)
+			->assertJsonPath('status', 'error')
+			->assertJsonPath('message', 'Approved creatives cannot have their status changed.');
+	}
+
+	public function test_update_approved_creative_preserves_approved_status(): void
+	{
+		$this->authenticateAsSuperAdmin();
+
+		$creative = Creative::create([
+			'code' => 'CR-EDIT-001',
+			'name' => 'Initial Name',
+			'type' => 'video',
+			'status' => 'approved',
+			'media_url' => 'https://example.com/vid.mp4',
+			'width' => 1920,
+			'height' => 1080,
+		]);
+
+		$response = $this->putJson("/admin/api/creative/{$creative->id}", [
+			'name' => 'Updated Name for Asset',
+			'status' => 'pending_review',
+		]);
+
+		$response->assertStatus(200)
+			->assertJsonPath('status', 'success')
+			->assertJsonPath('data.name', 'Updated Name for Asset')
+			->assertJsonPath('data.status', 'approved');
+
+		$this->assertDatabaseHas('creatives', [
+			'id' => $creative->id,
+			'name' => 'Updated Name for Asset',
+			'status' => 'approved',
+		]);
+	}
+
+	public function test_batch_review_creatives(): void
+	{
+		$reviewer = $this->authenticateAsSuperAdmin();
+
+		$c1 = Creative::create([
+			'code' => 'CR-BATCH-001',
+			'name' => 'Batch One',
+			'type' => 'video',
+			'status' => 'pending_review',
+			'media_url' => 'https://example.com/1.mp4',
+			'width' => 1920,
+			'height' => 1080,
+		]);
+
+		$c2 = Creative::create([
+			'code' => 'CR-BATCH-002',
+			'name' => 'Batch Two',
+			'type' => 'video',
+			'status' => 'pending_review',
+			'media_url' => 'https://example.com/2.mp4',
+			'width' => 1920,
+			'height' => 1080,
+		]);
+
+		$response = $this->postJson('/admin/api/creative/batch-status', [
+			'ids' => [$c1->id, $c2->id],
+			'status' => 'approved',
+		]);
+
+		$response->assertStatus(200)
+			->assertJsonPath('status', 'success')
+			->assertJsonPath('data.updated_count', 2);
+
+		$this->assertDatabaseHas('creatives', ['id' => $c1->id, 'status' => 'approved', 'approved_by' => $reviewer->id]);
+		$this->assertDatabaseHas('creatives', ['id' => $c2->id, 'status' => 'approved', 'approved_by' => $reviewer->id]);
+	}
+
+	public function test_reviewer_changing_media_url_preserves_approved_status_and_updates_approver(): void
+	{
+		$reviewer = $this->authenticateAsSuperAdmin();
+
+		$creative = Creative::create([
+			'code' => 'CR-REV-001',
+			'name' => 'Initial Asset',
+			'type' => 'video',
+			'status' => 'approved',
+			'media_url' => 'https://example.com/initial.mp4',
+			'width' => 1920,
+			'height' => 1080,
+			'approved_by' => $reviewer->id,
+			'approved_at' => now()->subDay(),
+		]);
+
+		$response = $this->putJson("/admin/api/creative/{$creative->id}", [
+			'name' => 'Initial Asset',
+			'media_url' => 'https://example.com/new_reviewer_media.mp4',
+			'status' => 'approved',
+		]);
+
+		$response->assertStatus(200)
+			->assertJsonPath('status', 'success')
+			->assertJsonPath('data.status', 'approved')
+			->assertJsonPath('data.media_url', 'https://example.com/new_reviewer_media.mp4')
+			->assertJsonPath('data.approver.id', $reviewer->id);
+
+		$this->assertDatabaseHas('creatives', [
+			'id' => $creative->id,
+			'status' => 'approved',
+			'media_url' => 'https://example.com/new_reviewer_media.mp4',
+			'approved_by' => $reviewer->id,
+		]);
+	}
+
+	public function test_non_reviewer_changing_media_url_resets_status_to_pending_review(): void
+	{
+		$perm = \Modules\User\Models\Permission::firstOrCreate(
+			['name' => 'creative.edit'],
+			['module' => 'creative', 'display_name' => 'Edit Creative']
+		);
+		$regularRole = \Modules\User\Models\Role::firstOrCreate(['name' => 'advertiser'], ['display_name' => 'Advertiser']);
+		$regularRole->permissions()->syncWithoutDetaching([$perm->id]);
+
+		$regularUser = \Modules\User\Models\User::create([
+			'name' => 'Jane Regular',
+			'email' => 'jane@regular.com',
+			'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+			'role_id' => $regularRole->id,
+			'permission_type' => \Modules\User\Models\User::PERMISSION_TYPE_ROLE,
+		]);
+		$this->actingAs($regularUser, 'web');
+
+		$creative = Creative::create([
+			'code' => 'CR-NORM-001',
+			'name' => 'Approved Commercial',
+			'type' => 'video',
+			'status' => 'approved',
+			'media_url' => 'https://example.com/original.mp4',
+			'width' => 1920,
+			'height' => 1080,
+			'approved_by' => $regularUser->id,
+			'approved_at' => now()->subDays(2),
+		]);
+
+		$response = $this->putJson("/admin/api/creative/{$creative->id}", [
+			'name' => 'Approved Commercial',
+			'media_url' => 'https://example.com/hacked_content.mp4',
+		]);
+
+		$response->assertStatus(200)
+			->assertJsonPath('status', 'success')
+			->assertJsonPath('data.status', 'pending_review')
+			->assertJsonPath('data.media_url', 'https://example.com/hacked_content.mp4');
+
+		$this->assertDatabaseHas('creatives', [
+			'id' => $creative->id,
+			'status' => 'pending_review',
+			'media_url' => 'https://example.com/hacked_content.mp4',
+			'approved_by' => null,
+			'approved_at' => null,
+		]);
+	}
 }

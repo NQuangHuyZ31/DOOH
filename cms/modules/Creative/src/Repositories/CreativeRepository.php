@@ -2,89 +2,42 @@
 
 namespace Modules\Creative\Repositories;
 
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Modules\Core\Repositories\BaseRepository;
 use Modules\Creative\Models\Creative;
 use Modules\Creative\Repositories\Interfaces\CreativeRepositoryInterface;
 
-class CreativeRepository implements CreativeRepositoryInterface
+class CreativeRepository extends BaseRepository implements CreativeRepositoryInterface
 {
-	public function paginate(array $filters = [], int $perPage = 15): LengthAwarePaginator
+	protected array $with = ['creator', 'approver'];
+
+	public function __construct(Creative $model)
 	{
-		$query = Creative::query()->with(['creator', 'approver']);
-
-		if (!empty($filters['search'])) {
-			$search = trim($filters['search']);
-			$query->where(function ($q) use ($search) {
-				$q->where('name', 'like', "%{$search}%")
-					->orWhere('code', 'like', "%{$search}%");
-			});
-		}
-
-		if (!empty($filters['type'])) {
-			$query->where('type', $filters['type']);
-		}
-
-		if (!empty($filters['status'])) {
-			$query->where('status', $filters['status']);
-		}
-
-		if (!empty($filters['aspect_ratio'])) {
-			$query->where('aspect_ratio', $filters['aspect_ratio']);
-		}
-
-		return $query->latest('id')->paginate($perPage);
+		parent::__construct($model);
 	}
 
-	public function findById(int $id): ?Creative
+	public function batchUpdateStatus(array $ids, string $status, ?string $rejectionReason = null, ?int $approverId = null): int
 	{
-		return Creative::with(['creator', 'approver'])->find($id);
-	}
-
-	public function create(array $data): Creative
-	{
-		return Creative::create($data);
-	}
-
-	public function update(int $id, array $data): ?Creative
-	{
-		$creative = Creative::find($id);
-		if (!$creative) {
-			return null;
-		}
-
-		$creative->update($data);
-		return $creative->fresh(['creator', 'approver']);
-	}
-
-	public function delete(int $id): bool
-	{
-		$creative = Creative::find($id);
-		if (!$creative) {
-			return false;
-		}
-
-		return (bool) $creative->delete();
-	}
-
-	public function updateStatus(int $id, string $status, ?string $rejectionReason = null, ?int $approverId = null): ?Creative
-	{
-		$creative = Creative::find($id);
-		if (!$creative) {
-			return null;
-		}
-
-		$payload = [
+		$data = [
 			'status' => $status,
 			'approved_by' => $approverId,
 			'approved_at' => now(),
 		];
-		if ($status === 'rejected') {
-			$payload['rejection_reason'] = $rejectionReason;
-		} else {
-			$payload['rejection_reason'] = null;
+		if ($status === 'approved') {
+			$data['rejection_reason'] = null;
+		} elseif ($status === 'rejected') {
+			$data['rejection_reason'] = $rejectionReason;
 		}
 
-		$creative->update($payload);
-		return $creative->fresh(['creator', 'approver']);
+		return $this->newQuery()
+			->whereIn('id', $ids)
+			->where('status', '!=', 'approved')
+			->update($data);
+	}
+
+	public function updateStatus(int|string $id, string $status, ?string $rejectionReason = null, ?int $approverId = null): ?Creative
+	{
+		$updated = $this->batchUpdateStatus([(int) $id], $status, $rejectionReason, $approverId);
+
+		return $updated > 0 ? $this->find($id) : null;
 	}
 }
