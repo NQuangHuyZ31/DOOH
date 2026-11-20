@@ -19,7 +19,14 @@ Deep dive: `docs/backend/architecture.md`. DB rules: `database.md`. Tests: `test
 | Resource | `src/Resources/` | extend `Illuminate\Http\Resources\Json\JsonResource` (`<Entity>Resource.php`); format all single-entity, collection, and paginated API outputs consistently | database queries (`N+1`), business state mutations |
 
 Bind in `<Module>ServiceProvider`: `$this->app->bind(<Model>RepositoryInterface::class, <Model>Repository::class)`.
-Merge module config in `<Module>ServiceProvider::register()`: `$this->mergeConfigFrom(__DIR__ . '/../../configs/<module>.php', '<module>')`. NEVER call `env()` outside `configs/*.php`.
+Only create and merge `configs/<module>.php` in `<Module>ServiceProvider::register()` when the module has config keys actively read via `config('<module>....')` in backend code — NEVER create an unused `configs/<module>.php` file. NEVER call `env()` outside `configs/*.php`.
+- **Mandatory Core Base Inheritance & Traits (Hard Rule — Zero Standalone Classes)**:
+  - **Controller**: MUST `extend Modules\Core\Http\Controllers\BaseController`.
+  - **Repository (MySQL)**: MUST `extend Modules\Core\Repositories\BaseRepository implements <Entity>RepositoryInterface` and pass `$model` to `parent::__construct($model)`. NEVER write a standalone Repository class that does not extend `BaseRepository`.
+  - **RepositoryInterface (MySQL)**: MUST `extend Modules\Core\Repositories\Interfaces\BaseRepositoryInterface` (do NOT re-declare `all`, `paginate`, `find`, `create`, `update`, `delete`).
+  - **Model (Business Entities)**: MUST `use SoftDeletes, Filterable, HasOwner;` (from `Modules\Core\Traits\Filterable` and `Modules\Core\Traits\HasOwner`) and declare `protected array $filterable = [...]`.
+  - **Request**: MUST `extend Illuminate\Foundation\Http\FormRequest`.
+  - **Resource**: MUST `extend Illuminate\Http\Resources\Json\JsonResource`.
 - **Request Validation Rule (`FormRequest` vs Inline Validate)**:
   - **Dedicated `FormRequest` (`src/Http/Requests/<Action><Entity>Request.php`)**: MUST be used whenever validating `≥ 3` fields, entity CRUD `store`/`update` payloads, nested array rules (`*.field`), or custom input normalization (`prepareForValidation()`). Controllers type-hint the `FormRequest` and pass `$request->validated()` to the Service.
   - **Inline `$request->validate([...])` Exception**: Allowed ONLY for trivial endpoints with `1–2` simple scalar fields (e.g., quick status toggle, single OTP code, or 1–2 basic query params) to avoid unnecessary file bloat.
