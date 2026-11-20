@@ -60,6 +60,7 @@ class RolePermissionSeeder extends Seeder
 
             // Creative module
             ['name' => 'creative.view', 'module' => 'creative', 'display_name' => 'View Creatives', 'description' => 'Browse creative library and metadata'],
+            ['name' => 'creative.create', 'module' => 'creative', 'display_name' => 'Create Creatives', 'description' => 'Create creative assets'],
             ['name' => 'creative.upload', 'module' => 'creative', 'display_name' => 'Upload Creatives', 'description' => 'Upload video and image assets'],
             ['name' => 'creative.approve', 'module' => 'creative', 'display_name' => 'Approve Creatives', 'description' => 'Validate and approve creative assets for broadcast'],
             ['name' => 'creative.delete', 'module' => 'creative', 'display_name' => 'Delete Creatives', 'description' => 'Archive or delete creative assets'],

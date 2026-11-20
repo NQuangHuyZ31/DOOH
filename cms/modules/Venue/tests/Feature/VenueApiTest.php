@@ -130,6 +130,7 @@ class VenueApiTest extends TestCase
         ]);
 
         $response = $this->putJson("/admin/api/venue/{$venue->id}", [
+            'code' => 'HAN-KEANGNAM',
             'name' => 'Keangnam Landmark 72 Tower',
             'daily_traffic' => 45000,
         ]);
@@ -139,9 +140,35 @@ class VenueApiTest extends TestCase
 
         $this->assertDatabaseHas('venues', [
             'id' => $venue->id,
+            'code' => 'HAN-KEANGNAM',
             'name' => 'Keangnam Landmark 72 Tower',
             'daily_traffic' => 45000,
         ]);
+    }
+
+    public function test_update_venue_fails_when_code_belongs_to_another_venue(): void
+    {
+        $this->authenticateAsSuperAdmin();
+
+        Venue::create([
+            'code' => 'EXISTING-CODE',
+            'name' => 'Other Venue',
+            'status' => 'active',
+        ]);
+
+        $venue = Venue::create([
+            'code' => 'HAN-MY-VENUE',
+            'name' => 'My Venue',
+            'status' => 'active',
+        ]);
+
+        $response = $this->putJson("/admin/api/venue/{$venue->id}", [
+            'code' => 'EXISTING-CODE',
+            'name' => 'Renamed Venue',
+        ]);
+
+        $response->assertStatus(422)
+                 ->assertJsonValidationErrors(['code']);
     }
 
     public function test_delete_venue_soft_deletes(): void
@@ -179,6 +206,12 @@ class VenueApiTest extends TestCase
             ['name' => 'media_owner'],
             ['display_name' => 'Media Owner']
         );
+
+        $perm = \Modules\User\Models\Permission::firstOrCreate(
+            ['name' => 'venue.view'],
+            ['display_name' => 'View Venues', 'module' => 'venue', 'action' => 'view']
+        );
+        $role->permissions()->syncWithoutDetaching([$perm->id]);
 
         $ownerA = \Modules\User\Models\User::create([
             'name' => 'Media Owner A',

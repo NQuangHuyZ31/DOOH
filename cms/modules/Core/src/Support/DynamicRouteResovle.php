@@ -68,6 +68,10 @@ class DynamicRouteResovle
             return self::jsonError("Action [{$method}] not found or not accessible on [{$controllerName}].", 404);
         }
 
+        if ($param !== null && $request->route()) {
+            $request->route()->setParameter('id', $param);
+        }
+
         return $param !== null
             ? app()->call([$instance, $method], ['id' => $param])
             : app()->call([$instance, $method]);

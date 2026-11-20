@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Modal, Tag, Descriptions, Button, Space, Input } from 'antd';
+import { Modal, Tag, Descriptions, Button, Space, Input, message } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { useAppSelector } from '@core/store/hooks';
+import { hasRole, isSuperAdmin } from '@core/utils/permission';
 import type { CreativeItem, CreativeReviewPayload } from '../types/creative';
 
 interface CreativePreviewModalProps {
@@ -19,7 +20,9 @@ export const CreativePreviewModal: React.FC<CreativePreviewModalProps> = ({ open
 
 	if (!creative) return null;
 
-	const canReview = !currentUser?.role || currentUser.role === 'admin' || currentUser.role === 'operator' || (currentUser as any)?.role_name === 'super_admin';
+	const canReview = isSuperAdmin(currentUser) || hasRole(currentUser, ['admin', 'operator', 'ads_ops']);
+	const isApproved = creative.status === 'approved';
+	const canTakeReviewAction = canReview && !isApproved;
 
 	const handleApprove = async () => {
 		await onReview(creative.id, { status: 'approved' });
@@ -30,7 +33,11 @@ export const CreativePreviewModal: React.FC<CreativePreviewModalProps> = ({ open
 			setRejectMode(true);
 			return;
 		}
-		await onReview(creative.id, { status: 'rejected', rejection_reason: reason });
+		if (!reason.trim()) {
+			message.warning('Please provide a reason for rejecting this creative.');
+			return;
+		}
+		await onReview(creative.id, { status: 'rejected', rejection_reason: reason.trim() });
 		setRejectMode(false);
 		setReason('');
 	};
@@ -38,7 +45,7 @@ export const CreativePreviewModal: React.FC<CreativePreviewModalProps> = ({ open
 	return (
 		<Modal
 			open={open}
-			title={`Asset Preview: ${creative.name} [${creative.code}]`}
+			title={`${creative.status === 'pending_review' ? 'Review & Approve' : 'Asset Preview'}: ${creative.name} [${creative.code}]`}
 			onCancel={() => {
 				setRejectMode(false);
 				setReason('');
@@ -50,7 +57,7 @@ export const CreativePreviewModal: React.FC<CreativePreviewModalProps> = ({ open
 					<div>{rejectMode && <Input placeholder="Enter rejection reason..." value={reason} onChange={(e) => setReason(e.target.value)} style={{ width: 280 }} />}</div>
 					<Space>
 						<Button onClick={onCancel}>Close</Button>
-						{canReview && (
+						{canTakeReviewAction && (
 							<>
 								<Button danger icon={<CloseCircleOutlined />} onClick={handleReject} loading={submitting}>
 									{rejectMode ? 'Confirm Reject' : 'Reject'}

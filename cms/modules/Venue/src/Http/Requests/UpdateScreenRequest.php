@@ -14,7 +14,10 @@ class UpdateScreenRequest extends FormRequest
 
     public function rules(): array
     {
-        $screenId = $this->route('id') ?? $this->route('screen');
+        $screenId = $this->route('id')
+            ?? $this->route('screen')
+            ?? (is_numeric($this->route('id_or_action')) ? $this->route('id_or_action') : null)
+            ?? (is_numeric($this->route('controller')) ? $this->route('controller') : null);
 
         return [
             'venue_id' => ['sometimes', 'required', 'integer', 'exists:venues,id'],

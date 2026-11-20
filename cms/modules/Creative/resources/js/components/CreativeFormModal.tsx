@@ -15,15 +15,7 @@ interface CreativeFormModalProps {
 }
 
 const createDefaultRow = (id: string): CreativeRowItem => ({
-	id,
-	name: '',
-	type: 'video',
-	status: 'pending_review',
-	sourceType: 'file',
-	media_url: '',
-	width: 1920,
-	height: 1080,
-	duration_seconds: 15,
+	id, name: '', type: 'video', status: 'pending_review', sourceType: 'file', media_url: '', width: 1920, height: 1080, duration_seconds: 15,
 });
 
 const roleCanPrview = ['admin', 'super_admin', 'operator', 'ads_ops'];
@@ -35,23 +27,17 @@ export const CreativeFormModal: React.FC<CreativeFormModalProps> = ({ open, init
 
 	useEffect(() => {
 		if (open) {
-			if (initialValues) {
-				setRows([
-					{
-						id: `edit-${initialValues.id}`,
-						name: initialValues.name,
-						type: initialValues.type,
-						status: initialValues.status,
-						sourceType: 'url',
-						media_url: initialValues.media_url,
-						width: initialValues.width,
-						height: initialValues.height,
-						duration_seconds: initialValues.type === 'image' ? null : initialValues.duration_seconds,
-					},
-				]);
-			} else {
-				setRows([createDefaultRow(`row-${Date.now()}`)]);
-			}
+			setRows(initialValues ? [{
+				id: `edit-${initialValues.id}`,
+				name: initialValues.name,
+				type: initialValues.type,
+				status: initialValues.status,
+				sourceType: 'url',
+				media_url: initialValues.media_url,
+				width: initialValues.width,
+				height: initialValues.height,
+				duration_seconds: initialValues.type === 'image' ? null : initialValues.duration_seconds,
+			}] : [createDefaultRow(`row-${Date.now()}`)]);
 		}
 	}, [open, initialValues]);
 
@@ -60,6 +46,8 @@ export const CreativeFormModal: React.FC<CreativeFormModalProps> = ({ open, init
 	};
 
 	const handleFileUploaded = async (id: string, url: string, file?: File) => {
+		const isMediaChanged = initialValues && url !== initialValues.media_url;
+		const statusUpdate = isMediaChanged && !canReview ? { status: 'pending_review' as const } : {};
 		if (file) {
 			const currentRow = rows.find((r) => r.id === id);
 			try {
@@ -73,12 +61,13 @@ export const CreativeFormModal: React.FC<CreativeFormModalProps> = ({ open, init
 					media_url: url,
 					file_size_bytes: file.size,
 					mime_type: file.type,
+					...statusUpdate,
 				});
 			} catch {
-				handleRowChange(id, { media_url: url });
+				handleRowChange(id, { media_url: url, ...statusUpdate });
 			}
 		} else {
-			handleRowChange(id, { media_url: url });
+			handleRowChange(id, { media_url: url, ...statusUpdate });
 		}
 	};
 
@@ -89,17 +78,21 @@ export const CreativeFormModal: React.FC<CreativeFormModalProps> = ({ open, init
 			if (!r.media_url.trim()) return message.error(`Row #${i + 1}: Please select a file or enter a media URL.`);
 		}
 		await onSave(
-			rows.map((r) => ({
-				name: r.name,
-				type: r.type,
-				status: canReview ? r.status : 'pending_review',
-				media_url: r.media_url,
-				width: r.width,
-				height: r.height,
-				duration_seconds: r.type === 'image' ? null : r.duration_seconds,
-				file_size_bytes: r.file_size_bytes,
-				mime_type: r.mime_type,
-			})),
+			rows.map((r) => {
+				const isMediaChanged = initialValues && r.media_url !== initialValues.media_url;
+				const status = isMediaChanged && !canReview ? 'pending_review' : (canReview ? r.status : 'pending_review');
+				return {
+					name: r.name,
+					type: r.type,
+					status,
+					media_url: r.media_url,
+					width: r.width,
+					height: r.height,
+					duration_seconds: r.type === 'image' ? null : r.duration_seconds,
+					file_size_bytes: r.file_size_bytes,
+					mime_type: r.mime_type,
+				};
+			}),
 		);
 	};
 
@@ -110,7 +103,7 @@ export const CreativeFormModal: React.FC<CreativeFormModalProps> = ({ open, init
 			onCancel={onCancel}
 			onOk={handleSubmit}
 			confirmLoading={submitting}
-			width={900}
+			width={1140}
 			okText={initialValues ? 'Save Changes' : `Save All (${rows.length}) Assets`}
 			destroyOnClose
 		>

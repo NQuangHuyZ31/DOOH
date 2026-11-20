@@ -60,6 +60,7 @@ export const CreativeBatchRow: React.FC<CreativeBatchRowProps> = ({ row, index, 
 							size="small"
 							value={row.status || 'pending_review'}
 							style={{ width: 140 }}
+							disabled={row.status === 'approved'}
 							onChange={(val: CreativeStatus) => onChange(row.id, { status: val })}
 							options={statusOptions.length > 0 ? statusOptions : undefined}
 						/>
@@ -68,7 +69,7 @@ export const CreativeBatchRow: React.FC<CreativeBatchRowProps> = ({ row, index, 
 				<Button type="text" danger icon={<DeleteOutlined />} disabled={!canDelete} onClick={() => onDelete(row.id)} />
 			</div>
 
-			<div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 2.2fr 1fr 1fr', gap: 10, alignItems: 'center' }}>
+			<div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 2.4fr 1.6fr 0.9fr', gap: 10, alignItems: 'center' }}>
 				<Input placeholder="Creative Name..." value={row.name} onChange={(e) => onChange(row.id, { name: e.target.value })} />
 
 				<Select
@@ -91,8 +92,8 @@ export const CreativeBatchRow: React.FC<CreativeBatchRowProps> = ({ row, index, 
 				)}
 
 				<Space.Compact style={{ width: '100%' }}>
-					<InputNumber placeholder="W" value={row.width} min={100} max={10000} onChange={(val) => onChange(row.id, { width: val || 1920 })} style={{ width: '50%' }} />
-					<InputNumber placeholder="H" value={row.height} min={100} max={10000} onChange={(val) => onChange(row.id, { height: val || 1080 })} style={{ width: '50%' }} />
+					<InputNumber prefix="W:" placeholder="Width" value={row.width} min={100} max={10000} onChange={(val) => onChange(row.id, { width: val || 1920 })} style={{ width: '50%' }} />
+					<InputNumber prefix="H:" placeholder="Height" value={row.height} min={100} max={10000} onChange={(val) => onChange(row.id, { height: val || 1080 })} style={{ width: '50%' }} />
 				</Space.Compact>
 
 				{row.type === 'image' ? (

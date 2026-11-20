@@ -1,14 +1,17 @@
 import React from 'react';
-import { Space, Tag, Button, Tooltip, Image } from 'antd';
+import { Space, Tag, Button, Tooltip, Image, Popconfirm } from 'antd';
 import { EyeOutlined, EditOutlined, DeleteOutlined, VideoCameraOutlined, PictureOutlined, CodeOutlined, LinkOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { StatusTag } from '@core/components/StatusTag';
+import type { MetadataOption } from '@core/types/metadata';
 import type { CreativeItem, CreativeType, CreativeStatus } from '../types/creative';
 
 interface CreativeColumnsProps {
+	typeOptions?: MetadataOption[];
+	canReview?: boolean;
 	onPreview: (creative: CreativeItem) => void;
 	onEdit: (creative: CreativeItem) => void;
-	onDelete: (creative: CreativeItem) => void;
+	onDelete: (id: number) => void;
 }
 
 const typeIconMap: Record<CreativeType, React.ReactNode> = {
@@ -18,14 +21,7 @@ const typeIconMap: Record<CreativeType, React.ReactNode> = {
 	vast: <LinkOutlined />,
 };
 
-const typeColorMap: Record<CreativeType, string> = {
-	video: 'blue',
-	image: 'green',
-	html5: 'purple',
-	vast: 'orange',
-};
-
-export const getCreativeColumns = ({ onPreview, onEdit, onDelete }: CreativeColumnsProps): ColumnsType<CreativeItem> => [
+export const getCreativeColumns = ({ typeOptions = [], onPreview, onEdit, onDelete }: CreativeColumnsProps): ColumnsType<CreativeItem> => [
 	{
 		title: 'Asset',
 		key: 'asset',
@@ -51,11 +47,14 @@ export const getCreativeColumns = ({ onPreview, onEdit, onDelete }: CreativeColu
 		dataIndex: 'type',
 		key: 'type',
 		width: 110,
-		render: (type: CreativeType) => (
-			<Tag icon={typeIconMap[type]} color={typeColorMap[type]}>
-				{type.toUpperCase()}
-			</Tag>
-		),
+		render: (type: CreativeType) => {
+			const color = typeOptions.find((t) => t.value === type)?.color || 'default';
+			return (
+				<Tag icon={typeIconMap[type]} color={color}>
+					{type.toUpperCase()}
+				</Tag>
+			);
+		},
 	},
 	{
 		title: 'Resolution',
@@ -73,13 +72,7 @@ export const getCreativeColumns = ({ onPreview, onEdit, onDelete }: CreativeColu
 		dataIndex: 'duration_seconds',
 		key: 'duration_seconds',
 		width: 90,
-		render: (sec: number | null, record: CreativeItem) => (
-			record.type === 'image' || !sec ? (
-				<span style={{ color: '#94a3b8' }}>—</span>
-			) : (
-				<Tag color="geekblue">{`${sec}s`}</Tag>
-			)
-		),
+		render: (sec: number | null, record: CreativeItem) => (record.type === 'image' || !sec ? <span style={{ color: '#94a3b8' }}>—</span> : <Tag color="geekblue">{`${sec}s`}</Tag>),
 	},
 	{
 		title: 'Status',
@@ -97,7 +90,8 @@ export const getCreativeColumns = ({ onPreview, onEdit, onDelete }: CreativeColu
 	{
 		title: 'Actions',
 		key: 'actions',
-		width: 130,
+		width: 120,
+		align: 'right',
 		render: (_, record) => (
 			<Space size="small">
 				<Tooltip title="Preview & Review">
@@ -106,9 +100,11 @@ export const getCreativeColumns = ({ onPreview, onEdit, onDelete }: CreativeColu
 				<Tooltip title="Edit Asset">
 					<Button type="text" icon={<EditOutlined />} onClick={() => onEdit(record)} />
 				</Tooltip>
-				<Tooltip title="Delete Asset">
-					<Button type="text" danger icon={<DeleteOutlined />} onClick={() => onDelete(record)} />
-				</Tooltip>
+				<Popconfirm title="Delete Asset" description={`Delete creative asset [${record.code}]?`} onConfirm={() => onDelete(record.id)} okText="Yes" cancelText="No">
+					<Tooltip title="Delete Asset">
+						<Button type="text" danger icon={<DeleteOutlined />} />
+					</Tooltip>
+				</Popconfirm>
 			</Space>
 		),
 	},
