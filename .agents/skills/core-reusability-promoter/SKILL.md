@@ -3,39 +3,26 @@ name: core-reusability-promoter
 description: Use before creating any new component, hook, service, repository, or endpoint. Search-first REUSE / EXTEND / CREATE decision and promotion to Core.
 ---
 
-# Reusability (REUSE → EXTEND → CREATE)
+# Reusability & DRY (REUSE → EXTEND → PROMOTE → CREATE)
 
-## 1. Search First (Mandatory Inventory Check)
+## 1. Search `Core` First (`git grep -n "<keyword>" -- cms/modules`)
 
-Before writing ANY new component, hook, utility, repository method, or service helper, check `Core` first:
-
-| Area | Existing `Core` Inventory (Reuse or Extend first) |
+| Area | Existing `Core` Inventory |
 |---|---|
-| Frontend Components (`@core/components/`) | `ListLayout`, `Table`, `CustomModal`, `StatusTag`, `AuthGuard`, `GuestGuard`, `NotFoundPage` |
-| Frontend Hooks (`@core/hooks/`) | `useAction`, `useFilter`, `usePagination`, `useAuthInit` |
-| Frontend Utils, Metadata & Configs (`@core/`) | `store/metadataSlice`, `store/metadataThunk` (`fetchMetadata`), `Action/metadataApi`, `types/metadata`, `utils/formatters`, `utils/error` (`extractErrorMessage`), `utils/tokenStorage`, `configs/pagination`, `configs/status`, `configs/theme` (`UREKA_COLORS`), `Action/api` (`http`), `routes/registry` (`registerRoutes`) |
-| Backend (`Modules\Core\`) | `BaseController`, `ApiResponseTrait` (`respondSuccess`, `respondCreated`, `respondPaginated`, `respondError`, `respondUnauthorized`, `respondForbidden`, `respondNotFound`), `BaseRepository` (`all`, `paginate`, `find`, `findOrFail`, `create`, `update`, `delete`), `MetadataService` (`configs/metadata.php`), `CheckModulePermission`, `DynamicRouteResovle`, `ModuleRegistry` |
+| Frontend Components (`@core/components/`) | `ListLayout`, `Table`, `CustomModal`, `StatusTag`, `DynamicFilterBar`, `AuthGuard`, `GuestGuard`, `NotFoundPage` |
+| Frontend Hooks & Store (`@core/`) | `hooks/` (`useAction`, `useFilter`, `usePagination`, `useAuthInit`), `store/metadataSlice`, `store/metadataThunk` (`fetchMetadata`), `Action/metadataApi`, `types/metadata` |
+| Frontend Utils & Configs (`@core/`) | `utils/formatters`, `utils/error` (`extractErrorMessage`), `utils/tokenStorage`, `configs/pagination`, `configs/status`, `configs/theme` (`UREKA_COLORS`), `Action/api` (`http`), `routes/registry` |
+| Backend (`Modules\Core\`) | `BaseController`, `ApiResponseTrait`, `BaseRepository`, `BaseRepositoryInterface`, `Filterable`, `HasOwner`, `MetadataService` (`configs/metadata.php`), `DisplaySpecHelper`, `HmacKeyUtil`, `UserPermissionHelper`, `CheckModulePermission`, `DynamicRouteResovle` |
 
-```powershell
-git grep -n "<keyword>" -- cms/modules
-```
+## 2. Decision & Rule of 2 (DRY)
 
-## 2. Decide (REUSE → EXTEND → PROMOTE TO CORE → CREATE LOCAL)
-
-| Strategy | When | Obligation |
+| Strategy | When | Action |
 |---|---|---|
-| **REUSE** | Existing piece in `Core` or current module fits as-is | Use it directly; NEVER create a duplicate or pass-through wrapper |
-| **EXTEND** | Existing `Core` piece fits with an optional prop/parameter | Add backward-compatible optional prop/param; verify all consumers via `git grep` |
-| **PROMOTE TO CORE** | New helper/hook/component/metadata is domain-agnostic or shared by `≥ 2` modules (formatting, error parsing, generic modal/table/filter UI, shared statuses/enums/pagination in `Core/configs/metadata.php`) | Create/extend it directly in `cms/modules/Core/` (typed, props-configurable, zero feature-module imports) so all modules benefit |
-| **CREATE LOCAL** | Strictly domain-specific to a single module (`1` module only — e.g., `OtpService`, `OtpVerificationForm`, `VenueFormModal`, or single-module enums/configs) | Keep inside the module (`modules/<Module>/configs/` or module components/services); NEVER put single-module-only options into `Core` metadata |
+| **REUSE / EXTEND** | Exists in `Core` or module (or fits with an optional prop/param) | Use/extend directly; NEVER create duplicate or pass-through wrappers |
+| **PROMOTE TO CORE (`≥ 2` Modules)** | Logic, math, formatter, UI block, or metadata status/enum used by `≥ 2` modules | Place in `cms/modules/Core/` (`Modules\Core\Support\`, `Traits\`, `configs/metadata.php`, `@core/utils/`, `@core/components/`) |
+| **EXTRACT IN MODULE (`≥ 2` Places in `1` Module)** | Setup lines, normalization, `<Select options>`, or JSX repeated in `≥ 2` methods/files of 1 module | Extract to a single `protected` method, `configs/*.ts`, `hooks/use*.ts`, or sub-component; NEVER put single-module options in `Core` metadata |
 
-## 3. Zero-Bloat & Simplicity Check (before finishing)
+## 3. Pre-Finish Audit
 
-- Did you create any pass-through wrapper, empty placeholder, barrel `index.ts`, `DTO`, or `ServiceInterface`? → **Delete it.**
-- Can a large component (> 120 lines) or multi-purpose service be split into focused single-responsibility units? → **Split it.**
-- Are there any unused imports, dead functions, or obsolete files left behind? → **Remove them.**
-- Did you touch any file outside the approved Plan's `Files:` list? → **Revert out-of-scope edits immediately.**
-
-## 4. Report Lines (append to final report)
-
-`Reused:` paths · `Extended:` paths + consumers verified · `Created:` paths + reason.
+- Delete any pass-through wrapper, barrel `index.ts`, `DTO`, `ServiceInterface`, dead/uncalled method, or unused `configs/<module>.php`.
+- Append to report: `Reused:` paths · `Extended:` paths · `Created:` paths + reason.
