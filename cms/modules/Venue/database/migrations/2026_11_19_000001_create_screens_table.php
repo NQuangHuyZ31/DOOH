@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('screen_type', 64)->default('outdoor_led')->comment('Display hardware category');
             $table->unsignedInteger('resolution_width')->default(1920);
             $table->unsignedInteger('resolution_height')->default(1080);
-            $table->enum('orientation', ['landscape', 'portrait', 'custom'])->default('landscape');
+            $table->enum('orientation', ['landscape', 'portrait', 'square', 'ribbon', 'custom'])->default('landscape');
             $table->string('aspect_ratio', 16)->default('16:9');
             $table->decimal('physical_width_m', 6, 2)->nullable();
             $table->decimal('physical_height_m', 6, 2)->nullable();

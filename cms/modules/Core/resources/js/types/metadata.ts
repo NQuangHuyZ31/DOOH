@@ -2,6 +2,9 @@ export interface MetadataOption {
 	value: string;
 	label: string;
 	color?: string;
+	width?: number;
+	height?: number;
+	orientation?: string;
 }
 
 export interface StatusTagMetaItem {

@@ -22,6 +22,7 @@ export const ScreenFormModal: React.FC<ScreenFormModalProps> = ({ open, venues, 
 	const metadata = useAppSelector((state) => state.metadata.data);
 	const screenTypeOptions = metadata?.enums?.screen_types || [];
 	const statusOptions = metadata?.statuses?.venue || [];
+	const resolutionPresets = metadata?.enums?.resolution_presets || [];
 
 	const width = Form.useWatch('resolution_width', form) || 1920;
 	const height = Form.useWatch('resolution_height', form) || 1080;
@@ -29,21 +30,12 @@ export const ScreenFormModal: React.FC<ScreenFormModalProps> = ({ open, venues, 
 	useEffect(() => {
 		if (open) {
 			if (initialValues) {
-				form.setFieldsValue({
-					...initialValues,
-					has_audio: Boolean(initialValues.has_audio),
-				});
+				form.setFieldsValue({ ...initialValues, has_audio: Boolean(initialValues.has_audio) });
 			} else {
 				form.resetFields();
 				form.setFieldsValue({
-					venue_id: venues[0]?.id,
-					screen_type: 'outdoor_led',
-					resolution_width: 1920,
-					resolution_height: 1080,
-					loop_duration_seconds: 120,
-					default_slot_seconds: 15,
-					has_audio: false,
-					status: 'active',
+					venue_id: venues[0]?.id, screen_type: 'outdoor_led', resolution_width: 1920, resolution_height: 1080,
+					loop_duration_seconds: 120, default_slot_seconds: 15, has_audio: false, status: 'active',
 				});
 			}
 		}
@@ -52,10 +44,7 @@ export const ScreenFormModal: React.FC<ScreenFormModalProps> = ({ open, venues, 
 	const handleAutoGenerateCode = async () => {
 		const venueId = form.getFieldValue('venue_id');
 		const venue = venues.find((v) => v.id === venueId);
-		if (!venue) {
-			message.warning('Please select a venue first.');
-			return;
-		}
+		if (!venue) return message.warning('Please select a venue first.');
 		setGenerating(true);
 		try {
 			const res = await venueApi.generateScreenCode(venue.code);
@@ -63,25 +52,26 @@ export const ScreenFormModal: React.FC<ScreenFormModalProps> = ({ open, venues, 
 				form.setFieldValue('code', res.data.data.code);
 				message.success(`Generated: ${res.data.data.code}`);
 			}
-		} finally {
-			setGenerating(false);
-		}
+		} finally { setGenerating(false); }
 	};
 
-	const applyResolutionPreset = (preset: string) => {
-		if (preset === '1080p_land') form.setFieldsValue({ resolution_width: 1920, resolution_height: 1080 });
-		if (preset === '1080p_port') form.setFieldsValue({ resolution_width: 1080, resolution_height: 1920 });
-		if (preset === '4k_land') form.setFieldsValue({ resolution_width: 3840, resolution_height: 2160 });
-		if (preset === '4k_port') form.setFieldsValue({ resolution_width: 2160, resolution_height: 3840 });
+	const applyResolutionPreset = (presetVal: string) => {
+		const found = resolutionPresets.find((p: any) => p.value === presetVal);
+		if (found?.width && found?.height) {
+			form.setFieldsValue({ resolution_width: found.width, resolution_height: found.height });
+		} else {
+			if (presetVal === '1080p_land') form.setFieldsValue({ resolution_width: 1920, resolution_height: 1080 });
+			if (presetVal === '1080p_port') form.setFieldsValue({ resolution_width: 1080, resolution_height: 1920 });
+			if (presetVal === '4k_land') form.setFieldsValue({ resolution_width: 3840, resolution_height: 2160 });
+			if (presetVal === '4k_port') form.setFieldsValue({ resolution_width: 2160, resolution_height: 3840 });
+		}
 	};
 
 	const handleOk = async () => {
 		try {
 			const values = await form.validateFields();
 			await onSubmit(values);
-		} catch {
-			// Validation failure
-		}
+		} catch { /* Validation failure */ }
 	};
 
 	return (
@@ -91,26 +81,16 @@ export const ScreenFormModal: React.FC<ScreenFormModalProps> = ({ open, venues, 
 					defaultActiveKey="general"
 					items={[
 						{
-							key: 'general',
-							label: 'General & Playback',
+							key: 'general', label: 'General & Playback',
 							children: (
 								<ScreenGeneralPlaybackTab
-									venues={venues}
-									screenTypeOptions={screenTypeOptions}
-									statusOptions={statusOptions}
-									generating={generating}
-									onAutoGenerateCode={handleAutoGenerateCode}
-									onPresetChange={applyResolutionPreset}
-									width={Number(width)}
-									height={Number(height)}
+									venues={venues} screenTypeOptions={screenTypeOptions} statusOptions={statusOptions} resolutionPresets={resolutionPresets}
+									generating={generating} onAutoGenerateCode={handleAutoGenerateCode} onPresetChange={applyResolutionPreset}
+									width={Number(width)} height={Number(height)}
 								/>
 							),
 						},
-						{
-							key: 'specs',
-							label: 'Hardware & Physical Specs',
-							children: <ScreenPhysicalSpecsTab />,
-						},
+						{ key: 'specs', label: 'Hardware & Physical Specs', children: <ScreenPhysicalSpecsTab /> },
 					]}
 				/>
 			</Form>

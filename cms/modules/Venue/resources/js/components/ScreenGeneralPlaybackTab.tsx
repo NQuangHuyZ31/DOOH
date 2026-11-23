@@ -1,12 +1,14 @@
 import React from 'react';
 import { Form, Input, InputNumber, Select, Button, Space, Switch, Tag } from 'antd';
 import { ThunderboltOutlined } from '@ant-design/icons';
+import { calcOrientation } from '@core/utils/mediaExtractor';
 import type { VenueItem } from '../types/venue';
 
 interface ScreenGeneralPlaybackTabProps {
 	venues: VenueItem[];
 	screenTypeOptions: Array<{ label: string; value: string }>;
 	statusOptions: Array<{ label: string; value: string }>;
+	resolutionPresets?: Array<{ label: string; value: string; width?: number; height?: number }>;
 	generating: boolean;
 	onAutoGenerateCode: () => void;
 	onPresetChange: (preset: string) => void;
@@ -14,8 +16,10 @@ interface ScreenGeneralPlaybackTabProps {
 	height?: number;
 }
 
-export const ScreenGeneralPlaybackTab: React.FC<ScreenGeneralPlaybackTabProps> = ({ venues, screenTypeOptions, statusOptions, generating, onAutoGenerateCode, onPresetChange, width = 1920, height = 1080 }) => {
-	const orientation = width >= height ? 'Landscape' : 'Portrait';
+const ORIENT_COLORS: Record<string, string> = { landscape: 'cyan', portrait: 'magenta', square: 'blue', ribbon: 'purple', custom: 'default' };
+
+export const ScreenGeneralPlaybackTab: React.FC<ScreenGeneralPlaybackTabProps> = ({ venues, screenTypeOptions, statusOptions, resolutionPresets = [], generating, onAutoGenerateCode, onPresetChange, width = 1920, height = 1080 }) => {
+	const orientation = calcOrientation(width, height);
 
 	return (
 		<>
@@ -50,16 +54,7 @@ export const ScreenGeneralPlaybackTab: React.FC<ScreenGeneralPlaybackTabProps> =
 
 			<div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 12 }}>
 				<Form.Item label="Resolution Presets">
-					<Select
-						placeholder="Select Preset"
-						onChange={onPresetChange}
-						options={[
-							{ value: '1080p_land', label: '1920 × 1080 (16:9 Landscape)' },
-							{ value: '1080p_port', label: '1080 × 1920 (9:16 Portrait)' },
-							{ value: '4k_land', label: '3840 × 2160 (4K Landscape)' },
-							{ value: '4k_port', label: '2160 × 3840 (4K Portrait)' },
-						]}
-					/>
+					<Select placeholder="Select Preset" onChange={onPresetChange} options={resolutionPresets} />
 				</Form.Item>
 				<Form.Item name="resolution_width" label="Width (px)" rules={[{ required: true }]}>
 					<InputNumber style={{ width: '100%' }} min={100} />
@@ -70,7 +65,7 @@ export const ScreenGeneralPlaybackTab: React.FC<ScreenGeneralPlaybackTabProps> =
 			</div>
 
 			<div style={{ marginBottom: 12, marginTop: -8 }}>
-				<Tag color="blue">{`${width} × ${height} (${orientation})`}</Tag>
+				<Tag color={ORIENT_COLORS[orientation] || 'default'}>{`${width} × ${height} (${orientation.toUpperCase()})`}</Tag>
 			</div>
 
 			<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>

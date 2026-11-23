@@ -87,6 +87,16 @@ return [
             ['value' => 'ribbon', 'label' => 'Ribbon / Banner (32:9)'],
             ['value' => 'custom', 'label' => 'Custom / Freeform'],
         ],
+        'resolution_presets' => [
+            ['value' => '1080p_land', 'label' => '1920 × 1080 (16:9 Landscape Full HD)', 'width' => 1920, 'height' => 1080, 'orientation' => 'landscape'],
+            ['value' => '1080p_port', 'label' => '1080 × 1920 (9:16 Portrait Full HD)', 'width' => 1080, 'height' => 1920, 'orientation' => 'portrait'],
+            ['value' => '4k_land', 'label' => '3840 × 2160 (16:9 Landscape 4K UHD)', 'width' => 3840, 'height' => 2160, 'orientation' => 'landscape'],
+            ['value' => '4k_port', 'label' => '2160 × 3840 (9:16 Portrait 4K UHD)', 'width' => 2160, 'height' => 3840, 'orientation' => 'portrait'],
+            ['value' => 'square_1080', 'label' => '1080 × 1080 (1:1 Square Pillar / Kiosk)', 'width' => 1080, 'height' => 1080, 'orientation' => 'square'],
+            ['value' => 'ribbon_3840', 'label' => '3840 × 600 (32:9 Ribbon / LED Header)', 'width' => 3840, 'height' => 600, 'orientation' => 'ribbon'],
+            ['value' => 'ribbon_1920', 'label' => '1920 × 360 (16:3 Fascia / Shelf Ribbon)', 'width' => 1920, 'height' => 360, 'orientation' => 'ribbon'],
+            ['value' => 'lcd_4_3', 'label' => '1024 × 768 (4:3 Standard Commercial LCD)', 'width' => 1024, 'height' => 768, 'orientation' => 'landscape'],
+        ],
         'connectivity_statuses' => [
             ['value' => 'online', 'label' => 'Online', 'color' => 'success'],
             ['value' => 'offline', 'label' => 'Offline', 'color' => 'error'],
