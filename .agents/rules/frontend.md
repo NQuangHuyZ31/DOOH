@@ -18,8 +18,9 @@ Deep dive: `docs/frontend/architecture.md`. New entity flow: skill `rtk-feature-
   - **Hooks (`hooks/use*.ts`) & Configs (`configs/*.ts(x)`)**: Extract stateful lifecycles to hooks and table columns/filter schemas to configs.
 - **Core-First Reuse & DRY (`Rule of 2`)** (`modules/Core/resources/js/`):
   - Reuse `@core` inventory first: `components/` (`ListLayout`, `Table`, `CustomModal`, `StatusTag`, `DynamicFilterBar`, `AuthGuard`, `GuestGuard`, `NotFoundPage`) · `hooks/` (`useAction`, `useFilter`, `usePagination`, `useAuthInit`) · `store/` (`metadataSlice`, `metadataThunk` `fetchMetadata`) · `utils/` & `configs/` (`formatters`, `error` `extractErrorMessage`, `tokenStorage`, `pagination`, `status`, `theme` `UREKA_COLORS`, `Action/api` `http`, `routes/registry`).
-  - **Promote to `@core` (`≥ 2` modules)**: Place domain-agnostic formatters (`@core/utils/formatters.ts`), components, or hooks in `@core`.
-  - **Within `1` Module (`≥ 2` places)**: Extract shared JSX blocks, modal workflows, or option configs into a shared sub-component, hook, or config file — NEVER copy-paste across tabs/modals/pages. Module A NEVER imports internals from Module B.
+  - **Cross-Module Component Reuse First (`@core` & `@modules/<Module>`)**: Before creating any new component, modal, table, or preview, search both `@core/components/` and `cms/modules/*/resources/js/components/`. If another module already has a suitable component (e.g., `CreativePreviewModal`, `UserFormModal`, `VenueFormModal`), **import and reuse it directly via `@modules/<Module>/resources/js/components/<Component>`** (extending with optional props if needed) instead of creating a new component.
+  - **Promote to `@core` (`≥ 2` modules)**: Place generic, domain-agnostic formatters (`@core/utils/formatters.ts`), components, or hooks in `@core`.
+  - **Within `1` Module (`≥ 2` places)**: Extract shared JSX blocks, modal workflows, or option configs into a shared sub-component, hook, or config file — NEVER copy-paste across tabs/modals/pages.
 
 ## 2. TypeScript & Comments
 

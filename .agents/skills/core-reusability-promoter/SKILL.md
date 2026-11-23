@@ -19,7 +19,7 @@ description: Use before creating any new component, hook, service, repository, o
 | Strategy | When | Action |
 |---|---|---|
 | **REUSE & FILTER FROM STORE** | Data belongs to an entity already in `@core/store/store.ts` (`state.user`, `state.role`, `state.permission`, `state.vendor`, `state.venue`, `state.creative`, `state.metadata`) | Read and filter directly from that store slice (e.g., filter `media_owner` users from `state.user.users` / `user` store); **NEVER** create a new backend API (like `/venue/media-owners`), duplicate slice state, or inline `http.get` |
-| **REUSE / EXTEND** | Exists in `Core` or module (or fits with an optional prop/param) | Use/extend directly; NEVER create duplicate or pass-through wrappers |
+| **REUSE / EXTEND EXISTING COMPONENT** | Component, modal, hook, or utility already exists in `@core` OR in another feature module (`cms/modules/*/resources/js/components/`) | Import and reuse/extend it directly (`@core/...` or `@modules/<Module>/resources/js/components/...` with optional props); **NEVER** create a new duplicate component or pass-through wrapper |
 | **PROMOTE TO CORE (`≥ 2` Modules)** | Logic, math, formatter, UI block, or metadata status/enum used by `≥ 2` modules | Place in `cms/modules/Core/` (`Modules\Core\Support\`, `Traits\`, `configs/metadata.php`, `@core/utils/`, `@core/components/`) |
 | **EXTRACT IN MODULE (`≥ 2` Places in `1` Module)** | Setup lines, normalization, `<Select options>`, or JSX repeated in `≥ 2` methods/files of 1 module | Extract to a single `protected` method, `configs/*.ts`, `hooks/use*.ts`, or sub-component; NEVER put single-module options in `Core` metadata |
 

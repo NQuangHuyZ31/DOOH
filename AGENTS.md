@@ -20,7 +20,7 @@ Modules (`cms/modules/`): `Core, Auth, User, Venue, Creative, Delivery, Report, 
 3. **Branch**: NEVER code on `main`. Base branches only: `feature | fix | refactor | test | chore | hotfix` (NEVER `feature/<name>`).
 4. **Implement**:
    - **Strict File Scope Lock**: ONLY touch files in the approved Plan `Files:` allowlist. Need an unlisted file → STOP and ask.
-   - **Reuse & Core Promotion First**: Search `cms/modules/Core/` first (skill `core-reusability-promoter`). Reuse/extend `Core` before creating new code; place generic helpers/components in `Core`.
+   - **Reuse & Cross-Module First**: Search `cms/modules/Core/` AND existing feature modules (`cms/modules/*/resources/js/components/`) first (skill `core-reusability-promoter`). Reuse/extend existing `@core` or sibling module components (`@modules/<Module>/...`) before creating new ones; place generic domain-agnostic helpers/components in `Core`.
    - **Tests**: Ship Feature/Unit tests with every feature or bugfix.
 5. **Review** → skill `code-review` (`git status --short` matches `Files:` allowlist + run quality gates).
 6. **Commit (Approval Gate)**: **NEVER** `git add`, `git commit`, or `git push` without explicit user approval. Stage explicit paths only (`git add <paths>`, NEVER `git add .`), Conventional Commits `type(scope): subject` (`.agents/rules/git.md`).
@@ -31,7 +31,7 @@ Modules (`cms/modules/`): `Core, Auth, User, Venue, Creative, Delivery, Report, 
   - MUST use **tab size 4** across all `.php, .ts, .tsx, .js, .cjs, .json, .css` (`singleQuote: true`, `semi: true`, `trailingComma: 'all'`, `printWidth: 230`). NEVER use 2-space indent.
   - **Single-Line Calls**: Keep function/method calls (2–4 args), constructors, `return` statements, imports, destructuring, and JSX tags on **1 line** when `≤ 140–180` chars. NEVER wrap short arguments one-per-line.
 - **Zero code outside `cms/modules/`**: shared views/routes/entry (`app.blade.php`, `app.tsx`, `routes/web.php`, `routes/api.php`) live in `modules/Core/`.
-- **Cross-Module Isolation**: `Core` NEVER imports feature modules. Module A NEVER imports/queries Module B's internal models, components, hooks, or slices directly (backend: DI Services/Interfaces or Events/Jobs; frontend shared by `≥ 2` modules: `@core`).
+- **Cross-Module Boundaries & Component Reuse**: `Core` NEVER imports feature modules. Backend: Module A calls Module B via DI Services/Interfaces or Events/Jobs (NEVER queries Module B's Models directly). Frontend: **Prioritize reusing/extending existing components, modals, and slices from `@core` OR other feature modules (`@modules/<Module>/resources/js/...`) instead of creating new duplicate components**; generic domain-agnostic UI shared by `≥ 2` modules belongs in `@core`.
 - **Providers**: `bootstrap/providers.php` = `AppServiceProvider` + `CoreServiceProvider` only; Core auto-registers `Modules\<Name>\Providers\<Name>ServiceProvider`.
 - **Zero Bloat & Dead Code (KISS/YAGNI)**: NEVER create pass-through wrappers, barrel `index.ts`, `DTO`s, `ServiceInterface`s (only Repositories use interfaces), or unused methods/configs. Delete dead code, unused imports, and debug logs (`console.log`, `dd`, `dump`) immediately.
 - **Store-First & Zero Redundant Sub-List APIs**: NEVER create backend sub-list endpoints when `index` + `$filterable` exists. In frontend, read and filter directly from existing Redux store slices (`state.user.users`, `state.vendor.vendors`), never create duplicate slice lists or inline `http.get` + `useState`.
