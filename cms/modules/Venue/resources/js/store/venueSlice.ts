@@ -3,6 +3,7 @@ import type { VenueItem, ScreenItem, VenueQueryParams, ScreenQueryParams } from 
 import {
 	fetchVenues,
 	fetchScreens,
+	fetchMediaOwners,
 	createVenue,
 	updateVenue,
 	deleteVenue,
@@ -19,6 +20,7 @@ export interface VenueState {
 	screens: ScreenItem[];
 	screenPagination: { current: number; pageSize: number; total: number };
 	screenFilters: ScreenQueryParams;
+	mediaOwners: Array<{ id: number; name: string; email: string }>;
 	loading: boolean;
 	submitting: boolean;
 	selectedVenue: VenueItem | null;
@@ -33,6 +35,7 @@ const initialState: VenueState = {
 	screens: [],
 	screenPagination: { current: 1, pageSize: 15, total: 0 },
 	screenFilters: {},
+	mediaOwners: [],
 	loading: false,
 	submitting: false,
 	selectedVenue: null,
@@ -153,6 +156,9 @@ export const venueSlice = createSlice({
 				if (screen && action.payload.secret_key) {
 					screen.secret_key = action.payload.secret_key;
 				}
+			})
+			.addCase(fetchMediaOwners.fulfilled, (state, action) => {
+				state.mediaOwners = action.payload || [];
 			});
 	},
 });

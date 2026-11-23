@@ -2,6 +2,7 @@ import React from 'react';
 import type { ColumnsType } from 'antd/es/table';
 import { Badge, Button, Popconfirm, Space, Tag, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, KeyOutlined } from '@ant-design/icons';
+import { UREKA_COLORS } from '@core/configs/theme';
 import type { MetadataOption } from '@core/types/metadata';
 import type { PermissionItem } from '../types/permission';
 
@@ -32,7 +33,7 @@ export const getPermissionColumns = (onEdit: (permission: PermissionItem) => voi
 			render: (_: unknown, record: PermissionItem) => (
 				<Space direction="vertical" size={2}>
 					<Space>
-						<KeyOutlined style={{ color: '#1890ff' }} />
+						<KeyOutlined style={{ color: UREKA_COLORS.info }} />
 						<Text code strong>
 							{record.name}
 						</Text>

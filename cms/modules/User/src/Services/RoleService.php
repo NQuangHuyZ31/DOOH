@@ -18,9 +18,6 @@ class RoleService
         return $this->roleRepository->all();
     }
 
-    /**
-     * @param array<string, mixed> $filters
-     */
     public function paginateRoles(int $perPage = 15, array $filters = []): LengthAwarePaginator
     {
         return $this->roleRepository->paginate($perPage, $filters);
@@ -31,9 +28,6 @@ class RoleService
         return $this->roleRepository->find($id);
     }
 
-    /**
-     * @param array<string, mixed> $data
-     */
     public function createRole(array $data): Role
     {
         $permissions = $data['permissions'] ?? [];
@@ -48,9 +42,6 @@ class RoleService
         return $this->roleRepository->find($role->id);
     }
 
-    /**
-     * @param array<string, mixed> $data
-     */
     public function updateRole(int $id, array $data): ?Role
     {
         $role = $this->roleRepository->find($id);

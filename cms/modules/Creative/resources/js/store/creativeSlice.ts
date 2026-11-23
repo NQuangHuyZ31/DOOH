@@ -1,7 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { defaultPagination, type PaginationConfig } from '@core/configs/pagination';
 import type { CreativeItem, CreativeQueryParams } from '../types/creative';
-import { fetchCreatives, createCreative, updateCreative, deleteCreative, reviewCreative } from './creativeThunk';
+import { fetchCreatives, createCreative, updateCreative, deleteCreative, reviewCreative, createBatchCreatives, batchReviewCreatives } from './creativeThunk';
 
 interface CreativeState {
 	creatives: CreativeItem[];
@@ -96,6 +96,24 @@ export const creativeSlice = createSlice({
 				}
 			})
 			.addCase(reviewCreative.rejected, (state) => {
+				state.submitting = false;
+			})
+			.addCase(createBatchCreatives.pending, (state) => {
+				state.submitting = true;
+			})
+			.addCase(createBatchCreatives.fulfilled, (state) => {
+				state.submitting = false;
+			})
+			.addCase(createBatchCreatives.rejected, (state) => {
+				state.submitting = false;
+			})
+			.addCase(batchReviewCreatives.pending, (state) => {
+				state.submitting = true;
+			})
+			.addCase(batchReviewCreatives.fulfilled, (state) => {
+				state.submitting = false;
+			})
+			.addCase(batchReviewCreatives.rejected, (state) => {
 				state.submitting = false;
 			});
 	},

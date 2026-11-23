@@ -110,3 +110,12 @@ export const regenerateScreenKey = createAsyncThunk(
 		}
 	},
 );
+
+export const fetchMediaOwners = createAsyncThunk('venue/fetchMediaOwners', async (_, { rejectWithValue }) => {
+	try {
+		const res = await venueApi.getMediaOwners();
+		return res.data?.data || [];
+	} catch (err: unknown) {
+		return rejectWithValue(extractErrorMessage(err, 'Failed to fetch media owners.'));
+	}
+});

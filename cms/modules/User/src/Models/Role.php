@@ -26,22 +26,11 @@ class Role extends Model
         'display_name',
     ];
 
-    /**
-     * The permissions that belong to the role.
-     */
     public function permissions(): BelongsToMany
     {
-        return $this->belongsToMany(
-            Permission::class,
-            'role_permissions',
-            'role_id',
-            'permission_id'
-        );
+        return $this->belongsToMany(Permission::class, 'role_permissions', 'role_id', 'permission_id');
     }
 
-    /**
-     * The users that belong to the role (One Role to Many Users).
-     */
     public function users(): HasMany
     {
         return $this->hasMany(User::class, 'role_id');

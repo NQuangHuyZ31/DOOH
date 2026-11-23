@@ -4,10 +4,10 @@ import { PlusOutlined } from '@ant-design/icons';
 import { ListLayout } from '@core/components/ListLayout';
 import { defaultPagination } from '@core/configs/pagination';
 import { useAppDispatch, useAppSelector } from '@core/store/hooks';
-import type { FilterFieldConfig } from '@core/types/filter';
 import { extractErrorMessage } from '@core/utils/error';
 import { UserFormModal } from '../components/UserFormModal';
 import { UserTable } from '../components/UserTable';
+import { getUserFilterConfigs } from '../configs/userFilterConfigs';
 import { closeUserModal, openCreateUserModal, openEditUserModal, setUserFilters, setUserPagination } from '../store/userSlice';
 import { createUser, deleteUser, fetchPermissions, fetchRoles, fetchUsers, sendUserResetPassword, updateUser } from '../store/userThunk';
 import type { UserFilterParams, UserFormData } from '../types/user';
@@ -74,29 +74,7 @@ export const UserListPage: React.FC = () => {
 		}
 	};
 
-	const filterConfigs: FilterFieldConfig[] = useMemo(
-		() => [
-			{ name: 'search', type: 'search', placeholder: 'Search by name or email...', width: 260 },
-			{
-				name: 'role',
-				type: 'select',
-				placeholder: 'Filter by Role',
-				width: 160,
-				options: roles.map((r) => ({ label: r.display_name, value: r.name })),
-			},
-			{
-				name: 'permission_type',
-				type: 'select',
-				placeholder: 'Permission Mode',
-				width: 170,
-				options: [
-					{ label: 'Role-based', value: 'role' },
-					{ label: 'Direct Permissions', value: 'direct' },
-				],
-			},
-		],
-		[roles],
-	);
+	const filterConfigs = useMemo(() => getUserFilterConfigs(roles), [roles]);
 
 	return (
 		<ListLayout
