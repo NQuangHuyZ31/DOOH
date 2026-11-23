@@ -13,7 +13,8 @@ use Modules\Creative\Repositories\Interfaces\CreativeRepositoryInterface;
 class CreativeService
 {
 	public function __construct(
-		protected CreativeRepositoryInterface $creativeRepository
+		protected CreativeRepositoryInterface $creativeRepository,
+		protected VastParserService $vastParserService
 	) {}
 
 	public function listCreatives(array $filters = [], int $perPage = 15): LengthAwarePaginator
@@ -33,9 +34,7 @@ class CreativeService
 			$data['code'] = 'CR-' . strtoupper(Str::random(8));
 		}
 
-		if (empty($data['aspect_ratio']) && !empty($data['width']) && !empty($data['height'])) {
-			$data['aspect_ratio'] = DisplaySpecHelper::deriveAspectRatio((int) $data['width'], (int) $data['height']);
-		}
+		$data = $this->enrichCreativeSpecs($data);
 
 		// Only reviewers (admin/operator) can set custom status or directly approve on creation
 		if ($canReview && !empty($data['status'])) {
@@ -91,12 +90,43 @@ class CreativeService
 			$data['status'] = 'approved';
 		}
 
-		if (!empty($data['width']) && !empty($data['height'])) {
-			$data['aspect_ratio'] = DisplaySpecHelper::deriveAspectRatio((int) $data['width'], (int) $data['height']);
-		}
+		$data = $this->enrichCreativeSpecs($data, $existing);
 
 		$updated = $this->creativeRepository->update($id, $data);
 		return $updated ? $this->getCreativeById($id) : null;
+	}
+
+	protected function enrichCreativeSpecs(array $data, ?Creative $existing = null): array
+	{
+		$type = $data['type'] ?? $existing?->type ?? '';
+		$mediaUrl = $data['media_url'] ?? $existing?->media_url ?? '';
+
+		if ($type === 'vast' && !empty($mediaUrl)) {
+			try {
+				$parsedVast = $this->vastParserService->parse($mediaUrl);
+				$data['metadata'] = array_merge($existing?->metadata ?? [], $data['metadata'] ?? [], ['vast' => $parsedVast]);
+				if (!empty($parsedVast['duration_seconds'])) {
+					$data['duration_seconds'] = $parsedVast['duration_seconds'];
+				}
+				if (!empty($parsedVast['width']) && !empty($parsedVast['height'])) {
+					$data['width'] = $parsedVast['width'];
+					$data['height'] = $parsedVast['height'];
+					$data['aspect_ratio'] = $parsedVast['aspect_ratio'];
+				}
+			} catch (\Exception $e) {
+				if ($e instanceof \DomainException) {
+					throw $e;
+				}
+			}
+		}
+
+		$width = (int) ($data['width'] ?? $existing?->width ?? 0);
+		$height = (int) ($data['height'] ?? $existing?->height ?? 0);
+		if ($width > 0 && $height > 0 && empty($data['aspect_ratio'])) {
+			$data['aspect_ratio'] = DisplaySpecHelper::deriveAspectRatio($width, $height);
+		}
+
+		return $data;
 	}
 
 	public function deleteCreative(int|string $id): bool
@@ -121,5 +151,10 @@ class CreativeService
 	public function batchReview(array $ids, string $status, ?string $rejectionReason = null, ?int $approverId = null): int
 	{
 		return $this->creativeRepository->batchUpdateStatus($ids, $status, $rejectionReason, $approverId);
+	}
+
+	public function parseVast(string $urlOrXml): array
+	{
+		return $this->vastParserService->parse($urlOrXml);
 	}
 }
