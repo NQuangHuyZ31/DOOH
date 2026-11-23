@@ -222,4 +222,43 @@ class UserApiTest extends TestCase
             'id' => $user->id,
         ]);
     }
+
+    public function test_create_user_with_vendor_link_and_sync(): void
+    {
+        $this->authenticateAsSuperAdmin();
+
+        $vendor = \Modules\Vendor\Models\Vendor::create([
+            'code' => 'VND-LINK1',
+            'name' => 'Linkable Vendor',
+            'contact_name' => 'Initial Name',
+            'status' => 'active',
+        ]);
+
+        $role = Role::firstOrCreate(['name' => 'media_owner'], ['display_name' => 'Media Owner']);
+
+        $payload = [
+            'name' => 'New Media Owner Contact',
+            'email' => 'mediaowner.contact@example.com',
+            'password' => 'secret123',
+            'permission_type' => User::PERMISSION_TYPE_ROLE,
+            'role_id' => $role->id,
+            'vendor_id' => $vendor->id,
+        ];
+
+        $response = $this->postJson('/admin/api/user', $payload);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('status', 'success');
+
+        $userId = $response->json('data.id');
+        $freshVendor = $vendor->fresh();
+        $this->assertSame($userId, $freshVendor->user_id);
+
+        // Test update sync
+        $this->putJson("/admin/api/user/{$userId}", [
+            'name' => 'Updated Contact Name',
+        ]);
+
+        $this->assertSame('Updated Contact Name', $vendor->fresh()->contact_name);
+    }
 }

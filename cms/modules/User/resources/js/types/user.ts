@@ -12,6 +12,8 @@ export interface UserItem {
 	permission_type: 'role' | 'direct';
 	direct_permissions?: (string | PermissionItem)[];
 	permissions?: (string | PermissionItem)[];
+	vendor_id?: number | null;
+	vendor?: { id: number; name: string; code: string } | null;
 	created_at?: string;
 }
 
@@ -20,6 +22,7 @@ export interface UserFormData {
 	email: string;
 	password?: string;
 	role_id?: number;
+	vendor_id?: number | null;
 	permission_type: 'role' | 'direct';
 	direct_permissions?: string[];
 }

@@ -9,7 +9,7 @@ Architecture standards for the CMS single-page application. Built on the **Modul
 1. **`Core` is a First-Class Module (`modules/Core/`)**:
    - Contains all reusable infrastructure, base components, HTTP interceptors, layouts, common hooks, and utilities.
    - Other domain modules (`Venue`, `Delivery`, `Creative`, `Report`, `Log`, `Simulator`) import directly from `@core/*`.
-   - Domain modules MUST NOT cross-import private internals from sibling modules; shared logic MUST be promoted to `@core`.
+   - `Core` MUST NOT import feature modules. Feature modules SHOULD prioritize reusing/extending existing components, modals, and slices from `@core/*` or sibling modules (`@modules/<Module>/resources/js/...`) instead of creating duplicate components; generic domain-agnostic UI shared by `≥ 2` modules belongs in `@core`.
 2. **Strict 150-Line Limit (Hard Invariant)**:
    - Any TSX file approaching ~120 lines MUST be proactively decomposed:
      - Static column/filter configs $\rightarrow$ `configs/*.ts`.

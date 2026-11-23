@@ -43,6 +43,15 @@ class DisplaySpecHelper
 
 	public static function deriveOrientation(int $width, int $height): string
 	{
+		if ($width <= 0 || $height <= 0) {
+			return 'landscape';
+		}
+		if (abs($width - $height) / max($width, $height) < 0.08) {
+			return 'square';
+		}
+		if ($width / $height >= 2.8) {
+			return 'ribbon';
+		}
 		return $width >= $height ? 'landscape' : 'portrait';
 	}
 

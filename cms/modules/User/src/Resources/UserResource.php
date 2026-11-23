@@ -17,6 +17,11 @@ class UserResource extends JsonResource
             'role_id' => $this->role_id,
             'permission_type' => $this->permission_type ?? User::PERMISSION_TYPE_ROLE,
             'role' => $this->whenLoaded('role', fn () => $this->role ? new RoleResource($this->role) : null),
+            'vendor' => $this->whenLoaded('vendor', fn () => $this->vendor ? [
+                'id' => $this->vendor->id,
+                'name' => $this->vendor->name,
+                'code' => $this->vendor->code,
+            ] : null),
             'direct_permissions' => $this->whenLoaded(
                 'directPermissions',
                 fn () => $this->directPermissions->pluck('name')->values()->all(),

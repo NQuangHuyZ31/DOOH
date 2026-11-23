@@ -11,6 +11,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
     protected array $with = [
         'role:id,name,display_name,description',
         'directPermissions:id,name,module,display_name',
+        'vendor:id,user_id,code,name',
     ];
 
     public function __construct(User $model)

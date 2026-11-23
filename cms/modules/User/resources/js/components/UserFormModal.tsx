@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Form, Input, Modal, Radio, Select } from 'antd';
+import { UserVendorField } from './UserVendorField';
 import type { PermissionItem, RoleItem, UserFormData, UserItem } from '../types/user';
 
 export interface UserFormModalProps {
@@ -46,6 +47,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, editingUser,
 					email: editingUser.email,
 					permission_type: currentType,
 					role_id: editingUser.role_id ?? (typeof editingUser.role === 'object' ? editingUser.role?.id : undefined),
+					vendor_id: editingUser.vendor_id ?? editingUser.vendor?.id,
 					direct_permissions: directPermissionNames,
 				});
 			} else {
@@ -110,15 +112,18 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, editingUser,
 				</Form.Item>
 
 				{permType === 'role' ? (
-					<Form.Item name="role_id" label="Role" rules={[{ required: true, message: 'Please select a role' }]}>
-						<Select
-							placeholder="Select a role"
-							options={roles.map((r) => ({
-								label: r.display_name || r.name,
-								value: r.id,
-							}))}
-						/>
-					</Form.Item>
+					<>
+						<Form.Item name="role_id" label="Role" rules={[{ required: true, message: 'Please select a role' }]}>
+							<Select
+								placeholder="Select a role"
+								options={roles.map((r) => ({
+									label: r.display_name || r.name,
+									value: r.id,
+								}))}
+							/>
+						</Form.Item>
+						<UserVendorField roles={roles} initialVendor={editingUser?.vendor} />
+					</>
 				) : (
 					<Form.Item name="direct_permissions" label="Direct Module Permissions" rules={[{ required: true, message: 'Select at least one permission' }]}>
 						<Select mode="multiple" placeholder="Select module permissions" options={groupedPermissionOptions} allowClear maxTagCount="responsive" />

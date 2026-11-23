@@ -70,6 +70,7 @@ export interface CreativeRowItem {
 	file_size_bytes?: number;
 	mime_type?: string;
 	uploading?: boolean;
+	error?: { name?: string; media?: string; orientation?: string; general?: string };
 }
 
 export interface CreativeReviewPayload {

@@ -25,7 +25,6 @@ class UpdateVendorRequest extends FormRequest
 			'contact_email' => ['nullable', 'email', 'max:100'],
 			'contact_phone' => ['nullable', 'string', 'max:20'],
 			'address' => ['nullable', 'string', 'max:255'],
-			'user_id' => ['nullable', 'integer', 'exists:users,id'],
 			'rate_limit_per_minute' => ['nullable', 'integer', 'min:10', 'max:3600'],
 			'revenue_share_percentage' => ['nullable', 'numeric', 'between:0,100'],
 			'status' => ['nullable', 'in:active,inactive,suspended'],

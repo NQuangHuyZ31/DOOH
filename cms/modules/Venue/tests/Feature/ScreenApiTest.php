@@ -246,4 +246,57 @@ class ScreenApiTest extends TestCase
         $this->assertNotEquals('old_secret_key_123', $newKey);
         $this->assertTrue(HmacKeyUtil::verifyScreenKey($newKey, $screen->code));
     }
+
+    public function test_create_screen_square_orientation_success(): void
+    {
+        $this->authenticateAsSuperAdmin();
+
+        $venue = Venue::create(['code' => 'SGN-SQR', 'name' => 'Square Venue', 'status' => 'active']);
+        $payload = [
+            'venue_id' => $venue->id,
+            'name' => 'Atrium Square Pillar',
+            'screen_type' => 'indoor_led',
+            'resolution_width' => 1080,
+            'resolution_height' => 1080,
+            'status' => 'active',
+        ];
+
+        $response = $this->postJson('/admin/api/venue/screen', $payload);
+        $response->assertStatus(201)
+                 ->assertJsonPath('status', 'success')
+                 ->assertJsonPath('data.orientation', 'square')
+                 ->assertJsonPath('data.aspect_ratio', '1:1');
+
+        $this->assertDatabaseHas('screens', [
+            'venue_id' => $venue->id,
+            'name' => 'Atrium Square Pillar',
+            'orientation' => 'square',
+        ]);
+    }
+
+    public function test_create_screen_ribbon_orientation_success(): void
+    {
+        $this->authenticateAsSuperAdmin();
+
+        $venue = Venue::create(['code' => 'SGN-RBN', 'name' => 'Ribbon Venue', 'status' => 'active']);
+        $payload = [
+            'venue_id' => $venue->id,
+            'name' => 'Storefront Header Ribbon',
+            'screen_type' => 'outdoor_led',
+            'resolution_width' => 3840,
+            'resolution_height' => 600,
+            'status' => 'active',
+        ];
+
+        $response = $this->postJson('/admin/api/venue/screen', $payload);
+        $response->assertStatus(201)
+                 ->assertJsonPath('status', 'success')
+                 ->assertJsonPath('data.orientation', 'ribbon');
+
+        $this->assertDatabaseHas('screens', [
+            'venue_id' => $venue->id,
+            'name' => 'Storefront Header Ribbon',
+            'orientation' => 'ribbon',
+        ]);
+    }
 }

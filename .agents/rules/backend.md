@@ -35,6 +35,7 @@ Deep dive: `docs/backend/architecture.md`. DB: `database.md`. Tests: `testing.md
 ## 3. Dynamic Routing & RBAC
 
 - `Modules\Core\Support\DynamicRouteResovle`: `/{module}/{controller}/{id?}/{action?}` → `Modules\<Module>\Http\Controllers\<Studly>Controller` (default `<Module>Controller`).
+- **No Redundant Sub-List Endpoints When Store / `index` Filter Exists**: NEVER create custom backend endpoints, controller actions, or service/repository methods just to return a filtered subset of an entity that already has its own store & `index` endpoint (e.g., NEVER create `GET /venue/media-owners` when the frontend can read/filter `media_owner` users directly from the `user` store / `GET /user?role=media_owner`).
 - Every `public` controller method is an endpoint → helpers MUST be `protected`/`private`. NEVER create dummy `IndexController`.
 - RBAC via `CheckModulePermission` (`GET→<module>.view`, `POST→<module>.create`, `PUT/PATCH→<module>.edit`, `DELETE→<module>.delete`; returns 401/403).
 

@@ -1,6 +1,9 @@
 import React, { useEffect } from 'react';
-import { Form, Input, InputNumber, Select, Row, Col } from 'antd';
+import { Form, Input, InputNumber, Select, Row, Col, Alert } from 'antd';
+import { UserOutlined } from '@ant-design/icons';
 import { CustomModal } from '@core/components/CustomModal';
+import { VENDOR_STATUS_OPTIONS } from '../configs/vendorFilterConfigs';
+import { VendorUserAccountFields } from './VendorUserAccountFields';
 import type { VendorItem } from '../types/vendor';
 
 interface VendorFormModalProps {
@@ -25,6 +28,7 @@ export const VendorFormModal: React.FC<VendorFormModalProps> = ({ open, initialV
 					rate_limit_per_minute: 120,
 					revenue_share_percentage: 70.0,
 					status: 'active',
+					create_user: false,
 				});
 			}
 		}
@@ -106,10 +110,22 @@ export const VendorFormModal: React.FC<VendorFormModalProps> = ({ open, initialV
 					</Col>
 					<Col span={8}>
 						<Form.Item name="status" label="Status" rules={[{ required: true }]}>
-							<Select options={[{ label: 'Active', value: 'active' }, { label: 'Inactive', value: 'inactive' }, { label: 'Suspended', value: 'suspended' }]} />
+							<Select options={VENDOR_STATUS_OPTIONS} />
 						</Form.Item>
 					</Col>
 				</Row>
+
+				{isEdit && initialValues?.user && (
+					<Alert
+						type="info"
+						showIcon
+						icon={<UserOutlined />}
+						message={`Linked Portal Account: ${initialValues.user.name} (${initialValues.user.email})`}
+						style={{ marginTop: 8 }}
+					/>
+				)}
+
+				{!isEdit && <VendorUserAccountFields form={form} open={open} />}
 			</Form>
 		</CustomModal>
 	);

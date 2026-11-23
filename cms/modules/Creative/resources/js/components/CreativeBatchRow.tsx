@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Card, Input, InputNumber, Select, Button, Space, Tag, Radio, message } from 'antd';
+import { Card, Input, InputNumber, Select, Button, Space, Tag, Radio, message, Typography } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import { FileUpload } from '@core/components/FileUpload';
 import { useAppSelector } from '@core/store/hooks';
 import { extractErrorMessage } from '@core/utils/error';
 import { creativeApi } from '../Action/creativeApi';
 import type { CreativeRowItem, CreativeStatus, CreativeType } from '../types/creative';
+
+const { Text } = Typography;
 
 interface CreativeBatchRowProps {
 	row: CreativeRowItem;
@@ -30,6 +32,7 @@ export const CreativeBatchRow: React.FC<CreativeBatchRowProps> = ({ row, index, 
 	const typeOptions = metadata?.enums?.creative_types || [];
 	const statusOptions = (metadata?.statuses?.creative || []).filter((s) => s.value !== 'rejected');
 	const uploadCfg = TYPE_UPLOAD_CFG[row.type] || TYPE_UPLOAD_CFG.video;
+	const hasError = Boolean(row.error?.name || row.error?.media || row.error?.orientation || row.error?.general);
 
 	const handleInspectVast = async () => {
 		if (!row.media_url?.trim()) return message.warning('Please enter VAST tag URL first.');
@@ -39,87 +42,76 @@ export const CreativeBatchRow: React.FC<CreativeBatchRowProps> = ({ row, index, 
 			const d = res.data?.data;
 			if (d) {
 				onChange(row.id, {
-					width: Number(d.width) || 1920,
-					height: Number(d.height) || 1080,
+					width: Number(d.width) || 1920, height: Number(d.height) || 1080,
 					duration_seconds: d.duration_seconds ? Number(d.duration_seconds) : row.duration_seconds,
 					name: row.name || (d.ad_title as string) || row.name,
+					error: row.error ? { ...row.error, media: undefined } : undefined,
 				});
 				message.success(`VAST verified: ${d.version} (${d.width}×${d.height}, ${d.duration_seconds || 15}s)`);
 			}
 		} catch (e: unknown) {
 			message.error(extractErrorMessage(e, 'Failed to inspect VAST XML.'));
-		} finally {
-			setInspecting(false);
-		}
+			onChange(row.id, { error: { ...row.error, media: 'Invalid VAST endpoint.' } });
+		} finally { setInspecting(false); }
 	};
 
 	const handleTypeChange = (type: CreativeType) => {
-		const updates: Partial<CreativeRowItem> = {
-			type,
-			duration_seconds: type === 'image' ? null : row.duration_seconds || 15,
-		};
+		const updates: Partial<CreativeRowItem> = { type, duration_seconds: type === 'image' ? null : row.duration_seconds || 15 };
 		if (type === 'vast') updates.sourceType = 'url';
 		onChange(row.id, updates);
 	};
 
 	return (
-		<Card size="small" style={{ marginBottom: 12, border: '1px solid #e2e8f0', background: '#fafafa' }}>
+		<Card size="small" style={{ marginBottom: 12, border: hasError ? '1px solid #ff4d4f' : '1px solid #e2e8f0', background: hasError ? '#fffaf9' : '#fafafa' }}>
 			<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
 				<Space>
-					<Tag color="blue" style={{ fontWeight: 600 }}>{`Row #${index + 1}`}</Tag>
+					<Tag color={hasError ? 'error' : 'blue'} style={{ fontWeight: 600 }}>{`Row #${index + 1}`}</Tag>
 					<Radio.Group size="small" value={row.type === 'vast' ? 'url' : row.sourceType} onChange={(e) => onChange(row.id, { sourceType: e.target.value })}>
-						<Radio.Button value="file" disabled={row.type === 'vast'}>
-							Upload File
-						</Radio.Button>
+						<Radio.Button value="file" disabled={row.type === 'vast'}>Upload File</Radio.Button>
 						<Radio.Button value="url">Enter URL</Radio.Button>
 					</Radio.Group>
 					{canReview && (
-						<Select
-							size="small"
-							value={row.status || 'pending_review'}
-							style={{ width: 140 }}
-							disabled={row.status === 'approved'}
-							onChange={(val: CreativeStatus) => onChange(row.id, { status: val })}
-							options={statusOptions.length > 0 ? statusOptions : undefined}
-						/>
+						<Select size="small" value={row.status || 'pending_review'} style={{ width: 140 }} disabled={row.status === 'approved'} onChange={(val: CreativeStatus) => onChange(row.id, { status: val })} options={statusOptions.length > 0 ? statusOptions : undefined} />
 					)}
+					{row.error?.general && <Text type="danger" style={{ fontSize: 12 }}>{row.error.general}</Text>}
 				</Space>
 				<Button type="text" danger icon={<DeleteOutlined />} disabled={!canDelete} onClick={() => onDelete(row.id)} />
 			</div>
 
-			<div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 2.4fr 1.6fr 0.9fr', gap: 10, alignItems: 'center' }}>
-				<Input placeholder="Creative Name..." value={row.name} onChange={(e) => onChange(row.id, { name: e.target.value })} />
+			<div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 2.4fr 1.6fr 0.9fr', gap: 10, alignItems: 'start' }}>
+				<div>
+					<Input status={row.error?.name ? 'error' : undefined} placeholder="Creative Name..." value={row.name} onChange={(e) => onChange(row.id, { name: e.target.value, error: row.error ? { ...row.error, name: undefined } : undefined })} />
+					{row.error?.name && <Text type="danger" style={{ fontSize: 11, display: 'block' }}>{row.error.name}</Text>}
+				</div>
 
 				<Select value={row.type} onChange={handleTypeChange} options={typeOptions} />
 
-				{row.sourceType === 'file' && row.type !== 'vast' ? (
-					<FileUpload
-						folder="creatives"
-						accept={uploadCfg.accept}
-						maxSizeMb={uploadCfg.maxSizeMb}
-						value={row.media_url}
-						buttonText={uploadCfg.buttonText}
-						onChange={(url, data, file) => onFileUploaded(row.id, url, file)}
-					/>
-				) : (
-					<Input
-						placeholder={row.type === 'vast' ? 'https://example.com/vast.xml' : 'https://cdn.example.com/asset.mp4'}
-						value={row.media_url}
-						onChange={(e) => onChange(row.id, { media_url: e.target.value })}
-						addonAfter={
-							row.type === 'vast' ? (
-								<Button size="small" type="link" loading={inspecting} onClick={handleInspectVast} style={{ padding: 0 }}>
-									Verify
-								</Button>
-							) : undefined
-						}
-					/>
-				)}
+				<div>
+					{row.sourceType === 'file' && row.type !== 'vast' ? (
+						<FileUpload
+							folder="creatives" accept={uploadCfg.accept} maxSizeMb={uploadCfg.maxSizeMb} value={row.media_url} buttonText={uploadCfg.buttonText}
+							status={row.error?.media || row.error?.orientation ? 'error' : undefined} errorMessage={row.error?.media}
+							onChange={(url, data, file) => onFileUploaded(row.id, url, file)} onError={(msg) => onChange(row.id, { error: { ...row.error, media: msg } })}
+						/>
+					) : (
+						<>
+							<Input
+								status={row.error?.media ? 'error' : undefined} placeholder={row.type === 'vast' ? 'https://example.com/vast.xml' : 'https://cdn.example.com/asset.mp4'}
+								value={row.media_url} onChange={(e) => onChange(row.id, { media_url: e.target.value, error: row.error ? { ...row.error, media: undefined } : undefined })}
+								addonAfter={row.type === 'vast' ? <Button size="small" type="link" loading={inspecting} onClick={handleInspectVast} style={{ padding: 0 }}>Verify</Button> : undefined}
+							/>
+							{row.error?.media && <Text type="danger" style={{ fontSize: 11, display: 'block' }}>{row.error.media}</Text>}
+						</>
+					)}
+				</div>
 
-				<Space.Compact style={{ width: '100%' }}>
-					<InputNumber prefix="W:" placeholder="Width" value={row.width} min={100} max={10000} onChange={(val) => onChange(row.id, { width: val || 1920 })} style={{ width: '50%' }} />
-					<InputNumber prefix="H:" placeholder="Height" value={row.height} min={100} max={10000} onChange={(val) => onChange(row.id, { height: val || 1080 })} style={{ width: '50%' }} />
-				</Space.Compact>
+				<div>
+					<Space.Compact style={{ width: '100%' }}>
+						<InputNumber status={row.error?.orientation ? 'error' : undefined} prefix="W:" placeholder="Width" value={row.width} min={100} max={10000} onChange={(val) => onChange(row.id, { width: val || 1920, error: row.error ? { ...row.error, orientation: undefined } : undefined })} style={{ width: '50%' }} />
+						<InputNumber status={row.error?.orientation ? 'error' : undefined} prefix="H:" placeholder="Height" value={row.height} min={100} max={10000} onChange={(val) => onChange(row.id, { height: val || 1080, error: row.error ? { ...row.error, orientation: undefined } : undefined })} style={{ width: '50%' }} />
+					</Space.Compact>
+					{row.error?.orientation && <Text type="danger" style={{ fontSize: 11, display: 'block', lineHeight: 1.2 }}>{row.error.orientation}</Text>}
+				</div>
 
 				{row.type === 'image' ? (
 					<Input disabled value="—" placeholder="N/A" style={{ textAlign: 'center', background: '#f1f5f9', color: '#94a3b8' }} />
