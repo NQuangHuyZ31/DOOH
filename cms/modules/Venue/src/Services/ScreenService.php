@@ -3,9 +3,9 @@
 namespace Modules\Venue\Services;
 
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Redis;
 use Modules\Core\Support\DisplaySpecHelper;
 use Modules\Core\Support\HmacKeyUtil;
+use Modules\Core\Support\PlaylistCacheHelper;
 use Modules\Venue\Models\Screen;
 use Modules\Venue\Repositories\Interfaces\ScreenRepositoryInterface;
 use Modules\Venue\Repositories\Interfaces\VenueRepositoryInterface;
@@ -46,7 +46,7 @@ class ScreenService
         }
 
         $screen = $this->screenRepo->create($data);
-        $this->evictPlaylistCache($screen->venue_id);
+        PlaylistCacheHelper::evictVenue($screen->venue_id);
 
         return $screen;
     }
@@ -70,7 +70,7 @@ class ScreenService
         if ($updated) {
             $screen = $this->getScreen($id);
             if ($screen) {
-                $this->evictPlaylistCache($screen->venue_id);
+                PlaylistCacheHelper::evictVenue($screen->venue_id);
             }
         }
 
@@ -82,7 +82,7 @@ class ScreenService
         $screen = $this->getScreen($id);
         $deleted = $this->screenRepo->delete($id);
         if ($deleted && $screen) {
-            $this->evictPlaylistCache($screen->venue_id);
+            PlaylistCacheHelper::evictVenue($screen->venue_id);
         }
 
         return $deleted;
@@ -97,7 +97,7 @@ class ScreenService
 
         $newKey = HmacKeyUtil::generateScreenKey($screen->code);
         $this->screenRepo->update($id, ['secret_key' => $newKey]);
-        $this->evictPlaylistCache($screen->venue_id);
+        PlaylistCacheHelper::evictVenue($screen->venue_id);
 
         return $newKey;
     }
@@ -114,14 +114,5 @@ class ScreenService
         }
 
         return $code;
-    }
-
-    protected function evictPlaylistCache(int|string $venueId): void
-    {
-        try {
-            Redis::del("playlist:venue:{$venueId}");
-        } catch (\Throwable) {
-            // Ignore Redis errors during offline or testing runs
-        }
     }
 }

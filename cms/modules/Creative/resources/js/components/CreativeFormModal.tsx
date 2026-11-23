@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Modal, Button, message, Alert } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useAppSelector } from '@core/store/hooks';
+import { hasRole } from '@core/utils/permission';
 import { extractMediaMetadata } from '../utils/mediaExtractor';
 import { CreativeBatchRow } from './CreativeBatchRow';
 import type { CreativeItem, CreativeFormData, CreativeRowItem } from '../types/creative';
@@ -15,29 +16,41 @@ interface CreativeFormModalProps {
 }
 
 const createDefaultRow = (id: string): CreativeRowItem => ({
-	id, name: '', type: 'video', status: 'pending_review', sourceType: 'file', media_url: '', width: 1920, height: 1080, duration_seconds: 15,
+	id,
+	name: '',
+	type: 'video',
+	status: 'pending_review',
+	sourceType: 'file',
+	media_url: '',
+	width: 1920,
+	height: 1080,
+	duration_seconds: 15,
 });
-
-const roleCanPrview = ['admin', 'super_admin', 'operator', 'ads_ops'];
 
 export const CreativeFormModal: React.FC<CreativeFormModalProps> = ({ open, initialValues, submitting = false, onCancel, onSave }) => {
 	const currentUser = useAppSelector((state) => state.auth.user);
-	const canReview = currentUser?.roles?.some((role: string) => roleCanPrview.includes(role));
+	const canReview = hasRole(currentUser, ['admin', 'operator', 'ads_ops']);
 	const [rows, setRows] = useState<CreativeRowItem[]>([createDefaultRow('row-1')]);
 
 	useEffect(() => {
 		if (open) {
-			setRows(initialValues ? [{
-				id: `edit-${initialValues.id}`,
-				name: initialValues.name,
-				type: initialValues.type,
-				status: initialValues.status,
-				sourceType: 'url',
-				media_url: initialValues.media_url,
-				width: initialValues.width,
-				height: initialValues.height,
-				duration_seconds: initialValues.type === 'image' ? null : initialValues.duration_seconds,
-			}] : [createDefaultRow(`row-${Date.now()}`)]);
+			setRows(
+				initialValues
+					? [
+							{
+								id: `edit-${initialValues.id}`,
+								name: initialValues.name,
+								type: initialValues.type,
+								status: initialValues.status,
+								sourceType: 'url',
+								media_url: initialValues.media_url,
+								width: initialValues.width,
+								height: initialValues.height,
+								duration_seconds: initialValues.type === 'image' ? null : initialValues.duration_seconds,
+							},
+						]
+					: [createDefaultRow(`row-${Date.now()}`)],
+			);
 		}
 	}, [open, initialValues]);
 
@@ -80,7 +93,7 @@ export const CreativeFormModal: React.FC<CreativeFormModalProps> = ({ open, init
 		await onSave(
 			rows.map((r) => {
 				const isMediaChanged = initialValues && r.media_url !== initialValues.media_url;
-				const status = isMediaChanged && !canReview ? 'pending_review' : (canReview ? r.status : 'pending_review');
+				const status = isMediaChanged && !canReview ? 'pending_review' : canReview ? r.status : 'pending_review';
 				return {
 					name: r.name,
 					type: r.type,

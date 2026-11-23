@@ -2,6 +2,7 @@ import React from 'react';
 import type { ColumnsType } from 'antd/es/table';
 import { Badge, Button, Popconfirm, Popover, Space, Tag, Tooltip, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, KeyOutlined, UserOutlined } from '@ant-design/icons';
+import { UREKA_COLORS } from '@core/configs/theme';
 import type { RoleItem } from '../types/role';
 
 const { Text } = Typography;
@@ -40,7 +41,7 @@ export const getRoleColumns = (onEdit: (role: RoleItem) => void, onDelete: (id: 
 		key: 'users_count',
 		width: 110,
 		align: 'center',
-		render: (count?: number) => <Badge count={count ?? 0} showZero style={{ backgroundColor: (count ?? 0) > 0 ? '#1890ff' : '#d9d9d9' }} />,
+		render: (count?: number) => <Badge count={count ?? 0} showZero style={{ backgroundColor: (count ?? 0) > 0 ? UREKA_COLORS.info : '#d9d9d9' }} />,
 	},
 	{
 		title: 'Permissions',

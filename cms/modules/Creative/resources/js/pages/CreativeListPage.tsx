@@ -4,10 +4,10 @@ import { PlusOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { ListLayout } from '@core/components/ListLayout';
 import { Table } from '@core/components/Table';
 import { useAppDispatch, useAppSelector } from '@core/store/hooks';
+import { UREKA_COLORS } from '@core/configs/theme';
 import { extractErrorMessage } from '@core/utils/error';
 import { hasRole, isSuperAdmin } from '@core/utils/permission';
-import { creativeApi } from '../Action/creativeApi';
-import { fetchCreatives, createCreative, updateCreative, deleteCreative, reviewCreative } from '../store/creativeThunk';
+import { fetchCreatives, createCreative, updateCreative, deleteCreative, reviewCreative, createBatchCreatives, batchReviewCreatives } from '../store/creativeThunk';
 import { setCreativeFilters, setCreativePagination } from '../store/creativeSlice';
 import { getCreativeColumns } from '../configs/creativeColumns';
 import { getCreativeFilterConfigs } from '../configs/creativeFilterConfigs';
@@ -43,7 +43,7 @@ export const CreativeListPage: React.FC = () => {
 				await dispatch(createCreative(items[0])).unwrap();
 				message.success('Creative registered successfully.');
 			} else {
-				await creativeApi.createBatch(items);
+				await dispatch(createBatchCreatives(items)).unwrap();
 				message.success(`${items.length} creatives uploaded successfully.`);
 			}
 			setFormModalOpen(false);
@@ -80,7 +80,7 @@ export const CreativeListPage: React.FC = () => {
 	const handleBatchApprove = async () => {
 		if (selectedRowKeys.length === 0) return;
 		try {
-			await creativeApi.batchReview(selectedRowKeys as number[], { status: 'approved' });
+			await dispatch(batchReviewCreatives({ ids: selectedRowKeys as number[], payload: { status: 'approved' } })).unwrap();
 			message.success(`Approved ${selectedRowKeys.length} creative(s).`);
 			setSelectedRowKeys([]);
 			loadData();
@@ -121,7 +121,7 @@ export const CreativeListPage: React.FC = () => {
 			extraActions={
 				<Space>
 					{canReview && selectedRowKeys.length > 0 && (
-						<Button type="primary" style={{ background: '#10b981' }} icon={<CheckCircleOutlined />} onClick={handleBatchApprove}>
+						<Button type="primary" style={{ background: UREKA_COLORS.success }} icon={<CheckCircleOutlined />} onClick={handleBatchApprove}>
 							{`Approve (${selectedRowKeys.length})`}
 						</Button>
 					)}

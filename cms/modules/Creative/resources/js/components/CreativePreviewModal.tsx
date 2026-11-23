@@ -13,6 +13,13 @@ interface CreativePreviewModalProps {
 	onReview: (id: number, payload: CreativeReviewPayload) => Promise<void>;
 }
 
+interface VastMeta {
+	primary_media_url?: string;
+	version?: string;
+	impressions?: unknown[];
+	tracking_events?: Record<string, unknown>;
+}
+
 export const CreativePreviewModal: React.FC<CreativePreviewModalProps> = ({ open, creative, submitting = false, onCancel, onReview }) => {
 	const currentUser = useAppSelector((state) => state.auth.user);
 	const [rejectMode, setRejectMode] = useState(false);
@@ -23,8 +30,9 @@ export const CreativePreviewModal: React.FC<CreativePreviewModalProps> = ({ open
 	const canReview = isSuperAdmin(currentUser) || hasRole(currentUser, ['admin', 'operator', 'ads_ops']);
 	const isApproved = creative.status === 'approved';
 	const canTakeReviewAction = canReview && !isApproved;
-	const vastMeta = (creative.metadata as Record<string, any>)?.vast;
-	const videoUrl = creative.type === 'video' ? creative.media_url : creative.type === 'vast' && vastMeta?.primary_media_url ? vastMeta.primary_media_url : null;
+	const vastMeta = (creative.metadata as Record<string, unknown>)?.vast as VastMeta | undefined;
+	const primaryMediaUrl = typeof vastMeta?.primary_media_url === 'string' ? vastMeta.primary_media_url : null;
+	const videoUrl = creative.type === 'video' ? creative.media_url : creative.type === 'vast' && primaryMediaUrl ? primaryMediaUrl : null;
 
 	const handleApprove = async () => {
 		await onReview(creative.id, { status: 'approved' });

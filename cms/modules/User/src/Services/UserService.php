@@ -37,9 +37,9 @@ class UserService
     public function createUser(array $data): User
     {
         return DB::transaction(function () use ($data) {
-            $permissionType = $data['permission_type'] ?? $this->userRepository->getModel()::PERMISSION_TYPE_ROLE;
+            $permissionType = $data['permission_type'] ?? User::PERMISSION_TYPE_ROLE;
 
-            if ($permissionType === $this->userRepository->getModel()::PERMISSION_TYPE_DIRECT) {
+            if ($permissionType === User::PERMISSION_TYPE_DIRECT) {
                 $roleId = null;
                 $permissionIds = $this->resolvePermissionIds($data['direct_permissions'] ?? []);
             } else {
@@ -87,7 +87,7 @@ class UserService
             $shouldSyncDirectPermissions = false;
             $permissionIds = [];
 
-            if ($permissionType === $this->userRepository->getModel()::PERMISSION_TYPE_DIRECT) {
+            if ($permissionType === User::PERMISSION_TYPE_DIRECT) {
                 $updatePayload['role_id'] = null;
                 if (array_key_exists('direct_permissions', $data) || $permissionTypeChanged) {
                     $shouldSyncDirectPermissions = true;
@@ -118,9 +118,6 @@ class UserService
         return $this->userRepository->delete($id);
     }
 
-    /**
-     * @return array{success: bool, message: string}
-     */
     public function sendResetPasswordLink(int $id): array
     {
         $user = $this->userRepository->find($id);

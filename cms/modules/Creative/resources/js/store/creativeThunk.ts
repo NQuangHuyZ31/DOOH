@@ -62,3 +62,27 @@ export const reviewCreative = createAsyncThunk(
 		}
 	},
 );
+
+export const createBatchCreatives = createAsyncThunk(
+	'creative/createBatchCreatives',
+	async (items: CreativeFormData[], { rejectWithValue }) => {
+		try {
+			const res = await creativeApi.createBatch(items);
+			return res.data?.data;
+		} catch (err: unknown) {
+			return rejectWithValue(extractErrorMessage(err, 'Failed to create batch creatives.'));
+		}
+	},
+);
+
+export const batchReviewCreatives = createAsyncThunk(
+	'creative/batchReviewCreatives',
+	async ({ ids, payload }: { ids: number[]; payload: CreativeReviewPayload }, { rejectWithValue }) => {
+		try {
+			const res = await creativeApi.batchReview(ids, payload);
+			return res.data?.data;
+		} catch (err: unknown) {
+			return rejectWithValue(extractErrorMessage(err, 'Failed to batch review creatives.'));
+		}
+	},
+);

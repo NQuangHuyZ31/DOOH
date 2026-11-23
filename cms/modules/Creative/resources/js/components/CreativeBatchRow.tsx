@@ -24,17 +24,10 @@ const TYPE_UPLOAD_CFG: Record<CreativeType, { accept: string; buttonText: string
 	vast: { accept: '', buttonText: 'Enter VAST Tag URL', maxSizeMb: 0 },
 };
 
-const DEFAULT_TYPES = [
-	{ label: 'Video (MP4)', value: 'video' },
-	{ label: 'Image (JPG/PNG/WebP)', value: 'image' },
-	{ label: 'HTML5 Package', value: 'html5' },
-	{ label: 'VAST XML Tag', value: 'vast' },
-];
-
 export const CreativeBatchRow: React.FC<CreativeBatchRowProps> = ({ row, index, canDelete, canReview = false, onChange, onDelete, onFileUploaded }) => {
 	const metadata = useAppSelector((state) => state.metadata.data);
 	const [inspecting, setInspecting] = useState(false);
-	const typeOptions = metadata?.enums?.creative_types || DEFAULT_TYPES;
+	const typeOptions = metadata?.enums?.creative_types || [];
 	const statusOptions = (metadata?.statuses?.creative || []).filter((s) => s.value !== 'rejected');
 	const uploadCfg = TYPE_UPLOAD_CFG[row.type] || TYPE_UPLOAD_CFG.video;
 

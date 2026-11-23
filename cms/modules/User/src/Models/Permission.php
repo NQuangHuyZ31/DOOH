@@ -26,29 +26,13 @@ class Permission extends Model
         'name',
     ];
 
-    /**
-     * The roles that belong to the permission.
-     */
     public function roles(): BelongsToMany
     {
-        return $this->belongsToMany(
-            Role::class,
-            'role_permissions',
-            'permission_id',
-            'role_id'
-        );
+        return $this->belongsToMany(Role::class, 'role_permissions', 'permission_id', 'role_id');
     }
 
-    /**
-     * The users assigned this permission directly.
-     */
     public function directUsers(): BelongsToMany
     {
-        return $this->belongsToMany(
-            User::class,
-            'user_permissions',
-            'permission_id',
-            'user_id'
-        );
+        return $this->belongsToMany(User::class, 'user_permissions', 'permission_id', 'user_id');
     }
 }

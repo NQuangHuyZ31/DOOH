@@ -4,6 +4,7 @@ namespace Modules\Venue\Services;
 
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
+use Modules\Core\Support\PlaylistCacheHelper;
 use Modules\User\Services\UserService;
 use Modules\Venue\Models\Venue;
 use Modules\Venue\Repositories\Interfaces\VenueRepositoryInterface;
@@ -22,7 +23,6 @@ class VenueService
 
     public function getVenue(int|string $id): ?Venue
     {
-        /** @var Venue|null */
         return $this->venueRepo->find($id);
     }
 
@@ -34,7 +34,6 @@ class VenueService
             $data['code'] = strtoupper(trim($data['code']));
         }
 
-        /** @var Venue */
         return $this->venueRepo->create($data);
     }
 
@@ -44,12 +43,22 @@ class VenueService
             $data['code'] = strtoupper(trim($data['code']));
         }
 
-        return $this->venueRepo->update($id, $data);
+        $updated = $this->venueRepo->update($id, $data);
+        if ($updated) {
+            PlaylistCacheHelper::evictVenue($id);
+        }
+
+        return $updated;
     }
 
     public function deleteVenue(int|string $id): bool
     {
-        return $this->venueRepo->delete($id);
+        $deleted = $this->venueRepo->delete($id);
+        if ($deleted) {
+            PlaylistCacheHelper::evictVenue($id);
+        }
+
+        return $deleted;
     }
 
     public function generateUniqueCode(?string $city, string $name): string

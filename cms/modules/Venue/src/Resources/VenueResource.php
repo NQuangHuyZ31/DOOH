@@ -29,7 +29,7 @@ class VenueResource extends JsonResource
             'opening_time' => $this->opening_time,
             'closing_time' => $this->closing_time,
             'is_24_7' => (bool) $this->is_24_7,
-            'daily_traffic' => (int) $this->daily_traffic,
+            'daily_traffic' => $this->daily_traffic !== null ? (int) $this->daily_traffic : null,
             'contact_name' => $this->contact_name,
             'contact_phone' => $this->contact_phone,
             'status' => $this->status,

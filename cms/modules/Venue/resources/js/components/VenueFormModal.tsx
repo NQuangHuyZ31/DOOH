@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Form, Tabs, message } from 'antd';
 import dayjs from 'dayjs';
 import { CustomModal } from '@core/components/CustomModal';
-import { useAppSelector } from '@core/store/hooks';
+import { useAppDispatch, useAppSelector } from '@core/store/hooks';
 import { venueApi } from '../Action/venueApi';
+import { fetchMediaOwners } from '../store/venueThunk';
 import type { VenueItem } from '../types/venue';
 import { VenueGeneralLocationTab } from './VenueGeneralLocationTab';
 import { VenueOperationsTab } from './VenueOperationsTab';
@@ -17,9 +18,10 @@ interface VenueFormModalProps {
 }
 
 export const VenueFormModal: React.FC<VenueFormModalProps> = ({ open, initialValues, loading, onCancel, onSubmit }) => {
+	const dispatch = useAppDispatch();
 	const [form] = Form.useForm();
 	const [generating, setGenerating] = useState(false);
-	const [mediaOwners, setMediaOwners] = useState<Array<{ id: number; name: string; email: string }>>([]);
+	const mediaOwners = useAppSelector((state) => state.venue.mediaOwners);
 	const metadata = useAppSelector((state) => state.metadata.data);
 	const currentUser = useAppSelector((state) => state.auth.user);
 	const isSuperAdminOrAdmin = currentUser?.role === 'super_admin' || currentUser?.role === 'admin';
@@ -29,17 +31,10 @@ export const VenueFormModal: React.FC<VenueFormModalProps> = ({ open, initialVal
 	const statusOptions = metadata?.statuses?.venue || [];
 
 	useEffect(() => {
-		if (open && isSuperAdminOrAdmin) {
-			venueApi
-				.getMediaOwners()
-				.then((res) => {
-					if (res.data?.data) {
-						setMediaOwners(res.data.data);
-					}
-				})
-				.catch(() => {});
+		if (open && isSuperAdminOrAdmin && mediaOwners.length === 0) {
+			dispatch(fetchMediaOwners());
 		}
-	}, [open, isSuperAdminOrAdmin]);
+	}, [open, isSuperAdminOrAdmin, mediaOwners.length, dispatch]);
 
 	useEffect(() => {
 		if (open) {

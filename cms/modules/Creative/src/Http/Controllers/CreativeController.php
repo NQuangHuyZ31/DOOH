@@ -8,7 +8,6 @@ use Modules\Core\Http\Controllers\BaseController;
 use Modules\Core\Support\UserPermissionHelper;
 use Modules\Creative\Http\Requests\BatchCreateCreativeRequest;
 use Modules\Creative\Http\Requests\CreateCreativeRequest;
-use Modules\Creative\Http\Requests\ReviewCreativeRequest;
 use Modules\Creative\Http\Requests\UpdateCreativeRequest;
 use Modules\Creative\Resources\CreativeResource;
 use Modules\Creative\Services\CreativeService;
@@ -44,54 +43,29 @@ class CreativeController extends BaseController
 
 	public function store(CreateCreativeRequest $request): JsonResponse
 	{
-		$user = $request->user();
-		$canReview = UserPermissionHelper::canReview($user);
+		[$user, $userId, $canReview] = $this->getAuthReviewContext($request);
+		$creative = $this->creativeService->createCreative($request->validated(), $userId, $canReview);
 
-		$creative = $this->creativeService->createCreative(
-			$request->validated(),
-			$user?->id,
-			$canReview
-		);
-
-		return $this->respondCreated(
-			new CreativeResource($creative),
-			'Creative created successfully.'
-		);
+		return $this->respondCreated(new CreativeResource($creative), 'Creative created successfully.');
 	}
 
 	public function batch(BatchCreateCreativeRequest $request): JsonResponse
 	{
-		$user = $request->user();
-		$canReview = UserPermissionHelper::canReview($user);
+		[$user, $userId, $canReview] = $this->getAuthReviewContext($request);
+		$created = $this->creativeService->createBatch($request->validated('items'), $userId, $canReview);
 
-		$items = $request->validated('items');
-		$created = $this->creativeService->createBatch($items, $user?->id, $canReview);
-
-		return $this->respondCreated(
-			CreativeResource::collection($created),
-			'Creatives created successfully in batch.'
-		);
+		return $this->respondCreated(CreativeResource::collection($created), 'Creatives created successfully in batch.');
 	}
 
 	public function update(int|string $id, UpdateCreativeRequest $request): JsonResponse
 	{
-		$user = $request->user();
-		$canReview = UserPermissionHelper::canReview($user);
-
-		$creative = $this->creativeService->updateCreative(
-			(int) $id,
-			$request->validated(),
-			$user?->id,
-			$canReview
-		);
+		[$user, $userId, $canReview] = $this->getAuthReviewContext($request);
+		$creative = $this->creativeService->updateCreative((int) $id, $request->validated(), $userId, $canReview);
 		if (!$creative) {
 			return $this->respondNotFound('Creative not found.');
 		}
 
-		return $this->respondSuccess(
-			new CreativeResource($creative),
-			'Creative updated successfully.'
-		);
+		return $this->respondSuccess(new CreativeResource($creative), 'Creative updated successfully.');
 	}
 
 	public function destroy(int|string $id): JsonResponse
@@ -106,8 +80,8 @@ class CreativeController extends BaseController
 
 	public function status(Request $request, int|string|null $id = null): JsonResponse
 	{
-		$user = $request->user();
-		if (!UserPermissionHelper::canReview($user)) {
+		[$user, $userId, $canReview] = $this->getAuthReviewContext($request);
+		if (!$canReview) {
 			return $this->respondForbidden('You are not authorized to review creatives.');
 		}
 
@@ -123,35 +97,22 @@ class CreativeController extends BaseController
 			return $this->respondError('No creatives selected for review.', 422);
 		}
 
-		if ($id) {
-			$existing = $this->creativeService->getCreativeById((int) $id);
-			if (!$existing) {
-				return $this->respondNotFound('Creative not found.');
+		try {
+			if ($id) {
+				$creative = $this->creativeService->reviewCreative((int) $id, $validated['status'], $validated['rejection_reason'] ?? null, $userId);
+				if (!$creative) {
+					return $this->respondNotFound('Creative not found.');
+				}
+
+				return $this->respondSuccess(new CreativeResource($creative), "Creative status updated to {$validated['status']}.");
 			}
-			if ($existing->status === 'approved') {
-				return $this->respondError('Approved creatives cannot have their status changed.', 422);
-			}
+
+			$count = $this->creativeService->batchReview($ids, $validated['status'], $validated['rejection_reason'] ?? null, $userId);
+
+			return $this->respondSuccess(['updated_count' => $count], "Successfully updated status for {$count} creative(s).");
+		} catch (\DomainException $e) {
+			return $this->respondError($e->getMessage(), 422);
 		}
-
-		$count = $this->creativeService->batchReview(
-			$ids,
-			$validated['status'],
-			$validated['rejection_reason'] ?? null,
-			$user?->id
-		);
-
-		if ($id) {
-			$creative = $this->creativeService->getCreativeById((int) $id);
-			return $this->respondSuccess(
-				new CreativeResource($creative),
-				"Creative status updated to {$validated['status']}."
-			);
-		}
-
-		return $this->respondSuccess(
-			['updated_count' => $count],
-			"Successfully updated status for {$count} creative(s)."
-		);
 	}
 
 	public function batchStatus(Request $request): JsonResponse
@@ -174,5 +135,11 @@ class CreativeController extends BaseController
 		} catch (\DomainException $e) {
 			return $this->respondError($e->getMessage(), 422);
 		}
+	}
+
+	protected function getAuthReviewContext(Request $request): array
+	{
+		$user = $request->user();
+		return [$user, $user?->id, UserPermissionHelper::canReview($user)];
 	}
 }
