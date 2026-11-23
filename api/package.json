@@ -1,0 +1,26 @@
+{
+	"name": "dooh-tracking-api",
+	"version": "1.0.0",
+	"description": "High-throughput DOOH delivery & tracking API built with pure node:http and Redis",
+	"main": "dist/modules/Core/server.js",
+	"type": "module",
+	"scripts": {
+		"build": "tsc",
+		"start": "node dist/modules/Core/server.js",
+		"dev": "tsx watch src/modules/Core/server.ts",
+		"test": "node --test --import tsx src/modules/**/*.test.ts"
+	},
+	"engines": {
+		"node": ">=22.0.0"
+	},
+	"dependencies": {
+		"dotenv": "^16.4.7",
+		"ioredis": "^5.4.2",
+		"mongodb": "^6.12.0"
+	},
+	"devDependencies": {
+		"@types/node": "^22.10.2",
+		"tsx": "^4.19.2",
+		"typescript": "^5.7.2"
+	}
+}
