@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { Form, Input, InputNumber, Select, Row, Col } from 'antd';
+import { Form, Input, InputNumber, Select, Row, Col, Alert } from 'antd';
+import { UserOutlined } from '@ant-design/icons';
 import { CustomModal } from '@core/components/CustomModal';
 import { VENDOR_STATUS_OPTIONS } from '../configs/vendorFilterConfigs';
 import { VendorUserAccountFields } from './VendorUserAccountFields';
@@ -114,7 +115,17 @@ export const VendorFormModal: React.FC<VendorFormModalProps> = ({ open, initialV
 					</Col>
 				</Row>
 
-				<VendorUserAccountFields form={form} open={open} initialUser={initialValues?.user} />
+				{isEdit && initialValues?.user && (
+					<Alert
+						type="info"
+						showIcon
+						icon={<UserOutlined />}
+						message={`Linked Portal Account: ${initialValues.user.name} (${initialValues.user.email})`}
+						style={{ marginTop: 8 }}
+					/>
+				)}
+
+				{!isEdit && <VendorUserAccountFields form={form} open={open} />}
 			</Form>
 		</CustomModal>
 	);

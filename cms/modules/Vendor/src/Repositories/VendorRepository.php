@@ -34,7 +34,7 @@ class VendorRepository extends BaseRepository implements VendorRepositoryInterfa
 
 	public function unlinkUser(int $userId): bool
 	{
-		return (bool) $this->newQuery()->where('user_id', $userId)->update(['user_id' => null]);
+		return (bool) $this->newQuery()->withTrashed()->where('user_id', $userId)->update(['user_id' => null]);
 	}
 
 	public function syncContactName(int $userId, string $name): bool

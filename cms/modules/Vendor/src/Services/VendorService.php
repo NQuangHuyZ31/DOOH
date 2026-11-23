@@ -39,8 +39,6 @@ class VendorService
 					'permission_type' => 'role',
 				]);
 				$data['user_id'] = $user->id;
-			} elseif (!empty($data['user_id'])) {
-				$this->vendorRepo->unlinkUser((int) $data['user_id']);
 			}
 
 			if (empty($data['code'])) {
@@ -76,28 +74,14 @@ class VendorService
 				$data['code'] = strtoupper(trim($code));
 			}
 
-			if (!empty($data['create_user'])) {
-				$user = $this->userService->createUser([
-					'name' => $data['user_name'] ?? ($data['contact_name'] ?? $existing->name),
-					'email' => $data['user_email'] ?? $data['contact_email'],
-					'password' => $data['user_password'],
-					'role_id' => 'media_owner',
-					'permission_type' => 'role',
-				]);
-				$data['user_id'] = $user->id;
-			} elseif (array_key_exists('user_id', $data) && !empty($data['user_id'])) {
-				$this->vendorRepo->unlinkUser((int) $data['user_id']);
-			}
-
-			// Prevent overriding apiKey through regular update
-			unset($data['api_key_hash'], $data['api_key_prefix'], $data['create_user'], $data['user_name'], $data['user_email'], $data['user_password']);
+			// Prevent overriding apiKey or altering user linkage through regular update
+			unset($data['api_key_hash'], $data['api_key_prefix'], $data['user_id'], $data['create_user'], $data['user_name'], $data['user_email'], $data['user_password']);
 
 			$this->vendorRepo->update($id, $data);
 
 			// Bidirectional sync to linked User if contact name is updated
-			$userId = $data['user_id'] ?? $existing->user_id;
-			if ($userId && !empty($data['contact_name'])) {
-				$this->userService->updateUser((int) $userId, ['name' => $data['contact_name']]);
+			if ($existing->user_id && !empty($data['contact_name'])) {
+				$this->userService->updateUser((int) $existing->user_id, ['name' => $data['contact_name']]);
 			}
 
 			return $this->getVendor($id);
@@ -106,6 +90,8 @@ class VendorService
 
 	public function deleteVendor(int|string $id): bool
 	{
+		$this->vendorRepo->update($id, ['user_id' => null]);
+
 		return $this->vendorRepo->delete($id);
 	}
 

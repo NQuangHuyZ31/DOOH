@@ -240,41 +240,113 @@ class VendorApiTest extends TestCase
 		$this->assertSame($existingUser->id, $vendor->user_id);
 	}
 
-	public function test_update_vendor_link_and_unlink_existing_user_success(): void
+	public function test_create_vendor_with_already_linked_user_fails(): void
 	{
 		$this->authenticateAsSuperAdmin();
 
 		$role = \Modules\User\Models\Role::firstOrCreate(['name' => 'media_owner'], ['display_name' => 'Media Owner']);
 		$user = \Modules\User\Models\User::create([
-			'name' => 'Owner Link Test',
-			'email' => 'link.test@example.com',
+			'name' => 'Single Media Owner',
+			'email' => 'single.owner@example.com',
+			'password' => 'secret123',
+			'role_id' => $role->id,
+			'permission_type' => 'role',
+		]);
+
+		Vendor::create([
+			'code' => 'VND-FIRST',
+			'name' => 'First Vendor',
+			'status' => 'active',
+			'user_id' => $user->id,
+		]);
+
+		// Attempt to link the same user to second vendor
+		$response = $this->postJson('/admin/api/vendor', [
+			'name' => 'Second Vendor Conflict',
+			'user_id' => $user->id,
+		]);
+
+		$response->assertStatus(422)
+				 ->assertJsonValidationErrors(['user_id']);
+	}
+
+	public function test_update_vendor_cannot_alter_user_id(): void
+	{
+		$this->authenticateAsSuperAdmin();
+
+		$role = \Modules\User\Models\Role::firstOrCreate(['name' => 'media_owner'], ['display_name' => 'Media Owner']);
+		$user1 = \Modules\User\Models\User::create([
+			'name' => 'Original Owner',
+			'email' => 'orig.owner@example.com',
+			'password' => 'secret123',
+			'role_id' => $role->id,
+			'permission_type' => 'role',
+		]);
+		$user2 = \Modules\User\Models\User::create([
+			'name' => 'Target Owner',
+			'email' => 'target.owner@example.com',
 			'password' => 'secret123',
 			'role_id' => $role->id,
 			'permission_type' => 'role',
 		]);
 
 		$vendor = Vendor::create([
-			'code' => 'VND-LINK',
-			'name' => 'Link Vendor Test',
+			'code' => 'VND-NO-ALTER',
+			'name' => 'Immutable User Vendor',
 			'status' => 'active',
+			'user_id' => $user1->id,
 		]);
 
-		// Link user
-		$resLink = $this->putJson("/admin/api/vendor/vendor/{$vendor->id}", [
+		// Attempt to alter user_id on update
+		$response = $this->putJson("/admin/api/vendor/vendor/{$vendor->id}", [
+			'name' => 'Renamed Vendor',
+			'user_id' => $user2->id,
+		]);
+
+		$response->assertStatus(200);
+		// user_id must remain unchanged
+		$this->assertSame($user1->id, $vendor->fresh()->user_id);
+	}
+
+	public function test_delete_vendor_unlinks_user_and_allows_relinking(): void
+	{
+		$this->authenticateAsSuperAdmin();
+
+		$role = \Modules\User\Models\Role::firstOrCreate(['name' => 'media_owner'], ['display_name' => 'Media Owner']);
+		$user = \Modules\User\Models\User::create([
+			'name' => 'Reusable Media Owner',
+			'email' => 'reusable.owner@example.com',
+			'password' => 'secret123',
+			'role_id' => $role->id,
+			'permission_type' => 'role',
+		]);
+
+		$resA = $this->postJson('/admin/api/vendor', [
+			'name' => 'Vendor First Owner',
 			'user_id' => $user->id,
 		]);
-		$resLink->assertStatus(200)
-				->assertJsonPath('data.user_id', $user->id);
+		$resA->assertStatus(201);
+		$vendorAId = $resA->json('data.vendor.id');
 
-		$this->assertSame($user->id, $vendor->fresh()->user_id);
+		$this->assertSame($vendorAId, $user->fresh()->vendor?->id);
 
-		// Unlink user
-		$resUnlink = $this->putJson("/admin/api/vendor/vendor/{$vendor->id}", [
-			'user_id' => null,
+		// Delete Vendor A
+		$delRes = $this->deleteJson("/admin/api/vendor/vendor/{$vendorAId}");
+		$delRes->assertStatus(200);
+
+		// User must now be unlinked
+		$this->assertNull($user->fresh()->vendor);
+
+		// Linking the same user to Vendor B must succeed
+		$resB = $this->postJson('/admin/api/vendor', [
+			'name' => 'Vendor Second Owner',
+			'user_id' => $user->id,
 		]);
-		$resUnlink->assertStatus(200)
-				  ->assertJsonPath('data.user_id', null);
+		$resB->assertStatus(201)
+			 ->assertJsonPath('status', 'success')
+			 ->assertJsonPath('data.vendor.user_id', $user->id);
 
-		$this->assertNull($vendor->fresh()->user_id);
+		$vendorBId = $resB->json('data.vendor.id');
+		$this->assertSame($vendorBId, $user->fresh()->vendor?->id);
 	}
 }

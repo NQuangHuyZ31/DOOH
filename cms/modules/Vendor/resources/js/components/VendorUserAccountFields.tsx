@@ -9,10 +9,9 @@ type AccountMode = 'none' | 'create' | 'link';
 interface VendorUserAccountFieldsProps {
 	form: FormInstance;
 	open: boolean;
-	initialUser?: { id: number; name: string; email: string } | null;
 }
 
-export const VendorUserAccountFields: React.FC<VendorUserAccountFieldsProps> = ({ form, open, initialUser }) => {
+export const VendorUserAccountFields: React.FC<VendorUserAccountFieldsProps> = ({ form, open }) => {
 	const [mode, setMode] = useState<AccountMode>('none');
 	const dispatch = useAppDispatch();
 	const users = useAppSelector((state) => state.user?.users || []);
@@ -20,15 +19,10 @@ export const VendorUserAccountFields: React.FC<VendorUserAccountFieldsProps> = (
 
 	useEffect(() => {
 		if (open) {
-			if (initialUser?.id) {
-				setMode('link');
-				form.setFieldsValue({ create_user: false, user_id: initialUser.id });
-			} else {
-				setMode('none');
-				form.setFieldsValue({ create_user: false, user_id: undefined });
-			}
+			setMode('none');
+			form.setFieldsValue({ create_user: false, user_id: undefined });
 		}
-	}, [open, initialUser, form]);
+	}, [open, form]);
 
 	useEffect(() => {
 		if (mode === 'link' && users.length === 0) {
@@ -38,16 +32,12 @@ export const VendorUserAccountFields: React.FC<VendorUserAccountFieldsProps> = (
 
 	const userOptions = useMemo(() => {
 		const isMediaOwner = (r: unknown) => (typeof r === 'string' ? r === 'media_owner' : (r as { name?: string })?.name === 'media_owner');
-		const mediaOwners = users.filter((u) => isMediaOwner(u.role));
-		const options = mediaOwners.map((u) => ({
-			label: `${u.name} (${u.email})${u.vendor ? ` [Linked: ${u.vendor.name}]` : ''}`,
+		const unlinkedMediaOwners = users.filter((u) => isMediaOwner(u.role) && !u.vendor && !u.vendor_id);
+		return unlinkedMediaOwners.map((u) => ({
+			label: `${u.name} (${u.email})`,
 			value: u.id,
 		}));
-		if (initialUser?.id && !options.some((o) => o.value === initialUser.id)) {
-			options.unshift({ label: `${initialUser.name} (${initialUser.email})`, value: initialUser.id });
-		}
-		return options;
-	}, [users, initialUser]);
+	}, [users]);
 
 	const handleModeChange = (newMode: AccountMode) => {
 		setMode(newMode);
@@ -59,14 +49,14 @@ export const VendorUserAccountFields: React.FC<VendorUserAccountFieldsProps> = (
 				user_email: form.getFieldValue('user_email') || form.getFieldValue('contact_email') || '',
 			});
 		} else if (newMode === 'link') {
-			form.setFieldsValue({ create_user: false, user_id: initialUser?.id || undefined });
+			form.setFieldsValue({ create_user: false, user_id: undefined });
 		} else {
 			form.setFieldsValue({ create_user: false, user_id: null });
 		}
 	};
 
 	return (
-		<Card size="small" style={{ marginBottom: 16, background: '#fafafa' }} title="Portal Account Linking (Role: Media Owner)">
+		<Card size="small" style={{ marginBottom: 16, background: '#fafafa' }} title="Portal Account (Media Owner)">
 			<Form.Item name="create_user" hidden><Input /></Form.Item>
 			<Radio.Group value={mode} onChange={(e) => handleModeChange(e.target.value)} style={{ marginBottom: 16 }}>
 				<Radio value="none"><DisconnectOutlined /> No User Account</Radio>
@@ -75,9 +65,9 @@ export const VendorUserAccountFields: React.FC<VendorUserAccountFieldsProps> = (
 			</Radio.Group>
 
 			{mode === 'link' && (
-				<Form.Item name="user_id" label="Select Existing Media Owner" rules={[{ required: true, message: 'Please select a user to link' }]}>
+				<Form.Item name="user_id" label="Select Existing Media Owner (Unlinked)" rules={[{ required: true, message: 'Please select an unlinked user' }]}>
 					<Select
-						placeholder="Search and select Media Owner account"
+						placeholder="Search and select unlinked Media Owner account"
 						options={userOptions}
 						loading={loading}
 						showSearch
