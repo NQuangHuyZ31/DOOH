@@ -32,36 +32,23 @@ export const VendorListPage: React.FC = () => {
 				await dispatch(createVendor(values)).unwrap();
 				message.success('Vendor registered successfully. Store the generated API key!');
 			}
-		} catch (err: unknown) {
-			message.error(extractErrorMessage(err, 'Failed to save vendor.'));
-		}
+		} catch (err: unknown) { message.error(extractErrorMessage(err, 'Failed to save vendor.')); }
 	};
 
 	const handleDelete = async (id: number) => {
-		try {
-			await dispatch(deleteVendor(id)).unwrap();
-			message.success('Vendor deleted successfully.');
-		} catch (err: unknown) {
-			message.error(extractErrorMessage(err, 'Failed to delete vendor.'));
-		}
+		try { await dispatch(deleteVendor(id)).unwrap(); message.success('Vendor deleted successfully.'); }
+		catch (err: unknown) { message.error(extractErrorMessage(err, 'Failed to delete vendor.')); }
 	};
 
 	const handleRegenerateKey = async (item: VendorItem) => {
-		try {
-			await dispatch(regenerateApiKey(item.id)).unwrap();
-			message.success('API key regenerated successfully.');
-		} catch (err: unknown) {
-			message.error(extractErrorMessage(err, 'Failed to regenerate API key.'));
-		}
+		try { await dispatch(regenerateApiKey(item.id)).unwrap(); message.success('API key regenerated successfully.'); }
+		catch (err: unknown) { message.error(extractErrorMessage(err, 'Failed to regenerate API key.')); }
 	};
 
 	const columns = useMemo(() => getVendorColumns({
 		onEdit: (item) => { dispatch(setSelectedVendor(item)); dispatch(setFormModalOpen(true)); },
-		onDelete: handleDelete,
-		onRegenerateKey: handleRegenerateKey,
+		onDelete: handleDelete, onRegenerateKey: handleRegenerateKey,
 	}), [dispatch]);
-
-	const filterConfigs = useMemo(() => getVendorFilterConfigs(), []);
 
 	return (
 		<ListLayout
@@ -70,41 +57,21 @@ export const VendorListPage: React.FC = () => {
 			extraActions={
 				<Space>
 					<Button icon={<ReloadOutlined />} onClick={loadData}>Refresh</Button>
-					<Button type="primary" icon={<PlusOutlined />} onClick={() => { dispatch(setSelectedVendor(null)); dispatch(setFormModalOpen(true)); }}>
-						Add Vendor
-					</Button>
+					<Button type="primary" icon={<PlusOutlined />} onClick={() => { dispatch(setSelectedVendor(null)); dispatch(setFormModalOpen(true)); }}>Add Vendor</Button>
 				</Space>
 			}
-			filters={filterConfigs}
+			filters={getVendorFilterConfigs()}
 			onFilterChange={(newFilters) => dispatch(setFilters(newFilters as VendorQueryParams))}
 		>
 			<Table<VendorItem>
-				columns={columns}
-				dataSource={vendors}
-				loading={loading}
-				rowKey="id"
+				columns={columns} dataSource={vendors} loading={loading} rowKey="id"
 				pagination={{
-					current: pagination.current,
-					pageSize: pagination.pageSize,
-					total: pagination.total,
-					showSizeChanger: true,
+					current: pagination.current, pageSize: pagination.pageSize, total: pagination.total, showSizeChanger: true,
 					onChange: (page, pageSize) => dispatch(fetchVendors({ ...filters, page, per_page: pageSize })),
 				}}
 			/>
-
-			<VendorFormModal
-				open={formModalOpen}
-				initialValues={selectedVendor}
-				loading={submitting}
-				onCancel={() => dispatch(setFormModalOpen(false))}
-				onSubmit={handleSave}
-			/>
-
-			<VendorApiKeyModal
-				open={keyModalOpen}
-				apiKey={generatedApiKey}
-				onClose={() => dispatch(setKeyModalOpen(false))}
-			/>
+			<VendorFormModal open={formModalOpen} initialValues={selectedVendor} loading={submitting} onCancel={() => dispatch(setFormModalOpen(false))} onSubmit={handleSave} />
+			<VendorApiKeyModal open={keyModalOpen} apiKey={generatedApiKey} onClose={() => dispatch(setKeyModalOpen(false))} />
 		</ListLayout>
 	);
 };

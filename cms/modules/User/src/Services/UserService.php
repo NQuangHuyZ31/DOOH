@@ -10,13 +10,15 @@ use Modules\User\Models\User;
 use Modules\User\Repositories\Interfaces\PermissionRepositoryInterface;
 use Modules\User\Repositories\Interfaces\RoleRepositoryInterface;
 use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
+use Modules\Vendor\Repositories\Interfaces\VendorRepositoryInterface;
 
 class UserService
 {
     public function __construct(
         protected UserRepositoryInterface $userRepository,
         protected RoleRepositoryInterface $roleRepository,
-        protected PermissionRepositoryInterface $permissionRepository
+        protected PermissionRepositoryInterface $permissionRepository,
+        protected ?VendorRepositoryInterface $vendorRepo = null
     ) {}
 
     public function listUsers(array $filters = [], int $perPage = 10): LengthAwarePaginator
@@ -56,6 +58,10 @@ class UserService
             ]);
 
             $this->userRepository->syncDirectPermissions($user, $permissionIds);
+
+            if (!empty($data['vendor_id']) && $this->vendorRepo) {
+                $this->vendorRepo->linkUser((int) $data['vendor_id'], $user->id);
+            }
 
             return $this->userRepository->find($user->id);
         });
@@ -109,12 +115,28 @@ class UserService
                 $this->userRepository->syncDirectPermissions($user, $permissionIds);
             }
 
+            if (array_key_exists('vendor_id', $data) && $this->vendorRepo) {
+                if (!empty($data['vendor_id'])) {
+                    $this->vendorRepo->linkUser((int) $data['vendor_id'], $id);
+                } else {
+                    $this->vendorRepo->unlinkUser($id);
+                }
+            }
+
+            if (isset($data['name']) && $this->vendorRepo) {
+                $this->vendorRepo->syncContactName($id, $data['name']);
+            }
+
             return $this->userRepository->find($id);
         });
     }
 
     public function deleteUser(int $id): bool
     {
+        if ($this->vendorRepo) {
+            $this->vendorRepo->unlinkUser($id);
+        }
+
         return $this->userRepository->delete($id);
     }
 

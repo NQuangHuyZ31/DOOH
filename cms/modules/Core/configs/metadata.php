@@ -22,6 +22,11 @@ return [
             ['value' => 'approved', 'label' => 'Approved', 'color' => 'success'],
             ['value' => 'rejected', 'label' => 'Rejected', 'color' => 'error'],
         ],
+        'vendor' => [
+            ['value' => 'active', 'label' => 'Active', 'color' => 'success'],
+            ['value' => 'inactive', 'label' => 'Inactive', 'color' => 'error'],
+            ['value' => 'suspended', 'label' => 'Suspended', 'color' => 'warning'],
+        ],
         'tags' => [
             'active' => ['color' => 'success', 'label' => 'Active'],
             'running' => ['color' => 'processing', 'label' => 'Running'],
@@ -33,6 +38,7 @@ return [
             'completed' => ['color' => 'default', 'label' => 'Completed'],
             'draft' => ['color' => 'default', 'label' => 'Draft'],
             'inactive' => ['color' => 'error', 'label' => 'Inactive'],
+            'suspended' => ['color' => 'warning', 'label' => 'Suspended'],
             'rejected' => ['color' => 'error', 'label' => 'Rejected'],
             'error' => ['color' => 'error', 'label' => 'Error'],
             'online' => ['color' => 'success', 'label' => 'Online'],
@@ -79,6 +85,7 @@ return [
         'modules' => [
             ['value' => 'core', 'label' => 'Core (System & Infrastructure)', 'color' => 'default'],
             ['value' => 'auth', 'label' => 'Auth (Authentication & Security)', 'color' => 'gold'],
+            ['value' => 'vendor', 'label' => 'Vendor (Vendor Management)', 'color' => 'yellow'],
             ['value' => 'user', 'label' => 'User (User Management & RBAC)', 'color' => 'blue'],
             ['value' => 'venue', 'label' => 'Venue (Screen Venues & Hardware)', 'color' => 'geekblue'],
             ['value' => 'creative', 'label' => 'Creative (Media & Content Assets)', 'color' => 'purple'],

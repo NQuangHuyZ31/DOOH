@@ -179,4 +179,102 @@ class VendorApiTest extends TestCase
 		$freshVendor = $vendor->fresh();
 		$this->assertSame(hash('sha256', $newPlainKey), $freshVendor->api_key_hash);
 	}
+
+	public function test_create_vendor_with_user_account_success(): void
+	{
+		$this->authenticateAsSuperAdmin();
+
+		\Modules\User\Models\Role::firstOrCreate(['name' => 'media_owner'], ['display_name' => 'Media Owner']);
+
+		$payload = [
+			'name' => 'Auto User Vendor',
+			'contact_name' => 'John Vendor',
+			'contact_email' => 'john.vendor@example.com',
+			'create_user' => true,
+			'user_name' => 'John Vendor Login',
+			'user_email' => 'john.vendor.login@example.com',
+			'user_password' => 'secret123456',
+		];
+
+		$response = $this->postJson('/admin/api/vendor', $payload);
+
+		$response->assertStatus(201)
+				 ->assertJsonPath('status', 'success')
+				 ->assertJsonPath('data.vendor.name', 'Auto User Vendor');
+
+		$vendor = Vendor::where('name', 'Auto User Vendor')->first();
+		$this->assertNotNull($vendor);
+		$this->assertNotNull($vendor->user_id);
+
+		$user = \Modules\User\Models\User::find($vendor->user_id);
+		$this->assertNotNull($user);
+		$this->assertSame('john.vendor.login@example.com', $user->email);
+		$this->assertSame('John Vendor Login', $user->name);
+		$this->assertSame('media_owner', $user->role?->name);
+	}
+
+	public function test_create_vendor_with_existing_user_id_success(): void
+	{
+		$this->authenticateAsSuperAdmin();
+
+		$role = \Modules\User\Models\Role::firstOrCreate(['name' => 'media_owner'], ['display_name' => 'Media Owner']);
+		$existingUser = \Modules\User\Models\User::create([
+			'name' => 'Existing Media Owner',
+			'email' => 'existing.owner@example.com',
+			'password' => 'secret123',
+			'role_id' => $role->id,
+			'permission_type' => 'role',
+		]);
+
+		$response = $this->postJson('/admin/api/vendor', [
+			'name' => 'Existing User Vendor',
+			'user_id' => $existingUser->id,
+		]);
+
+		$response->assertStatus(201)
+				 ->assertJsonPath('status', 'success')
+				 ->assertJsonPath('data.vendor.user_id', $existingUser->id);
+
+		$vendor = Vendor::where('name', 'Existing User Vendor')->first();
+		$this->assertNotNull($vendor);
+		$this->assertSame($existingUser->id, $vendor->user_id);
+	}
+
+	public function test_update_vendor_link_and_unlink_existing_user_success(): void
+	{
+		$this->authenticateAsSuperAdmin();
+
+		$role = \Modules\User\Models\Role::firstOrCreate(['name' => 'media_owner'], ['display_name' => 'Media Owner']);
+		$user = \Modules\User\Models\User::create([
+			'name' => 'Owner Link Test',
+			'email' => 'link.test@example.com',
+			'password' => 'secret123',
+			'role_id' => $role->id,
+			'permission_type' => 'role',
+		]);
+
+		$vendor = Vendor::create([
+			'code' => 'VND-LINK',
+			'name' => 'Link Vendor Test',
+			'status' => 'active',
+		]);
+
+		// Link user
+		$resLink = $this->putJson("/admin/api/vendor/vendor/{$vendor->id}", [
+			'user_id' => $user->id,
+		]);
+		$resLink->assertStatus(200)
+				->assertJsonPath('data.user_id', $user->id);
+
+		$this->assertSame($user->id, $vendor->fresh()->user_id);
+
+		// Unlink user
+		$resUnlink = $this->putJson("/admin/api/vendor/vendor/{$vendor->id}", [
+			'user_id' => null,
+		]);
+		$resUnlink->assertStatus(200)
+				  ->assertJsonPath('data.user_id', null);
+
+		$this->assertNull($vendor->fresh()->user_id);
+	}
 }

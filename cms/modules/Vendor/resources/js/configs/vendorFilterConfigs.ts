@@ -1,5 +1,11 @@
 import type { FilterFieldConfig, FilterSelectOption } from '@core/types/filter';
 
+export const VENDOR_STATUS_OPTIONS: FilterSelectOption[] = [
+	{ label: 'Active', value: 'active' },
+	{ label: 'Inactive', value: 'inactive' },
+	{ label: 'Suspended', value: 'suspended' },
+];
+
 interface VendorFilterConfigOptions {
 	statusOptions?: FilterSelectOption[];
 }
@@ -18,10 +24,6 @@ export const getVendorFilterConfigs = ({
 		type: 'select',
 		placeholder: 'Status',
 		width: 150,
-		options: statusOptions.length > 0 ? statusOptions : [
-			{ label: 'Active', value: 'active' },
-			{ label: 'Inactive', value: 'inactive' },
-			{ label: 'Suspended', value: 'suspended' },
-		],
+		options: statusOptions.length > 0 ? statusOptions : VENDOR_STATUS_OPTIONS,
 	},
 ];

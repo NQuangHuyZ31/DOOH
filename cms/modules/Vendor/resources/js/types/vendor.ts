@@ -19,6 +19,10 @@ export interface VendorItem {
 	rate_limit_per_minute: number;
 	revenue_share_percentage: number;
 	status: 'active' | 'inactive' | 'suspended';
+	create_user?: boolean;
+	user_name?: string;
+	user_email?: string;
+	user_password?: string;
 	last_active_at?: string | null;
 	created_at?: string;
 	updated_at?: string;
