@@ -78,4 +78,22 @@ class HmacKeyUtilTest extends TestCase
 		$this->assertTrue(HmacKeyUtil::verifyKeyMatch($key, $key));
 		$this->assertFalse(HmacKeyUtil::verifyKeyMatch($key, 'different_key'));
 	}
+
+	public function test_generate_partner_api_key(): void
+	{
+		$keyData = HmacKeyUtil::generatePartnerApiKey('dooh_test_');
+
+		$this->assertNotEmpty($keyData['plain_key']);
+		$this->assertStringStartsWith('dooh_test_', $keyData['plain_key']);
+		$this->assertSame(hash('sha256', $keyData['plain_key']), $keyData['hash']);
+		$this->assertSame(substr($keyData['plain_key'], 0, 16), $keyData['prefix']);
+	}
+
+	public function test_hash_api_key(): void
+	{
+		$plainKey = 'dooh_live_sample_key_123';
+		$expected = hash('sha256', $plainKey);
+
+		$this->assertSame($expected, HmacKeyUtil::hashApiKey($plainKey));
+	}
 }

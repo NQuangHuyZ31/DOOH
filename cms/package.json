@@ -18,6 +18,7 @@
         "mix:report": "node scripts/mix-module.cjs Report",
         "mix:log": "node scripts/mix-module.cjs Log",
         "mix:simulator": "node scripts/mix-module.cjs Simulator",
+        "mix:vendor": "node scripts/mix-module.cjs Vendor",
         "mix:module": "node scripts/mix-module.cjs",
         "check-types": "node --max-old-space-size=4096 ./node_modules/typescript/bin/tsc --noEmit"
     },
