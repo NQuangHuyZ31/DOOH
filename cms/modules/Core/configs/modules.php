@@ -15,6 +15,7 @@ return [
         'Report',
         'Log',
         'Simulator',
+        'Vendor',
     ],
     'routes' => [
         'core',
@@ -26,5 +27,6 @@ return [
         'report',
         'log',
         'simulator',
+        'vendor',
     ],
 ];

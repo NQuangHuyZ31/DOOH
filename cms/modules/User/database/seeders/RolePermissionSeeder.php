@@ -58,6 +58,12 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'venue.edit', 'module' => 'venue', 'display_name' => 'Edit Venues', 'description' => 'Modify screen venue details and tags'],
             ['name' => 'venue.delete', 'module' => 'venue', 'display_name' => 'Delete Venues', 'description' => 'Decommission or remove screen venues'],
 
+            // Vendor module
+            ['name' => 'vendor.view', 'module' => 'vendor', 'display_name' => 'View Vendors', 'description' => 'View Media Owners and vendors'],
+            ['name' => 'vendor.create', 'module' => 'vendor', 'display_name' => 'Create Vendors', 'description' => 'Register new Media Owners and vendors'],
+            ['name' => 'vendor.edit', 'module' => 'vendor', 'display_name' => 'Edit Vendors', 'description' => 'Modify Media Owner details and API keys'],
+            ['name' => 'vendor.delete', 'module' => 'vendor', 'display_name' => 'Delete Vendors', 'description' => 'Delete Media Owners and vendors'],
+
             // Creative module
             ['name' => 'creative.view', 'module' => 'creative', 'display_name' => 'View Creatives', 'description' => 'Browse creative library and metadata'],
             ['name' => 'creative.create', 'module' => 'creative', 'display_name' => 'Create Creatives', 'description' => 'Create creative assets'],
@@ -105,6 +111,7 @@ class RolePermissionSeeder extends Seeder
         // admin -> operational modules + user management (except deleting roles/super_admin)
         $adminPermissions = [
             'venue.view', 'venue.create', 'venue.edit', 'venue.delete',
+            'vendor.view', 'vendor.create', 'vendor.edit', 'vendor.delete',
             'creative.view', 'creative.upload', 'creative.approve', 'creative.delete',
             'delivery.view', 'delivery.create', 'delivery.edit', 'delivery.publish',
             'report.view', 'report.export',

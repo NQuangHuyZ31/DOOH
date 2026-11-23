@@ -69,4 +69,22 @@ class HmacKeyUtil
 	{
 		return hash_equals($storedKey, $providedKey);
 	}
+
+	public static function generatePartnerApiKey(string $prefix = 'dooh_live_'): array
+	{
+		$nonce = bin2hex(random_bytes(24));
+		$plainKey = $prefix . $nonce;
+		$hash = self::hashApiKey($plainKey);
+
+		return [
+			'plain_key' => $plainKey,
+			'hash' => $hash,
+			'prefix' => substr($plainKey, 0, 16),
+		];
+	}
+
+	public static function hashApiKey(string $plainKey): string
+	{
+		return hash('sha256', $plainKey);
+	}
 }

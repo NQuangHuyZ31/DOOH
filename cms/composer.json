@@ -44,9 +44,11 @@
 			"Modules\\Simulator\\": "modules/Simulator/src/",
 			"Modules\\Auth\\": "modules/Auth/src/",
 			"Modules\\User\\": "modules/User/src/",
+			"Modules\\Vendor\\": "modules/Vendor/src/",
 			"Modules\\User\\Database\\Seeders\\": "modules/User/database/seeders/",
 			"Modules\\Venue\\Database\\Seeders\\": "modules/Venue/database/seeders/",
 			"Modules\\Creative\\Database\\Seeders\\": "modules/Creative/database/seeders/",
+			"Modules\\Vendor\\Database\\Seeders\\": "modules/Vendor/database/seeders/",
 			"Database\\Seeders\\": "database/seeders/"
 		}
 	},

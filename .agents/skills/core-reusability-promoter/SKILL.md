@@ -12,7 +12,7 @@ description: Use before creating any new component, hook, service, repository, o
 | Frontend Components (`@core/components/`) | `ListLayout`, `Table`, `CustomModal`, `StatusTag`, `DynamicFilterBar`, `AuthGuard`, `GuestGuard`, `NotFoundPage` |
 | Frontend Hooks & Store (`@core/`) | `hooks/` (`useAction`, `useFilter`, `usePagination`, `useAuthInit`), `store/metadataSlice`, `store/metadataThunk` (`fetchMetadata`), `Action/metadataApi`, `types/metadata` |
 | Frontend Utils & Configs (`@core/`) | `utils/formatters`, `utils/error` (`extractErrorMessage`), `utils/tokenStorage`, `configs/pagination`, `configs/status`, `configs/theme` (`UREKA_COLORS`), `Action/api` (`http`), `routes/registry` |
-| Backend (`Modules\Core\`) | `BaseController`, `ApiResponseTrait`, `BaseRepository`, `BaseRepositoryInterface`, `Filterable`, `HasOwner`, `MetadataService` (`configs/metadata.php`), `DisplaySpecHelper`, `HmacKeyUtil`, `UserPermissionHelper`, `CheckModulePermission`, `DynamicRouteResovle` |
+| Backend (`Modules\Core\`) | `BaseController`, `ApiResponseTrait`, `BaseRepository`, `BaseRepositoryInterface`, `Filterable`, `HasOwner`, `MetadataService` (`configs/metadata.php`), `DisplaySpecHelper`, `HmacKeyUtil` (mandatory for all key gen/hashing/HMAC signing), `UserPermissionHelper`, `CheckModulePermission`, `DynamicRouteResovle` |
 
 ## 2. Decision & Rule of 2 (DRY)
 
