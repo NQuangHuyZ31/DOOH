@@ -27,6 +27,19 @@ return [
             ['value' => 'inactive', 'label' => 'Inactive', 'color' => 'error'],
             ['value' => 'suspended', 'label' => 'Suspended', 'color' => 'warning'],
         ],
+        'campaign' => [
+            ['value' => 'active', 'label' => 'Active', 'color' => 'success'],
+            ['value' => 'paused', 'label' => 'Paused', 'color' => 'warning'],
+            ['value' => 'draft', 'label' => 'Draft', 'color' => 'default'],
+            ['value' => 'completed', 'label' => 'Completed', 'color' => 'default'],
+            ['value' => 'archived', 'label' => 'Archived', 'color' => 'default'],
+        ],
+        'line_item' => [
+            ['value' => 'active', 'label' => 'Active', 'color' => 'success'],
+            ['value' => 'paused', 'label' => 'Paused', 'color' => 'warning'],
+            ['value' => 'draft', 'label' => 'Draft', 'color' => 'default'],
+            ['value' => 'completed', 'label' => 'Completed', 'color' => 'default'],
+        ],
         'tags' => [
             'active' => ['color' => 'success', 'label' => 'Active'],
             'running' => ['color' => 'processing', 'label' => 'Running'],
@@ -39,6 +52,7 @@ return [
             'draft' => ['color' => 'default', 'label' => 'Draft'],
             'inactive' => ['color' => 'error', 'label' => 'Inactive'],
             'suspended' => ['color' => 'warning', 'label' => 'Suspended'],
+            'archived' => ['color' => 'default', 'label' => 'Archived'],
             'rejected' => ['color' => 'error', 'label' => 'Rejected'],
             'error' => ['color' => 'error', 'label' => 'Error'],
             'online' => ['color' => 'success', 'label' => 'Online'],
@@ -67,9 +81,11 @@ return [
             ['value' => 'kiosk_totem', 'label' => 'Kiosk / Totem'],
         ],
         'orientations' => [
-            ['value' => 'landscape', 'label' => 'Landscape (16:9)'],
-            ['value' => 'portrait', 'label' => 'Portrait (9:16)'],
-            ['value' => 'custom', 'label' => 'Custom Aspect'],
+            ['value' => 'landscape', 'label' => 'Landscape (16:9 Standard)'],
+            ['value' => 'portrait', 'label' => 'Portrait (9:16 Standard)'],
+            ['value' => 'square', 'label' => 'Square (1:1)'],
+            ['value' => 'ribbon', 'label' => 'Ribbon / Banner (32:9)'],
+            ['value' => 'custom', 'label' => 'Custom / Freeform'],
         ],
         'connectivity_statuses' => [
             ['value' => 'online', 'label' => 'Online', 'color' => 'success'],
