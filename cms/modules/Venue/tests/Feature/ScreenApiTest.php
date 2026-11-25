@@ -299,4 +299,50 @@ class ScreenApiTest extends TestCase
             'orientation' => 'ribbon',
         ]);
     }
+
+    public function test_create_screen_after_soft_delete_avoids_duplicate_code_collision(): void
+    {
+        $this->authenticateAsSuperAdmin();
+
+        $venue = Venue::create(['code' => 'SGN-SOFTDEL', 'name' => 'Soft Delete Venue', 'status' => 'active']);
+        $first = Screen::create(['venue_id' => $venue->id, 'code' => 'SCR-SGN-SOFTDEL-01', 'name' => 'Old Screen', 'status' => 'active']);
+        $first->delete();
+
+        $response = $this->postJson('/admin/api/venue/screen', [
+            'venue_id' => $venue->id,
+            'name' => 'Replacement Screen',
+            'resolution_width' => 1920,
+            'resolution_height' => 1080,
+            'status' => 'active',
+        ]);
+
+        $response->assertStatus(201)->assertJsonPath('data.code', 'SCR-SGN-SOFTDEL-02');
+    }
+
+    public function test_create_venue_and_screen_with_very_long_name_stay_within_64_chars(): void
+    {
+        $this->authenticateAsSuperAdmin();
+
+        $venueRes = $this->postJson('/admin/api/venue', [
+            'name' => 'Trung Tam Thuong Mai Vincom Mega Mall Grand Park Quan 9 Thanh Pho Thu Duc Ho Chi Minh',
+            'city_province' => 'Ho Chi Minh',
+            'status' => 'active',
+        ]);
+
+        $venueRes->assertStatus(201);
+        $venueCode = $venueRes->json('data.code');
+        $venueId = $venueRes->json('data.id');
+        $this->assertLessThanOrEqual(52, strlen($venueCode));
+
+        $screenRes = $this->postJson('/admin/api/venue/screen', [
+            'venue_id' => $venueId,
+            'name' => 'Main Facade LED',
+            'resolution_width' => 1920,
+            'resolution_height' => 1080,
+            'status' => 'active',
+        ]);
+
+        $screenRes->assertStatus(201);
+        $this->assertLessThanOrEqual(64, strlen($screenRes->json('data.code')));
+    }
 }
