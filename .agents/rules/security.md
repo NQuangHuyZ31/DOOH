@@ -12,7 +12,7 @@ globs: cms/modules/**/src/**, cms/modules/**/routes/**, cms/config/**, api/src/*
 
 ## AuthN / AuthZ & Cryptographic Keys (`HmacKeyUtil`)
 - CMS API: Sanctum bearer token; every non-public route behind `auth` + `CheckModulePermission`. New public routes need explicit justification in the plan.
-- **Centralized Key Generation, Hashing & Signing (`Modules\Core\Support\HmacKeyUtil`)**: Every CMS screen `secret_key`, vendor `api_key`, key hash, HMAC signature, or key verification MUST be generated and verified through `HmacKeyUtil` (extend `HmacKeyUtil` when adding new key formats). NEVER hand-roll `bin2hex(random_bytes(...))`, `hash('sha256', ...)`, `hash_hmac(...)`, or `Str::random(...)` for cryptographic keys in feature Services or Seeders.
+- **Centralized Key Generation, Hashing & Signing (`Modules\Core\Support\HmacKeyUtil`)**: Every CMS screen `secret_key`, vendor `api_key`, key hash, HMAC signature, or key verification MUST be generated and verified through `HmacKeyUtil`'s generic helpers (`generateScopedKey`, `verifyScopedKey`, `generatePrefixedKey`, `hash`, `signPayload`, `verifyPayload`, `verifyKeyMatch`). NEVER add domain-specific methods to `HmacKeyUtil`, and NEVER hand-roll `bin2hex(random_bytes(...))`, `hash('sha256', ...)`, `hash_hmac(...)`, or `Str::random(...)` for cryptographic keys in feature Services or Seeders.
 - Tracking API: `X-DOOH-API-KEY` for delivery endpoints; beacons trusted only through valid, unexpired AES-256-GCM `:hash` (`exp` checked). Compare secrets with constant-time functions.
 
 ## Input & Output

@@ -10,11 +10,6 @@ class HmacKeyUtil
 			return $customSecret;
 		}
 
-		$configuredSecret = config('venue.screen_master_secret');
-		if (!empty($configuredSecret)) {
-			return $configuredSecret;
-		}
-
 		$appKey = (string) config('app.key', '');
 		if (str_starts_with($appKey, 'base64:')) {
 			$decoded = base64_decode(substr($appKey, 7), true);
@@ -26,43 +21,42 @@ class HmacKeyUtil
 		return !empty($appKey) ? $appKey : 'dooh-fallback-secret-key-32chars!';
 	}
 
-	public static function generateScreenKey(string $identifier, ?string $masterSecret = null): string
+	public static function generateScopedKey(string $scope, string $identifier, ?string $masterSecret = null, int $nonceBytes = 16, int $signatureLength = 32): string
 	{
 		$secret = self::getMasterSecret($masterSecret);
-		$nonce = bin2hex(random_bytes(16));
-		$signature = substr(hash_hmac('sha256', "screen:{$identifier}:{$nonce}", $secret), 0, 32);
+		$nonce = bin2hex(random_bytes($nonceBytes));
+		$signature = substr(hash_hmac('sha256', "{$scope}:{$identifier}:{$nonce}", $secret), 0, $signatureLength);
 
 		return $nonce . $signature;
 	}
 
-	public static function verifyScreenKey(string $key, string $identifier, ?string $masterSecret = null): bool
+	public static function verifyScopedKey(string $key, string $scope, string $identifier, ?string $masterSecret = null, int $nonceBytes = 16, int $signatureLength = 32): bool
 	{
-		if (strlen($key) !== 64 || !ctype_xdigit($key)) {
+		$nonceLength = $nonceBytes * 2;
+		if (strlen($key) !== $nonceLength + $signatureLength || !ctype_xdigit($key)) {
 			return false;
 		}
 
 		$secret = self::getMasterSecret($masterSecret);
-		$nonce = substr($key, 0, 32);
-		$signature = substr($key, 32, 32);
-		$expectedSignature = substr(hash_hmac('sha256', "screen:{$identifier}:{$nonce}", $secret), 0, 32);
+		$nonce = substr($key, 0, $nonceLength);
+		$signature = substr($key, $nonceLength, $signatureLength);
+		$expectedSignature = substr(hash_hmac('sha256', "{$scope}:{$identifier}:{$nonce}", $secret), 0, $signatureLength);
 
 		return hash_equals($expectedSignature, $signature);
 	}
 
-	public static function signPayload(string|array $data, string $secretKey): string
+	public static function signPayload(string|array $data, string $secretKey, string $algo = 'sha256'): string
 	{
 		$payload = is_array($data)
 			? (string) json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
 			: (string) $data;
 
-		return hash_hmac('sha256', $payload, $secretKey);
+		return hash_hmac($algo, $payload, $secretKey);
 	}
 
-	public static function verifyPayload(string|array $data, string $signature, string $secretKey): bool
+	public static function verifyPayload(string|array $data, string $signature, string $secretKey, string $algo = 'sha256'): bool
 	{
-		$expected = self::signPayload($data, $secretKey);
-
-		return hash_equals($expected, $signature);
+		return hash_equals(self::signPayload($data, $secretKey, $algo), $signature);
 	}
 
 	public static function verifyKeyMatch(string $providedKey, string $storedKey): bool
@@ -70,21 +64,19 @@ class HmacKeyUtil
 		return hash_equals($storedKey, $providedKey);
 	}
 
-	public static function generatePartnerApiKey(string $prefix = 'dooh_live_'): array
+	public static function generatePrefixedKey(string $prefix = '', int $randomBytes = 24, int $displayPrefixLength = 16, string $hashAlgo = 'sha256'): array
 	{
-		$nonce = bin2hex(random_bytes(24));
-		$plainKey = $prefix . $nonce;
-		$hash = self::hashApiKey($plainKey);
+		$plainKey = $prefix . bin2hex(random_bytes($randomBytes));
 
 		return [
 			'plain_key' => $plainKey,
-			'hash' => $hash,
-			'prefix' => substr($plainKey, 0, 16),
+			'hash' => self::hash($plainKey, $hashAlgo),
+			'prefix' => substr($plainKey, 0, $displayPrefixLength),
 		];
 	}
 
-	public static function hashApiKey(string $plainKey): string
+	public static function hash(string $value, string $algo = 'sha256'): string
 	{
-		return hash('sha256', $plainKey);
+		return hash($algo, $value);
 	}
 }

@@ -13,7 +13,7 @@ class VendorSeeder extends Seeder
 	{
 		$mediaOwnerUser = User::where('email', 'mediaowner@dooh.media')->first();
 		$defaultApiKey = 'dooh_live_demo_mediaowner_key_1234567890';
-		$hashedKey = HmacKeyUtil::hashApiKey($defaultApiKey);
+		$hashedKey = HmacKeyUtil::hash($defaultApiKey);
 
 		Vendor::firstOrCreate(
 			['code' => 'VND-GOLDSUN'],

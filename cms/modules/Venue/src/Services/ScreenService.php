@@ -38,7 +38,7 @@ class ScreenService
         }
 
         if (empty($data['secret_key'])) {
-            $data['secret_key'] = HmacKeyUtil::generateScreenKey($data['code']);
+            $data['secret_key'] = HmacKeyUtil::generateScopedKey('screen', $data['code'], config('venue.screen_master_secret'));
         }
 
         if (!empty($data['resolution_width']) && !empty($data['resolution_height'])) {
@@ -95,7 +95,7 @@ class ScreenService
             return null;
         }
 
-        $newKey = HmacKeyUtil::generateScreenKey($screen->code);
+        $newKey = HmacKeyUtil::generateScopedKey('screen', $screen->code, config('venue.screen_master_secret'));
         $this->screenRepo->update($id, ['secret_key' => $newKey]);
         PlaylistCacheHelper::evictVenue($screen->venue_id);
 
