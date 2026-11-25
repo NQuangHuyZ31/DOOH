@@ -3,216 +3,184 @@
 namespace Modules\User\Services;
 
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
+use Modules\User\Events\UserDeleted;
+use Modules\User\Events\UserSaved;
 use Modules\User\Jobs\SendResetPasswordMailJob;
 use Modules\User\Models\User;
 use Modules\User\Repositories\Interfaces\PermissionRepositoryInterface;
 use Modules\User\Repositories\Interfaces\RoleRepositoryInterface;
 use Modules\User\Repositories\Interfaces\UserRepositoryInterface;
-use Modules\Vendor\Repositories\Interfaces\VendorRepositoryInterface;
 
 class UserService
 {
-    public function __construct(
-        protected UserRepositoryInterface $userRepository,
-        protected RoleRepositoryInterface $roleRepository,
-        protected PermissionRepositoryInterface $permissionRepository,
-        protected ?VendorRepositoryInterface $vendorRepo = null
-    ) {}
+	public function __construct(
+		protected UserRepositoryInterface $userRepository,
+		protected RoleRepositoryInterface $roleRepository,
+		protected PermissionRepositoryInterface $permissionRepository
+	) {}
 
-    public function listUsers(array $filters = [], int $perPage = 10): LengthAwarePaginator
-    {
-        return $this->userRepository->paginate($perPage, $filters);
-    }
+	public function listUsers(array $filters = [], int $perPage = 10): LengthAwarePaginator
+	{
+		return $this->userRepository->paginate($perPage, $filters);
+	}
 
-    public function getUser(int $id): ?User
-    {
-        return $this->userRepository->find($id);
-    }
+	public function getUser(int $id): ?User
+	{
+		return $this->userRepository->find($id);
+	}
 
-    public function getMediaOwners(): array
-    {
-        return $this->userRepository->getUsersByRoles(['media_owner', 'admin']);
-    }
+	public function getMediaOwners(): array
+	{
+		return $this->userRepository->getUsersByRoles(['media_owner', 'admin']);
+	}
 
-    public function createUser(array $data): User
-    {
-        return DB::transaction(function () use ($data) {
-            $permissionType = $data['permission_type'] ?? User::PERMISSION_TYPE_ROLE;
+	public function createUser(array $data): User
+	{
+		return DB::transaction(function () use ($data) {
+			$access = $this->resolveAccessState($data);
 
-            if ($permissionType === User::PERMISSION_TYPE_DIRECT) {
-                $roleId = null;
-                $permissionIds = $this->resolvePermissionIds($data['direct_permissions'] ?? []);
-            } else {
-                $roleId = $this->resolveRoleId($data['role_id'] ?? null);
-                $permissionIds = [];
-            }
+			$user = $this->userRepository->create(array_merge(
+				Arr::only($data, ['name', 'email', 'password']),
+				$access['payload']
+			));
 
-            $user = $this->userRepository->create([
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'password' => $data['password'],
-                'permission_type' => $permissionType,
-                'role_id' => $roleId,
-            ]);
+			$this->userRepository->syncDirectPermissions($user, $access['permission_ids']);
+			event(new UserSaved($user, $data, true));
 
-            $this->userRepository->syncDirectPermissions($user, $permissionIds);
+			return $this->userRepository->find($user->id);
+		});
+	}
 
-            if (!empty($data['vendor_id']) && $this->vendorRepo) {
-                $this->vendorRepo->linkUser((int) $data['vendor_id'], $user->id);
-            }
+	public function updateUser(int $id, array $data): ?User
+	{
+		return DB::transaction(function () use ($id, $data) {
+			$user = $this->userRepository->find($id);
+			if (!$user) {
+				return null;
+			}
 
-            return $this->userRepository->find($user->id);
-        });
-    }
+			$access = $this->resolveAccessState($data, $user);
+			$updatePayload = array_merge(Arr::only($data, ['name', 'email']), $access['payload']);
+			if (!empty($data['password'])) {
+				$updatePayload['password'] = $data['password'];
+			}
 
-    public function updateUser(int $id, array $data): ?User
-    {
-        return DB::transaction(function () use ($id, $data) {
-            $user = $this->userRepository->find($id);
-            if (!$user) {
-                return null;
-            }
+			$this->userRepository->update($id, $updatePayload);
 
-            $updatePayload = [];
-            if (isset($data['name'])) {
-                $updatePayload['name'] = $data['name'];
-            }
-            if (isset($data['email'])) {
-                $updatePayload['email'] = $data['email'];
-            }
-            if (!empty($data['password'])) {
-                $updatePayload['password'] = $data['password'];
-            }
+			if ($access['sync_permissions']) {
+				$this->userRepository->syncDirectPermissions($user, $access['permission_ids']);
+			}
 
-            $permissionTypeChanged = isset($data['permission_type']) && $data['permission_type'] !== $user->permission_type;
-            $permissionType = $data['permission_type'] ?? $user->permission_type;
-            $updatePayload['permission_type'] = $permissionType;
+			event(new UserSaved($user, $data, false));
 
-            $shouldSyncDirectPermissions = false;
-            $permissionIds = [];
+			return $this->userRepository->find($id);
+		});
+	}
 
-            if ($permissionType === User::PERMISSION_TYPE_DIRECT) {
-                $updatePayload['role_id'] = null;
-                if (array_key_exists('direct_permissions', $data) || $permissionTypeChanged) {
-                    $shouldSyncDirectPermissions = true;
-                    $permissionIds = $this->resolvePermissionIds($data['direct_permissions'] ?? []);
-                }
-            } else {
-                if (array_key_exists('role_id', $data)) {
-                    $updatePayload['role_id'] = $this->resolveRoleId($data['role_id']);
-                }
-                if ($permissionTypeChanged) {
-                    $shouldSyncDirectPermissions = true;
-                    $permissionIds = [];
-                }
-            }
+	public function deleteUser(int $id): bool
+	{
+		return DB::transaction(function () use ($id) {
+			$deleted = $this->userRepository->delete($id);
+			if ($deleted) {
+				event(new UserDeleted($id));
+			}
 
-            $this->userRepository->update($id, $updatePayload);
+			return $deleted;
+		});
+	}
 
-            if ($shouldSyncDirectPermissions) {
-                $this->userRepository->syncDirectPermissions($user, $permissionIds);
-            }
+	public function sendResetPasswordLink(int $id, ?int $actingUserId = null): array
+	{
+		$user = $this->userRepository->find($id);
+		if (!$user) {
+			return ['success' => false, 'code' => 404, 'message' => 'User not found.'];
+		}
 
-            if (array_key_exists('vendor_id', $data) && $this->vendorRepo) {
-                if (!empty($data['vendor_id'])) {
-                    $this->vendorRepo->linkUser((int) $data['vendor_id'], $id);
-                } else {
-                    $this->vendorRepo->unlinkUser($id);
-                }
-            }
+		if ($user->hasRole(['super_admin', 'admin'])) {
+			return ['success' => false, 'code' => 400, 'message' => 'Cannot reset password for Admin or Super Admin accounts.'];
+		}
 
-            if (isset($data['name']) && $this->vendorRepo) {
-                $this->vendorRepo->syncContactName($id, $data['name']);
-            }
+		$currentUserId = $actingUserId ?? auth('sanctum')->id() ?? auth()->id();
+		if ($currentUserId && (int) $user->id === (int) $currentUserId) {
+			return ['success' => false, 'code' => 400, 'message' => 'You cannot reset password for your own account.'];
+		}
 
-            return $this->userRepository->find($id);
-        });
-    }
+		$token = Password::broker('users')->createToken($user);
+		$resetUrl = url('/admin/login?reset-password=1&token=' . $token . '&email=' . urlencode($user->email));
+		$ttl = (int) config('auth.passwords.users.expire', 60);
 
-    public function deleteUser(int $id): bool
-    {
-        if ($this->vendorRepo) {
-            $this->vendorRepo->unlinkUser($id);
-        }
+		SendResetPasswordMailJob::dispatch($user->name, $user->email, $resetUrl, $ttl);
 
-        return $this->userRepository->delete($id);
-    }
+		return ['success' => true, 'code' => 200, 'message' => 'Password reset email sent successfully.'];
+	}
 
-    public function sendResetPasswordLink(int $id): array
-    {
-        $user = $this->userRepository->find($id);
-        if (!$user) {
-            return [
-                'success' => false,
-                'message' => 'User not found.',
-            ];
-        }
+	protected function resolveAccessState(array $data, ?User $existing = null): array
+	{
+		$permissionType = $data['permission_type'] ?? $existing?->permission_type ?? User::PERMISSION_TYPE_ROLE;
+		$permissionTypeChanged = $existing !== null && isset($data['permission_type']) && $data['permission_type'] !== $existing->permission_type;
 
-        if ($user->hasRole(['super_admin', 'admin'])) {
-            return [
-                'success' => false,
-                'message' => 'Cannot reset password for Admin or Super Admin accounts.',
-            ];
-        }
+		$payload = ['permission_type' => $permissionType];
+		$syncPermissions = $existing === null;
+		$permissionIds = [];
 
-        $currentUserId = auth('sanctum')->id() ?? auth()->id();
-        if ($currentUserId && (int) $user->id === (int) $currentUserId) {
-            return [
-                'success' => false,
-                'message' => 'You cannot reset password for your own account.',
-            ];
-        }
+		if ($permissionType === User::PERMISSION_TYPE_DIRECT) {
+			$payload['role_id'] = null;
+			if ($existing === null || array_key_exists('direct_permissions', $data) || $permissionTypeChanged) {
+				$syncPermissions = true;
+				$permissionIds = $this->resolvePermissionIds($data['direct_permissions'] ?? []);
+			}
+		} else {
+			if ($existing === null || array_key_exists('role_id', $data)) {
+				$payload['role_id'] = $this->resolveRoleId($data['role_id'] ?? null);
+			}
+			if ($permissionTypeChanged) {
+				$syncPermissions = true;
+			}
+		}
 
-        $token = Password::broker('users')->createToken($user);
-        $resetUrl = url('/admin/login?reset-password=1&token=' . $token . '&email=' . urlencode($user->email));
+		return [
+			'payload' => $payload,
+			'sync_permissions' => $syncPermissions,
+			'permission_ids' => $permissionIds,
+		];
+	}
 
-        SendResetPasswordMailJob::dispatch($user->name, $user->email, $resetUrl, 60);
+	protected function resolveRoleId(int|string|null $role): ?int
+	{
+		if ($role === null) {
+			return null;
+		}
 
-        return [
-            'success' => true,
-            'message' => 'Password reset email sent successfully.',
-        ];
-    }
+		if (is_numeric($role)) {
+			return (int) $role;
+		}
 
-    protected function resolveRoleId(int|string|null $role): ?int
-    {
-        if ($role === null) {
-            return null;
-        }
+		return $this->roleRepository->findByName($role)?->id;
+	}
 
-        if (is_numeric($role)) {
-            return (int) $role;
-        }
+	protected function resolvePermissionIds(array $permissionIdsOrNames): array
+	{
+		if (empty($permissionIdsOrNames)) {
+			return [];
+		}
 
-        $roleModel = $this->roleRepository->findByName($role);
+		$ids = [];
+		$names = [];
+		foreach ($permissionIdsOrNames as $item) {
+			if (is_numeric($item)) {
+				$ids[] = (int) $item;
+			} else {
+				$names[] = (string) $item;
+			}
+		}
 
-        return $roleModel?->id;
-    }
+		if (!empty($names)) {
+			$ids = array_merge($ids, $this->permissionRepository->getIdsByNames($names));
+		}
 
-    protected function resolvePermissionIds(array $permissionIdsOrNames): array
-    {
-        if (empty($permissionIdsOrNames)) {
-            return [];
-        }
-
-        $ids = [];
-        $names = [];
-
-        foreach ($permissionIdsOrNames as $item) {
-            if (is_numeric($item)) {
-                $ids[] = (int) $item;
-            } else {
-                $names[] = (string) $item;
-            }
-        }
-
-        if (!empty($names)) {
-            $resolvedIds = $this->permissionRepository->getIdsByNames($names);
-            $ids = array_merge($ids, $resolvedIds);
-        }
-
-        return array_values(array_unique($ids));
-    }
+		return array_values(array_unique($ids));
+	}
 }

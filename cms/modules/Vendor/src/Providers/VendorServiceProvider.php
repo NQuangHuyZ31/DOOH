@@ -2,7 +2,11 @@
 
 namespace Modules\Vendor\Providers;
 
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Modules\User\Events\UserDeleted;
+use Modules\User\Events\UserSaved;
+use Modules\Vendor\Listeners\SyncVendorUserListener;
 use Modules\Vendor\Repositories\Interfaces\VendorRepositoryInterface;
 use Modules\Vendor\Repositories\VendorRepository;
 
@@ -20,6 +24,7 @@ class VendorServiceProvider extends ServiceProvider
 
 	public function boot(): void
 	{
-		//
+		Event::listen(UserSaved::class, [SyncVendorUserListener::class, 'handleSaved']);
+		Event::listen(UserDeleted::class, [SyncVendorUserListener::class, 'handleDeleted']);
 	}
 }
