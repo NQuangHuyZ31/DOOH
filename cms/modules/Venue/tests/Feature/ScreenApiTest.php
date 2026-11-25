@@ -88,7 +88,7 @@ class ScreenApiTest extends TestCase
         $this->assertNotEmpty($secretKey);
         $this->assertSame(64, strlen($secretKey));
         $this->assertTrue(ctype_xdigit($secretKey));
-        $this->assertTrue(HmacKeyUtil::verifyScreenKey($secretKey, $code));
+        $this->assertTrue(HmacKeyUtil::verifyScopedKey($secretKey, 'screen', $code, config('venue.screen_master_secret')));
     }
 
     public function test_show_screen_success(): void
@@ -244,7 +244,7 @@ class ScreenApiTest extends TestCase
         $this->assertSame(64, strlen($newKey));
         $this->assertTrue(ctype_xdigit($newKey));
         $this->assertNotEquals('old_secret_key_123', $newKey);
-        $this->assertTrue(HmacKeyUtil::verifyScreenKey($newKey, $screen->code));
+        $this->assertTrue(HmacKeyUtil::verifyScopedKey($newKey, 'screen', $screen->code, config('venue.screen_master_secret')));
     }
 
     public function test_create_screen_square_orientation_success(): void

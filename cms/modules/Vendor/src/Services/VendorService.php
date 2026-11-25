@@ -118,7 +118,7 @@ class VendorService
 	{
 		$prefix = config('vendor.api_key_prefix', 'dooh_live_');
 
-		return HmacKeyUtil::generatePartnerApiKey($prefix);
+		return HmacKeyUtil::generatePrefixedKey($prefix);
 	}
 
 	protected function generateUniqueVendorCode(string $name): string
