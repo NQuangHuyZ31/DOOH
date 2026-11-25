@@ -37,10 +37,16 @@ Envelope from `Modules\Core\Support\ApiResponseTrait` (NEVER hand-roll `response
 
 ## 2. Tracking API (Node) — `/api/v1`
 
+- **Auth Headers (Strict Separation — hyphenated, never underscores):**
+  - `X-DOOH-API-KEY`: **Vendor / Partner** authentication (`dooh_live_...`, matched via `sha256` against `vendors.api_key_hash`) for server-to-server Partner APIs (`/api/v1/partner/*`) and multi-screen Vendor requests.
+  - `X-DOOH-SCREEN-KEY`: **Screen / Edge Player** authentication (64-hex `screens.secret_key`, constant-time verified) for single-screen Player APIs (`/api/v1/delivery/playlist`, `/api/v1/player/*`).
+  - Tracking beacons (`/api/v1/log/imp/:hash`, `/api/v1/log/complete/:hash`): **no auth header** — authenticated purely by AES-256-GCM opaque `:hash` token.
+
 | Endpoint | Contract |
 |---|---|
-| `GET /api/v1/delivery/playlist?venue_id=` | header `X-DOOH-API-KEY`; returns `{ venue_id, refresh_seconds, playlist: [{ line_item_id, type, media_url, duration, tracking: { impression_url, complete_url } }] }` |
-| `GET /api/v1/log/imp/:hash`, `GET /api/v1/log/complete/:hash` | always `204` (also for duplicates/invalid → drop silently) |
-| `GET /api/v1/venue/:code`, `POST /api/v1/venue/heartbeat` | venue config / health |
+| `GET /api/v1/delivery/playlist?screen_code=` | header `X-DOOH-SCREEN-KEY` (or `X-DOOH-API-KEY` for Vendor S2S); returns `{ screen_id, venue_id, refresh_seconds, playlist: [{ line_item_id, type, media_url, duration, tracking: { impression_url, complete_url } }] }` |
+| `GET /api/v1/log/imp/:hash`, `GET /api/v1/log/complete/:hash` | no auth header; always `204` (also for duplicates/invalid → drop silently) |
+| `GET /api/v1/partner/screens`, `POST /api/v1/partner/screens` | header `X-DOOH-API-KEY`; Vendor-scoped Venue/Screen sync & lookup |
+| `GET /api/v1/player/config`, `POST /api/v1/player/heartbeat` | header `X-DOOH-SCREEN-KEY`; screen config / health |
 
 - Breaking changes require a new version prefix (`/api/v2`) — never change `v1` shapes in place.
