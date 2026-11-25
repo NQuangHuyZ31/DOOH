@@ -5,6 +5,8 @@ let redisInstance: Redis | null = null;
 
 export const RedisKeyHelper = {
 	playlist: (venueId: string | number): string => `playlist:venue:${venueId}`,
+	vendorAuth: (keyHash: string): string => `vendor:auth:${keyHash}`,
+	screenAuth: (screenCode: string): string => `screen:auth:${screenCode}`,
 	dedup: (hash: string): string => `dedup:${hash}`,
 	stat: (date: string, lineItemId: string | number, venueId: string | number): string => `stat:${date}:${lineItemId}:${venueId}`,
 	rawQueue: (): string => 'queue:raw_tracking_logs',

@@ -1,9 +1,10 @@
 import http from 'node:http';
-import { createApp } from './app.js';
+import { coreRouter, createApp } from './app.js';
 import { config } from './config/config.js';
 import { closeRedisConnection, closeMongoConnection } from '../../../database/index.js';
+import { createAuthGuard } from '../Auth/index.js';
 
-const app = createApp();
+const app = createApp(coreRouter, [createAuthGuard()]);
 const server = http.createServer(app);
 
 server.listen(config.port, () => {
