@@ -1,8 +1,7 @@
 import http from 'node:http';
 import { createApp } from './app.js';
 import { config } from './config/config.js';
-import { closeRedisConnection } from './database/redis.js';
-import { closeMongoConnection } from './database/mongodb.js';
+import { closeRedisConnection, closeMongoConnection } from '../../../database/index.js';
 
 const app = createApp();
 const server = http.createServer(app);

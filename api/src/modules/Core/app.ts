@@ -1,8 +1,8 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Router } from './router/router.js';
-import { sendError, sendSuccess } from './http/response.js';
+import { sendError, sendSuccess } from './utils/httpUtil.js';
 import { config } from './config/config.js';
-import { checkRedisHealth } from './database/redis.js';
+import { checkRedisHealth } from '../../../database/index.js';
 
 export const coreRouter = new Router();
 
