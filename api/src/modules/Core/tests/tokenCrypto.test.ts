@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { encryptToken, decryptToken } from '../crypto/tokenCrypto.js';
+import { encryptToken, decryptToken } from '../utils/tokenCrypto.js';
 
 describe('Core Module - Token Crypto AES-256-GCM Tests', () => {
 	it('encrypts and decrypts payload successfully', () => {

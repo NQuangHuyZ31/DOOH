@@ -11,14 +11,14 @@ Contracts: `api-contract.md`. Redis keys: `database.md`. Deep dive: `docs/api/ro
 ## Structure (modules mirror CMS)
 
 ```text
-api/src/
-├── modules/
-|   ├──	core/            # router, AES-256-GCM crypto, DB/Redis pools, auth
-│   ├── Venue/       # controllers/ services/ routes.ts
-│   ├── Delivery/    # playlist build, pacing, token encryption
-│   └── Log/         # beacon ingest, dedup, counters; workers/ (Redis → Mongo)
-├── app.ts           # aggregates module routes
-└── server.ts        # node:http listen
+api/
+├── database/            # redis.ts, mongodb.ts (outside src/)
+└── src/
+    └── modules/
+        ├── Core/        # router, config, server.ts, app.ts; utils/ (authUtil, tokenCrypto, httpUtil)
+        ├── Venue/       # controllers/ services/ routes.ts
+        ├── Delivery/    # playlist build, pacing, token encryption
+        └── Log/         # beacon ingest, dedup, counters; workers/ (Redis → Mongo)
 ```
 
 ## Invariants

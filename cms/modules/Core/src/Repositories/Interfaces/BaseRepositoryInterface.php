@@ -34,4 +34,6 @@ interface BaseRepositoryInterface
     public function update(int|string $id, array $data): bool;
 
     public function delete(int|string $id): bool;
+
+    public function getCodesByPrefix(string $prefix, string $column = 'code'): array;
 }

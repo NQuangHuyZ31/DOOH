@@ -4,6 +4,7 @@ namespace Modules\Venue\Services;
 
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
+use Modules\Core\Support\CodeGenerator;
 use Modules\Core\Support\PlaylistCacheHelper;
 use Modules\User\Services\UserService;
 use Modules\Venue\Models\Venue;
@@ -28,13 +29,17 @@ class VenueService
 
     public function createVenue(array $data): Venue
     {
-        if (empty($data['code'])) {
-            $data['code'] = $this->generateUniqueCode($data['city_province'] ?? '', $data['name'] ?? 'Venue');
-        } else {
+        if (!empty($data['code'])) {
             $data['code'] = strtoupper(trim($data['code']));
+
+            return $this->venueRepo->create($data);
         }
 
-        return $this->venueRepo->create($data);
+        return CodeGenerator::createWithRetry(function () use ($data) {
+            $data['code'] = $this->generateUniqueCode($data['city_province'] ?? '', $data['name'] ?? 'Venue');
+
+            return $this->venueRepo->create($data);
+        });
     }
 
     public function updateVenue(int|string $id, array $data): bool
@@ -77,17 +82,11 @@ class VenueService
             }
         }
 
-        $cleanName = strtoupper(Str::slug($name, '-'));
-        $base = trim("{$prefix}-{$cleanName}", '-');
-        $code = $base;
-        $counter = 1;
+        // Keep venue code <= 52 chars so child screen codes (SCR-{venueCode}-01) stay within varchar(64)
+        $base = CodeGenerator::buildSlugBase($prefix, $name, 48);
+        $existingCodes = $this->venueRepo->getCodesByPrefix($base);
 
-        while ($this->venueRepo->findByCode($code)) {
-            $counter++;
-            $code = "{$base}-{$counter}";
-        }
-
-        return $code;
+        return CodeGenerator::nextUniqueCode($base, $existingCodes, false, 0, 52);
     }
 
     public function getMediaOwnersList(): array

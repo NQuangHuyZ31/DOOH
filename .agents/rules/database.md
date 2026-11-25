@@ -37,8 +37,11 @@ Deep dive: `docs/database/schema-and-migrations.md`.
 | Purpose | Key | Type | TTL |
 |---|---|---|---|
 | Playlist cache | `playlist:venue:{venue_id}` | String JSON | 120–300s |
+| Vendor auth cache | `vendor:auth:{sha256(key)}` | String JSON | 300–600s |
+| Screen auth cache | `screen:auth:{screen_code}` | String JSON | 300–600s |
 | Beacon dedup | `dedup:{hash}` | String `1` (`SET NX EX 30`) | 30s |
 | Daily stat | `stat:{YYYY-MM-DD}:{line_item_id}:{venue_id}` | Hash `imp`, `complete` | 48h |
 | Ingest buffer | `queue:raw_tracking_logs` | List (RPUSH/LPOP) | until flushed |
 
-- On Venue/Line Item/Creative change in CMS → `DEL playlist:venue:{venue_id}` for affected venues.
+- On Venue/Screen/Campaign/Line Item/Creative change in CMS → `DEL playlist:venue:{venue_id}` for affected venues.
+- On Vendor key rotate/disable/delete → `DEL vendor:auth:{old_hash}`; on Screen key rotate/disable/delete → `DEL screen:auth:{screen_code}`.

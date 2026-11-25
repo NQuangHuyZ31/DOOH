@@ -91,6 +91,16 @@ abstract class BaseRepository implements BaseRepositoryInterface
         return $this->model;
     }
 
+    public function getCodesByPrefix(string $prefix, string $column = 'code'): array
+    {
+        $query = $this->model->newQuery();
+        if (method_exists($this->model, 'bootSoftDeletes')) {
+            $query->withTrashed();
+        }
+
+        return $query->where($column, 'like', $prefix . '%')->pluck($column)->all();
+    }
+
     protected function newQuery(): Builder
     {
         $query = $this->model->newQuery();

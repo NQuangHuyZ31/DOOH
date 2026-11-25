@@ -3,6 +3,7 @@
 namespace Modules\Venue\Services;
 
 use Illuminate\Pagination\LengthAwarePaginator;
+use Modules\Core\Support\CodeGenerator;
 use Modules\Core\Support\DisplaySpecHelper;
 use Modules\Core\Support\HmacKeyUtil;
 use Modules\Core\Support\PlaylistCacheHelper;
@@ -29,23 +30,31 @@ class ScreenService
 
     public function createScreen(array $data): Screen
     {
-        if (empty($data['code'])) {
-            $venue = $this->venueRepo->find($data['venue_id']);
-            $venueCode = $venue ? $venue->code : 'VNU';
-            $data['code'] = $this->generateUniqueScreenCode($venueCode);
-        } else {
-            $data['code'] = strtoupper(trim($data['code']));
-        }
-
-        if (empty($data['secret_key'])) {
-            $data['secret_key'] = HmacKeyUtil::generateScopedKey('screen', $data['code'], config('venue.screen_master_secret'));
-        }
-
         if (!empty($data['resolution_width']) && !empty($data['resolution_height'])) {
             $data = array_merge($data, DisplaySpecHelper::deriveSpecs((int) $data['resolution_width'], (int) $data['resolution_height']));
         }
 
-        $screen = $this->screenRepo->create($data);
+        if (!empty($data['code'])) {
+            $data['code'] = strtoupper(trim($data['code']));
+            if (empty($data['secret_key'])) {
+                $data['secret_key'] = HmacKeyUtil::generateScopedKey('screen', $data['code'], config('venue.screen_master_secret'));
+            }
+            $screen = $this->screenRepo->create($data);
+        } else {
+            $venue = $this->venueRepo->find($data['venue_id']);
+            $venueCode = $venue ? $venue->code : 'VNU';
+            $hasCustomKey = !empty($data['secret_key']);
+
+            $screen = CodeGenerator::createWithRetry(function () use ($data, $venueCode, $hasCustomKey) {
+                $data['code'] = $this->generateUniqueScreenCode($venueCode);
+                if (!$hasCustomKey) {
+                    $data['secret_key'] = HmacKeyUtil::generateScopedKey('screen', $data['code'], config('venue.screen_master_secret'));
+                }
+
+                return $this->screenRepo->create($data);
+            });
+        }
+
         PlaylistCacheHelper::evictVenue($screen->venue_id);
 
         return $screen;
@@ -104,15 +113,9 @@ class ScreenService
 
     public function generateUniqueScreenCode(string $venueCode): string
     {
-        $prefix = "SCR-{$venueCode}";
-        $counter = 1;
-        $code = sprintf('%s-%02d', $prefix, $counter);
+        $prefix = CodeGenerator::buildSlugBase('SCR', $venueCode, 56);
+        $existingCodes = $this->screenRepo->getCodesByPrefix($prefix . '-');
 
-        while ($this->screenRepo->findByCode($code)) {
-            $counter++;
-            $code = sprintf('%s-%02d', $prefix, $counter);
-        }
-
-        return $code;
+        return CodeGenerator::nextUniqueCode($prefix, $existingCodes, true, 2, 64);
     }
 }

@@ -1,10 +1,12 @@
 import { Redis } from 'ioredis';
-import { config } from '../config/config.js';
+import { config } from '../src/modules/Core/config/config.js';
 
 let redisInstance: Redis | null = null;
 
 export const RedisKeyHelper = {
 	playlist: (venueId: string | number): string => `playlist:venue:${venueId}`,
+	vendorAuth: (keyHash: string): string => `vendor:auth:${keyHash}`,
+	screenAuth: (screenCode: string): string => `screen:auth:${screenCode}`,
 	dedup: (hash: string): string => `dedup:${hash}`,
 	stat: (date: string, lineItemId: string | number, venueId: string | number): string => `stat:${date}:${lineItemId}:${venueId}`,
 	rawQueue: (): string => 'queue:raw_tracking_logs',

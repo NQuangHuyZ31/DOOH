@@ -2,11 +2,11 @@
 	"name": "dooh-tracking-api",
 	"version": "1.0.0",
 	"description": "High-throughput DOOH delivery & tracking API built with pure node:http and Redis",
-	"main": "dist/modules/Core/server.js",
+	"main": "dist/src/modules/Core/server.js",
 	"type": "module",
 	"scripts": {
 		"build": "tsc",
-		"start": "node dist/modules/Core/server.js",
+		"start": "node dist/src/modules/Core/server.js",
 		"dev": "tsx watch src/modules/Core/server.ts",
 		"test": "node --test --import tsx src/modules/**/*.test.ts"
 	},

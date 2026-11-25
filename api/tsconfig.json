@@ -4,7 +4,6 @@
 		"module": "NodeNext",
 		"moduleResolution": "NodeNext",
 		"outDir": "./dist",
-		"rootDir": "./src",
 		"strict": true,
 		"noImplicitAny": true,
 		"strictNullChecks": true,
@@ -14,11 +13,11 @@
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"noImplicitReturns": true,
+		"forceConsistentCasingInFileNames": true,
 		"noFallthroughCasesInSwitch": true,
 		"esModuleInterop": true,
-		"skipLibCheck": true,
-		"forceConsistentCasingInFileNames": true
+		"skipLibCheck": true
 	},
-	"include": ["src/**/*"],
+	"include": ["src/**/*", "database/**/*"],
 	"exclude": ["node_modules", "dist"]
 }

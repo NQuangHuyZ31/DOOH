@@ -50,14 +50,14 @@ class VenueServiceTest extends TestCase
     public function test_create_venue_generates_code_if_missing(): void
     {
         $repoMock = Mockery::mock(VenueRepositoryInterface::class);
-        $repoMock->shouldReceive('findByCode')->once()->andReturn(null);
-        $repoMock->shouldReceive('create')->once()->withArgs(fn (array $data) => !empty($data['code']))->andReturnUsing(fn (array $data) => new Venue($data));
+        $repoMock->shouldReceive('getCodesByPrefix')->once()->with('SGN-LANDMARK-81')->andReturn([]);
+        $repoMock->shouldReceive('create')->once()->withArgs(fn (array $data) => $data['code'] === 'SGN-LANDMARK-81')->andReturnUsing(fn (array $data) => new Venue($data));
         $userMock = Mockery::mock(UserService::class);
 
         $service = new VenueService($repoMock, $userMock);
         $created = $service->createVenue(['name' => 'Landmark 81', 'city_province' => 'Ho Chi Minh']);
 
-        $this->assertNotEmpty($created->code);
+        $this->assertSame('SGN-LANDMARK-81', $created->code);
     }
 
     public function test_create_venue_preserves_provided_code(): void
