@@ -1,8 +1,11 @@
 import http from 'node:http';
 import { coreRouter, createApp } from './app.js';
 import { config } from './config/config.js';
-import { closeRedisConnection, closeMongoConnection } from '../../../database/index.js';
-import { createAuthGuard } from '../Auth/index.js';
+import { closeRedisConnection, closeMongoConnection } from '@database';
+import { createAuthGuard } from '@modules/Auth/index.js';
+import { createDeliveryRouter } from '@modules/Delivery/index.js';
+
+coreRouter.mount(`${config.apiPrefix}/delivery`, createDeliveryRouter());
 
 const app = createApp(coreRouter, [createAuthGuard()]);
 const server = http.createServer(app);

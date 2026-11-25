@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { Router } from '../../Core/router/router.js';
-import { createApp } from '../../Core/app.js';
-import { sendSuccess } from '../../Core/utils/httpUtil.js';
-import { RedisKeyHelper } from '../../../../database/index.js';
+import { Router } from '@core/router/router.js';
+import { createApp } from '@core/app.js';
+import { sendSuccess } from '@core/utils/httpUtil.js';
+import { RedisKeyHelper, type CacheStore } from '@database';
 import { AuthService } from '../services/authService.js';
 import { buildDefaultAuthRules, createAuthGuard, requireHmacSignature } from '../middlewares/authGuard.js';
 import { resolveMasterSecret, sha256Hex, verifyScopedKey } from '../utils/hmacUtil.js';
-import type { AuthCacheStore, AuthContext, ScreenAuthRecord, VendorAuthRecord } from '../types/auth.types.js';
+import type { AuthContext, ScreenAuthRecord, VendorAuthRecord } from '../types/auth.types.js';
 
 const MASTER_SECRET = 'base64:' + Buffer.from('0123456789abcdef0123456789abcdef').toString('base64');
 
@@ -26,13 +26,16 @@ const signTestPayload = (payload: string, secret: string): string => crypto.crea
 const createMemoryStore = (entries: Record<string, unknown> = {}) => {
 	const map = new Map<string, string>(Object.entries(entries).map(([k, v]) => [k, JSON.stringify(v)]));
 	let calls = 0;
-	const store: AuthCacheStore = {
+	const store: CacheStore = {
 		get: async (key: string) => {
 			calls += 1;
 			return map.get(key) ?? null;
 		},
+		setex: async (key: string, _ttl: number, value: string) => {
+			map.set(key, value);
+		},
 	};
-	return { store, getCalls: () => calls, set: (k: string, v: unknown) => map.set(k, JSON.stringify(v)) };
+	return { store, getCalls: () => calls, has: (k: string) => map.has(k), set: (k: string, v: unknown) => map.set(k, JSON.stringify(v)) };
 };
 
 describe('Auth Module - HMAC & Scoped Key Parity', () => {
@@ -93,6 +96,7 @@ describe('Auth Module - AuthService Layer 1 & Layer 2', () => {
 		const res = await service.authenticateScreen(validKey, 'SCR-FALLBACK-01');
 		assert.equal(res.ok, true);
 		if (res.ok && res.auth.type === 'screen') assert.equal(res.auth.screen.screen_id, 99);
+		assert.equal(mem.has(RedisKeyHelper.screenAuth('SCR-FALLBACK-01')), true);
 	});
 
 	it('authenticates vendor key via sha256 cache lookup and rejects inactive vendor', async () => {

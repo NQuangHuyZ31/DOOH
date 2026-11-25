@@ -2,7 +2,10 @@
 
 namespace Modules\Delivery\Providers;
 
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Modules\Core\Http\Middleware\VerifyInternalSecret;
+use Modules\Delivery\Http\Controllers\InternalPlaylistController;
 use Modules\Delivery\Repositories\CampaignRepository;
 use Modules\Delivery\Repositories\Interfaces\CampaignRepositoryInterface;
 use Modules\Delivery\Repositories\Interfaces\LineItemRepositoryInterface;
@@ -22,5 +25,9 @@ class DeliveryServiceProvider extends ServiceProvider
 		if (is_dir($migrationPath)) {
 			$this->loadMigrationsFrom($migrationPath);
 		}
+
+		$prefix = trim((string) config('modules.api_prefix', 'admin/api'), '/');
+		Route::middleware(['api', VerifyInternalSecret::class])
+			->get("{$prefix}/internal/delivery/playlist", [InternalPlaylistController::class, 'show']);
 	}
 }

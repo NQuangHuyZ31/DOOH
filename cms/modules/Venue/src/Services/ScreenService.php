@@ -28,6 +28,14 @@ class ScreenService
         return $this->screenRepo->find($id);
     }
 
+    public function getScreenByCode(string $code): ?Screen
+    {
+        $screen = $this->screenRepo->findByCode(strtoupper(trim($code)));
+        $screen?->loadMissing('venue');
+
+        return $screen;
+    }
+
     public function createScreen(array $data): Screen
     {
         if (!empty($data['resolution_width']) && !empty($data['resolution_height'])) {

@@ -1,2 +1,2 @@
-export { RedisKeyHelper, getRedisClient, checkRedisHealth, closeRedisConnection } from './redis.js';
+export { RedisKeyHelper, getRedisClient, defaultCacheStore, readCacheJson, writeCacheJson, checkRedisHealth, closeRedisConnection, type CacheStore } from './redis.js';
 export { getMongoClient, getMongoDb, checkMongoHealth, closeMongoConnection } from './mongodb.js';

@@ -2,27 +2,35 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Router, type MiddlewareHandler, type RouteContext } from './router/router.js';
 import { sendError, sendSuccess } from './utils/httpUtil.js';
 import { config } from './config/config.js';
-import { checkRedisHealth } from '../../../database/index.js';
+import { checkRedisHealth } from '@database';
 
 export const coreRouter = new Router();
 
 coreRouter.get('/health', async (_req, res) => {
 	const redisHealthy = await checkRedisHealth();
-	sendSuccess(res, {
-		status: 'healthy',
-		uptime_seconds: Math.round(process.uptime()),
-		timestamp: new Date().toISOString(),
-		services: { redis: redisHealthy ? 'connected' : 'disconnected' },
-		environment: config.nodeEnv,
-	}, 'DOOH Tracking API Core is operational');
+	sendSuccess(
+		res,
+		{
+			status: 'healthy',
+			uptime_seconds: Math.round(process.uptime()),
+			timestamp: new Date().toISOString(),
+			services: { redis: redisHealthy ? 'connected' : 'disconnected' },
+			environment: config.nodeEnv,
+		},
+		'DOOH Tracking API Core is operational',
+	);
 });
 
 coreRouter.get('/', (_req, res) => {
-	sendSuccess(res, {
-		name: 'DOOH Delivery & Tracking API',
-		version: '1.0.0',
-		modules: ['Core', 'Auth', 'Venue', 'Delivery', 'Log'],
-	}, 'Service Online');
+	sendSuccess(
+		res,
+		{
+			name: 'DOOH Delivery & Tracking API',
+			version: '1.0.0',
+			modules: ['Core', 'Auth', 'Venue', 'Delivery', 'Log'],
+		},
+		'Service Online',
+	);
 });
 
 const runPipeline = async (req: IncomingMessage, res: ServerResponse, ctx: RouteContext, middlewares: MiddlewareHandler[], finalHandler: () => Promise<void>): Promise<void> => {
