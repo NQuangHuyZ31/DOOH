@@ -34,10 +34,6 @@ export interface AuthRouteRule {
 	policy: AuthPolicy;
 }
 
-export interface AuthCacheStore {
-	get(key: string): Promise<string | null>;
-}
-
 export interface AuthFallbackResolver {
 	resolveVendor?: (apiKeyHash: string) => Promise<VendorAuthRecord | null>;
 	resolveScreen?: (screenCode: string, screenKey: string) => Promise<ScreenAuthRecord | null>;

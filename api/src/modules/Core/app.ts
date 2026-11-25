@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Router, type MiddlewareHandler, type RouteContext } from './router/router.js';
 import { sendError, sendSuccess } from './utils/httpUtil.js';
 import { config } from './config/config.js';
-import { checkRedisHealth } from '../../../database/index.js';
+import { checkRedisHealth } from '#database';
 
 export const coreRouter = new Router();
 

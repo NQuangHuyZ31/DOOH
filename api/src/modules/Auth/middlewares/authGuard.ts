@@ -1,15 +1,13 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { config } from '../../Core/config/config.js';
-import type { MiddlewareHandler, RouteContext } from '../../Core/router/router.js';
-import { sendError } from '../../Core/utils/httpUtil.js';
+import { config, normalizePathPrefix } from '#core/config/config.js';
+import type { MiddlewareHandler, RouteContext } from '#core/router/router.js';
+import { sendError } from '#core/utils/httpUtil.js';
 import type { AuthContext, AuthPolicy, AuthRouteRule } from '../types/auth.types.js';
 import { AuthService, defaultAuthService } from '../services/authService.js';
 import { extractApiKey, extractScreenKey, extractSignatureHeaders } from '../utils/hmacUtil.js';
 
-const normalizePrefix = (raw: string): string => '/' + raw.replace(/^\/+|\/+$/g, '');
-
 export const buildDefaultAuthRules = (apiPrefix: string = config.apiPrefix): AuthRouteRule[] => {
-	const base = normalizePrefix(apiPrefix);
+	const base = normalizePathPrefix(apiPrefix);
 	return [
 		{ prefix: '/', exact: true, policy: 'public' },
 		{ prefix: '/health', exact: true, policy: 'public' },
@@ -36,7 +34,7 @@ const resolvePolicy = (pathname: string, rules: AuthRouteRule[], apiPrefix: stri
 			return rule.policy;
 		}
 	}
-	return pathname.startsWith(`${normalizePrefix(apiPrefix)}/`) ? 'screen_or_vendor' : 'public';
+	return pathname.startsWith(`${normalizePathPrefix(apiPrefix)}/`) ? 'screen_or_vendor' : 'public';
 };
 
 export const requireVendorAuth = (service: AuthService = defaultAuthService): MiddlewareHandler => {
@@ -68,9 +66,7 @@ export const requireScreenOrVendorAuth = (service: AuthService = defaultAuthServ
 		const screenKey = extractScreenKey(req);
 		const apiKey = extractApiKey(req);
 
-		const result = screenKey
-			? await service.authenticateScreen(screenKey, resolveScreenCode(ctx))
-			: await service.authenticateVendor(apiKey);
+		const result = screenKey ? await service.authenticateScreen(screenKey, resolveScreenCode(ctx)) : await service.authenticateVendor(apiKey);
 
 		if (!result.ok) {
 			sendError(res, result.code, result.message);

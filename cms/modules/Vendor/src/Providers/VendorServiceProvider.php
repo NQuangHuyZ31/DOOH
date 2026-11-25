@@ -3,9 +3,12 @@
 namespace Modules\Vendor\Providers;
 
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Modules\Core\Http\Middleware\VerifyInternalSecret;
 use Modules\User\Events\UserDeleted;
 use Modules\User\Events\UserSaved;
+use Modules\Vendor\Http\Controllers\InternalVendorController;
 use Modules\Vendor\Listeners\SyncVendorUserListener;
 use Modules\Vendor\Repositories\Interfaces\VendorRepositoryInterface;
 use Modules\Vendor\Repositories\VendorRepository;
@@ -26,5 +29,9 @@ class VendorServiceProvider extends ServiceProvider
 	{
 		Event::listen(UserSaved::class, [SyncVendorUserListener::class, 'handleSaved']);
 		Event::listen(UserDeleted::class, [SyncVendorUserListener::class, 'handleDeleted']);
+
+		$prefix = trim((string) config('modules.api_prefix', 'admin/api'), '/');
+		Route::middleware(['api', VerifyInternalSecret::class])
+			->get("{$prefix}/internal/auth/vendor", [InternalVendorController::class, 'showByKeyHash']);
 	}
 }

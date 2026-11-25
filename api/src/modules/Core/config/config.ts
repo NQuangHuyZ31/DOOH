@@ -20,16 +20,22 @@ export interface AppConfig {
 		uri: string;
 		dbName: string;
 	};
+	cms: {
+		baseUrl: string;
+		internalPrefix: string;
+		internalSecret: string;
+		timeoutMs: number;
+	};
 	allowedOrigins: string[];
 }
 
-const normalizePrefix = (raw: string): string => (raw ? '/' + raw.replace(/^\/+|\/+$/g, '') : '');
+export const normalizePathPrefix = (raw: string): string => (raw ? '/' + raw.replace(/^\/+|\/+$/g, '') : '');
 
 export const config: AppConfig = {
 	port: Number(process.env.PORT || 3000),
 	nodeEnv: process.env.NODE_ENV || 'development',
 	appUrl: (process.env.APP_URL || '').replace(/\/+$/, ''),
-	apiPrefix: normalizePrefix(process.env.API_PREFIX || '/api/v1'),
+	apiPrefix: normalizePathPrefix(process.env.API_PREFIX || '/api/v1'),
 	appKey: process.env.APP_KEY || '',
 	screenMasterSecret: process.env.SCREEN_MASTER_SECRET || '',
 	hmacMaxSkewSeconds: Number(process.env.HMAC_MAX_SKEW_SECONDS || 300),
@@ -43,5 +49,15 @@ export const config: AppConfig = {
 		uri: process.env.MONGODB_URI || '',
 		dbName: process.env.MONGODB_DB || '',
 	},
-	allowedOrigins: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean) : [],
+	cms: {
+		baseUrl: (process.env.CMS_BASE_URL || '').replace(/\/+$/, ''),
+		internalPrefix: normalizePathPrefix(process.env.CMS_INTERNAL_PREFIX || '/admin/api/internal'),
+		internalSecret: process.env.CMS_INTERNAL_SECRET || '',
+		timeoutMs: Number(process.env.CMS_TIMEOUT_MS || 3000),
+	},
+	allowedOrigins: process.env.ALLOWED_ORIGINS
+		? process.env.ALLOWED_ORIGINS.split(',')
+				.map((o) => o.trim())
+				.filter(Boolean)
+		: [],
 };

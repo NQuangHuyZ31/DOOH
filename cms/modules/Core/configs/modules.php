@@ -3,6 +3,7 @@
 return [
     'admin_prefix' => env('CMS_ADMIN_PREFIX', 'admin'),
     'api_prefix' => env('CMS_API_PREFIX', 'admin/api'),
+    'internal_secret' => env('CMS_INTERNAL_SECRET', ''),
     'default_module' => env('CMS_DEFAULT_MODULE', 'venues'),
 
     'modules' => [

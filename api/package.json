@@ -4,6 +4,20 @@
 	"description": "High-throughput DOOH delivery & tracking API built with pure node:http and Redis",
 	"main": "dist/src/modules/Core/server.js",
 	"type": "module",
+	"imports": {
+		"#database": {
+			"types": "./database/index.ts",
+			"default": "./dist/database/index.js"
+		},
+		"#core/*": {
+			"types": "./src/modules/Core/*",
+			"default": "./dist/src/modules/Core/*"
+		},
+		"#modules/*": {
+			"types": "./src/modules/*",
+			"default": "./dist/src/modules/*"
+		}
+	},
 	"scripts": {
 		"build": "tsc",
 		"start": "node dist/src/modules/Core/server.js",

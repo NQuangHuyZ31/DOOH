@@ -27,6 +27,11 @@ class VendorService
 		return $this->vendorRepo->find($id);
 	}
 
+	public function getVendorByApiKeyHash(string $hash): ?Vendor
+	{
+		return $this->vendorRepo->findByApiKeyHash(strtolower(trim($hash)));
+	}
+
 	public function createVendor(array $data): array
 	{
 		return DB::transaction(function () use ($data) {

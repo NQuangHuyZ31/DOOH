@@ -1,36 +1,34 @@
-import { getRedisClient, RedisKeyHelper } from '../../../../database/index.js';
-import { config } from '../../Core/config/config.js';
-import type { AuthCacheStore, AuthFallbackResolver, AuthResult, ScreenAuthRecord, SignatureVerifyResult, VendorAuthRecord } from '../types/auth.types.js';
+import { defaultCacheStore, readCacheJson, RedisKeyHelper, writeCacheJson, type CacheStore } from '#database';
+import { config } from '#core/config/config.js';
+import { CmsClient, defaultCmsClient } from '#core/utils/cmsClient.js';
+import type { AuthFallbackResolver, AuthResult, ScreenAuthRecord, SignatureVerifyResult, VendorAuthRecord } from '../types/auth.types.js';
 import { sha256Hex, verifyKeyMatch, verifyPayload, verifyScopedKey } from '../utils/hmacUtil.js';
 
+const AUTH_CACHE_TTL_SECONDS = 300;
+
 export interface AuthServiceOptions {
-	store?: AuthCacheStore;
+	store?: CacheStore;
 	masterSecret?: string;
 	fallback?: AuthFallbackResolver;
+	cmsClient?: CmsClient;
 	hmacMaxSkewSeconds?: number;
 }
 
-const defaultRedisStore: AuthCacheStore = {
-	get: async (key: string): Promise<string | null> => {
-		const client = getRedisClient();
-		if (client.status === 'wait') {
-			await client.connect().catch(() => {});
-		}
-		if (client.status !== 'ready') return null;
-		return client.get(key);
-	},
-};
+const createCmsAuthFallback = (cms: CmsClient): AuthFallbackResolver => ({
+	resolveVendor: (keyHash: string) => cms.getJson<VendorAuthRecord>('/auth/vendor', { key_hash: keyHash }),
+	resolveScreen: (screenCode: string) => cms.getJson<ScreenAuthRecord>('/auth/screen', { code: screenCode }),
+});
 
 export class AuthService {
-	private store: AuthCacheStore;
+	private store: CacheStore;
 	private masterSecret?: string;
-	private fallback?: AuthFallbackResolver;
+	private fallback: AuthFallbackResolver;
 	private maxSkewSeconds: number;
 
 	constructor(options: AuthServiceOptions = {}) {
-		this.store = options.store ?? defaultRedisStore;
+		this.store = options.store ?? defaultCacheStore;
 		this.masterSecret = options.masterSecret;
-		this.fallback = options.fallback;
+		this.fallback = options.fallback ?? createCmsAuthFallback(options.cmsClient ?? defaultCmsClient);
 		this.maxSkewSeconds = options.hmacMaxSkewSeconds ?? config.hmacMaxSkewSeconds;
 	}
 
@@ -40,8 +38,13 @@ export class AuthService {
 		}
 
 		const keyHash = sha256Hex(apiKey);
-		const record = await this.readCacheJson<VendorAuthRecord>(RedisKeyHelper.vendorAuth(keyHash))
-			?? (this.fallback?.resolveVendor ? await this.fallback.resolveVendor(keyHash) : null);
+		const cacheKey = RedisKeyHelper.vendorAuth(keyHash);
+		let record = await readCacheJson<VendorAuthRecord>(this.store, cacheKey);
+
+		if (!record && this.fallback.resolveVendor) {
+			record = await this.fallback.resolveVendor(keyHash);
+			if (record) await writeCacheJson(this.store, cacheKey, AUTH_CACHE_TTL_SECONDS, record);
+		}
 
 		if (!record || record.status !== 'active') {
 			return { ok: false, code: 401, message: 'Unauthorized: API key is invalid or inactive' };
@@ -55,14 +58,19 @@ export class AuthService {
 			return { ok: false, code: 401, message: 'Unauthorized: missing screen key or screen code' };
 		}
 
-		// Layer 1: stateless HMAC verification blocks forged keys before touching Redis
+		// Layer 1: stateless HMAC verification blocks forged keys before touching Redis or CMS
 		if (!verifyScopedKey(screenKey, 'screen', screenCode, this.masterSecret)) {
 			return { ok: false, code: 401, message: 'Unauthorized: invalid screen key signature' };
 		}
 
-		// Layer 2: Redis cache lookup verifies active status and catches rotated/revoked keys
-		const record = await this.readCacheJson<ScreenAuthRecord>(RedisKeyHelper.screenAuth(screenCode))
-			?? (this.fallback?.resolveScreen ? await this.fallback.resolveScreen(screenCode, screenKey) : null);
+		// Layer 2: Redis cache lookup; Layer 3: fallback to CMS and warm Redis on cache miss
+		const cacheKey = RedisKeyHelper.screenAuth(screenCode);
+		let record = await readCacheJson<ScreenAuthRecord>(this.store, cacheKey);
+
+		if (!record && this.fallback.resolveScreen) {
+			record = await this.fallback.resolveScreen(screenCode, screenKey);
+			if (record) await writeCacheJson(this.store, cacheKey, AUTH_CACHE_TTL_SECONDS, record);
+		}
 
 		if (!record || record.status !== 'active' || !verifyKeyMatch(screenKey, record.secret_key)) {
 			return { ok: false, code: 401, message: 'Unauthorized: screen key is inactive or revoked' };
@@ -87,16 +95,6 @@ export class AuthService {
 		}
 
 		return { ok: true };
-	}
-
-	private async readCacheJson<T>(key: string): Promise<T | null> {
-		try {
-			const raw = await this.store.get(key);
-			if (!raw) return null;
-			return JSON.parse(raw) as T;
-		} catch {
-			return null;
-		}
 	}
 }
 
