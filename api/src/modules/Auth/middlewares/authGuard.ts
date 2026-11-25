@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { config, normalizePathPrefix } from '#core/config/config.js';
-import type { MiddlewareHandler, RouteContext } from '#core/router/router.js';
-import { sendError } from '#core/utils/httpUtil.js';
+import { config, normalizePathPrefix } from '@core/config/config.js';
+import type { MiddlewareHandler, RouteContext } from '@core/router/router.js';
+import { sendError } from '@core/utils/httpUtil.js';
 import type { AuthContext, AuthPolicy, AuthRouteRule } from '../types/auth.types.js';
 import { AuthService, defaultAuthService } from '../services/authService.js';
 import { extractApiKey, extractScreenKey, extractSignatureHeaders } from '../utils/hmacUtil.js';

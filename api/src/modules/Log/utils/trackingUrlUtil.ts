@@ -1,5 +1,5 @@
-import { config, normalizePathPrefix } from '#core/config/config.js';
-import { encryptToken } from '#core/utils/tokenCrypto.js';
+import { config, normalizePathPrefix } from '@core/config/config.js';
+import { encryptToken } from '@core/utils/tokenCrypto.js';
 
 export interface TrackingUrlInput {
 	venue_id: number;

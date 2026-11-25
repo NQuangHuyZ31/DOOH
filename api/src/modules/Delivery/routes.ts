@@ -1,4 +1,4 @@
-import { Router } from '#core/router/router.js';
+import { Router } from '@core/router/router.js';
 import { createDeliveryController } from './controllers/deliveryController.js';
 import { DeliveryService, defaultDeliveryService } from './services/deliveryService.js';
 

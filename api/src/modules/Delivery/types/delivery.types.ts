@@ -1,4 +1,4 @@
-import type { TrackingUrlInput, TrackingUrls } from '#modules/Log/utils/trackingUrlUtil.js';
+import type { TrackingUrlInput, TrackingUrls } from '@modules/Log/utils/trackingUrlUtil.js';
 
 export interface CachedPlaylistSlot {
 	line_item_id: number;

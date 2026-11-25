@@ -5,9 +5,9 @@
 		"moduleResolution": "NodeNext",
 		"outDir": "./dist",
 		"paths": {
-			"#database": ["./database/index.ts"],
-			"#core/*": ["./src/modules/Core/*"],
-			"#modules/*": ["./src/modules/*"]
+			"@database": ["./database/index.ts"],
+			"@core/*": ["./src/modules/Core/*"],
+			"@modules/*": ["./src/modules/*"]
 		},
 		"strict": true,
 		"noImplicitAny": true,

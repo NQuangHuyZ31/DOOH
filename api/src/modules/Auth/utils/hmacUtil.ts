@@ -1,6 +1,6 @@
 import type { IncomingMessage } from 'node:http';
 import crypto from 'node:crypto';
-import { config } from '#core/config/config.js';
+import { config } from '@core/config/config.js';
 
 export const resolveMasterSecret = (customSecret?: string): Buffer | string => {
 	const raw = customSecret && customSecret.length > 0 ? customSecret : config.screenMasterSecret;

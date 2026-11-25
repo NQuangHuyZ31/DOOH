@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import type { RouteContext } from '#core/router/router.js';
-import { sendError, sendSuccess } from '#core/utils/httpUtil.js';
-import type { AuthContext } from '#modules/Auth/types/auth.types.js';
+import type { RouteContext } from '@core/router/router.js';
+import { sendError, sendSuccess } from '@core/utils/httpUtil.js';
+import type { AuthContext } from '@modules/Auth/types/auth.types.js';
 import { DeliveryService, defaultDeliveryService } from '../services/deliveryService.js';
 
 export const createDeliveryController = (service: DeliveryService = defaultDeliveryService) => ({

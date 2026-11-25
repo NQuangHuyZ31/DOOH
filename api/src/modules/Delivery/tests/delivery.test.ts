@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { Router } from '#core/router/router.js';
-import { createApp } from '#core/app.js';
-import { CmsClient } from '#core/utils/cmsClient.js';
-import { decryptToken } from '#core/utils/tokenCrypto.js';
-import { RedisKeyHelper, type CacheStore } from '#database';
-import { AuthService, createAuthGuard, resolveMasterSecret, sha256Hex } from '#modules/Auth/index.js';
-import type { ScreenAuthRecord, VendorAuthRecord } from '#modules/Auth/types/auth.types.js';
-import { buildTrackingUrls } from '#modules/Log/index.js';
+import { Router } from '@core/router/router.js';
+import { createApp } from '@core/app.js';
+import { CmsClient } from '@core/utils/cmsClient.js';
+import { decryptToken } from '@core/utils/tokenCrypto.js';
+import { RedisKeyHelper, type CacheStore } from '@database';
+import { AuthService, createAuthGuard, resolveMasterSecret, sha256Hex } from '@modules/Auth/index.js';
+import type { ScreenAuthRecord, VendorAuthRecord } from '@modules/Auth/types/auth.types.js';
+import { buildTrackingUrls } from '@modules/Log/index.js';
 import { DeliveryService } from '../services/deliveryService.js';
 import { createDeliveryRouter } from '../routes.js';
 import type { CachedPlaylist, DeliveryPlaylistResponse } from '../types/delivery.types.js';
@@ -178,15 +178,17 @@ describe('Delivery Module - Playlist, Daily Cap & Log Tracking URLs', () => {
 			}
 			setTimeout(() => {
 				res.writeHead(200, { 'Content-Type': 'application/json' });
-				res.end(JSON.stringify({
-					status: 'success',
-					data: {
-						screen_id: 77,
-						venue_id: 25,
-						refresh_seconds: 150,
-						playlist: [{ line_item_id: 301, type: 'video', media_url: 'https://cdn.test/cms.mp4', duration: 15 }],
-					},
-				}));
+				res.end(
+					JSON.stringify({
+						status: 'success',
+						data: {
+							screen_id: 77,
+							venue_id: 25,
+							refresh_seconds: 150,
+							playlist: [{ line_item_id: 301, type: 'video', media_url: 'https://cdn.test/cms.mp4', duration: 15 }],
+						},
+					}),
+				);
 			}, 30);
 		});
 

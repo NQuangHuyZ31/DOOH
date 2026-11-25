@@ -5,15 +5,15 @@
 	"main": "dist/src/modules/Core/server.js",
 	"type": "module",
 	"imports": {
-		"#database": {
+		"@database": {
 			"types": "./database/index.ts",
 			"default": "./dist/database/index.js"
 		},
-		"#core/*": {
+		"@core/*": {
 			"types": "./src/modules/Core/*",
 			"default": "./dist/src/modules/Core/*"
 		},
-		"#modules/*": {
+		"@modules/*": {
 			"types": "./src/modules/*",
 			"default": "./dist/src/modules/*"
 		}
