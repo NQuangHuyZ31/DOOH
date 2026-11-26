@@ -18,4 +18,6 @@ interface LineItemRepositoryInterface extends BaseRepositoryInterface
 	public function getActiveLineItemsForVenue(int $venueId, ?string $date = null): array;
 
 	public function getActiveLineItemsForScreen(int $screenId, ?string $date = null): array;
+
+	public function getAffectedTargetsByCreativeIds(array $creativeIds): array;
 }

@@ -84,4 +84,25 @@ class LineItemRepository extends BaseRepository implements LineItemRepositoryInt
 			->get()
 			->all();
 	}
+
+	public function getAffectedTargetsByCreativeIds(array $creativeIds): array
+	{
+		$ids = array_values(array_unique(array_filter(array_map('intval', $creativeIds))));
+		if (empty($ids)) {
+			return ['venue_ids' => [], 'screen_ids' => []];
+		}
+
+		$items = $this->newQuery()
+			->where(function ($query) use ($ids) {
+				$query->whereIn('creative_id', $ids)
+					->orWhereHas('creatives', fn ($q) => $q->whereIn('creatives.id', $ids));
+			})
+			->with(['venues:id', 'screens:id'])
+			->get(['id']);
+
+		return [
+			'venue_ids' => $items->flatMap(fn ($li) => $li->venues->pluck('id'))->unique()->values()->all(),
+			'screen_ids' => $items->flatMap(fn ($li) => $li->screens->pluck('id'))->unique()->values()->all(),
+		];
+	}
 }

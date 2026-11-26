@@ -47,12 +47,8 @@ class DeliveryService
 
 		$updated = $this->campaignRepo->update($id, $data);
 		if ($updated) {
-			/** @var Campaign|null $campaign */
-			$campaign = $this->campaignRepo->find($id);
-			if ($campaign) {
-				$venueIds = $campaign->lineItems->flatMap(fn ($li) => $li->venues->pluck('id'))->unique()->all();
-				PlaylistCacheHelper::evictVenues($venueIds);
-			}
+			[$venueIds, $screenIds] = $this->extractCampaignTargets($this->campaignRepo->find($id));
+			PlaylistCacheHelper::evictTargets($venueIds, $screenIds);
 		}
 
 		return $updated ? $this->getCampaign($id) : null;
@@ -60,14 +56,14 @@ class DeliveryService
 
 	public function deleteCampaign(int|string $id): bool
 	{
-		/** @var Campaign|null $campaign */
-		$campaign = $this->campaignRepo->find($id);
-		if ($campaign) {
-			$venueIds = $campaign->lineItems->flatMap(fn ($li) => $li->venues->pluck('id'))->unique()->all();
-			PlaylistCacheHelper::evictVenues($venueIds);
+		[$venueIds, $screenIds] = $this->extractCampaignTargets($this->campaignRepo->find($id));
+
+		$deleted = $this->campaignRepo->delete($id);
+		if ($deleted) {
+			PlaylistCacheHelper::evictTargets($venueIds, $screenIds);
 		}
 
-		return $this->campaignRepo->delete($id);
+		return $deleted;
 	}
 
 	public function listLineItems(array $filters = [], int $perPage = 15): LengthAwarePaginator
@@ -90,29 +86,23 @@ class DeliveryService
 			}
 
 			$venueIds = $data['venue_ids'] ?? [];
-			unset($data['venue_ids']);
-
 			$screenIds = $data['screen_ids'] ?? [];
-			unset($data['screen_ids']);
-
 			$creativeIds = $data['creative_ids'] ?? ($data['creatives'] ?? null);
-			unset($data['creative_ids'], $data['creatives']);
+			unset($data['venue_ids'], $data['screen_ids'], $data['creative_ids'], $data['creatives']);
 
-			/** @var LineItem $lineItem */
 			$lineItem = $this->lineItemRepo->create($data);
 
 			if (!empty($venueIds)) {
 				$this->lineItemRepo->syncVenues($lineItem->id, $venueIds);
-				PlaylistCacheHelper::evictVenues($venueIds);
 			}
-
 			if (!empty($screenIds)) {
 				$this->lineItemRepo->syncScreens($lineItem->id, $screenIds);
 			}
-
 			if (!empty($creativeIds)) {
 				$this->lineItemRepo->syncCreatives($lineItem->id, $creativeIds);
 			}
+
+			DB::afterCommit(fn () => PlaylistCacheHelper::evictTargets($venueIds, $screenIds));
 
 			return $this->lineItemRepo->find($lineItem->id);
 		});
@@ -127,37 +117,35 @@ class DeliveryService
 
 			$hasVenues = array_key_exists('venue_ids', $data);
 			$venueIds = $data['venue_ids'] ?? [];
-			unset($data['venue_ids']);
-
 			$hasScreens = array_key_exists('screen_ids', $data);
 			$screenIds = $data['screen_ids'] ?? [];
-			unset($data['screen_ids']);
-
 			$hasCreatives = array_key_exists('creative_ids', $data) || array_key_exists('creatives', $data);
 			$creativeIds = $data['creative_ids'] ?? ($data['creatives'] ?? []);
-			unset($data['creative_ids'], $data['creatives']);
+			unset($data['venue_ids'], $data['screen_ids'], $data['creative_ids'], $data['creatives']);
 
-			/** @var LineItem|null $existing */
 			$existing = $this->lineItemRepo->find($id);
 			$previousVenues = $existing ? $existing->venues->pluck('id')->all() : [];
+			$previousScreens = $existing ? $existing->screens->pluck('id')->all() : [];
 
 			$this->lineItemRepo->update($id, $data);
 
+			$affectedVenues = $previousVenues;
 			if ($hasVenues) {
 				$this->lineItemRepo->syncVenues((int) $id, $venueIds);
-				$allAffected = array_unique(array_merge($previousVenues, $venueIds));
-				PlaylistCacheHelper::evictVenues($allAffected);
-			} else {
-				PlaylistCacheHelper::evictVenues($previousVenues);
+				$affectedVenues = array_unique(array_merge($previousVenues, $venueIds));
 			}
 
+			$affectedScreens = $previousScreens;
 			if ($hasScreens) {
 				$this->lineItemRepo->syncScreens((int) $id, $screenIds);
+				$affectedScreens = array_unique(array_merge($previousScreens, $screenIds));
 			}
 
 			if ($hasCreatives) {
 				$this->lineItemRepo->syncCreatives((int) $id, $creativeIds);
 			}
+
+			DB::afterCommit(fn () => PlaylistCacheHelper::evictTargets($affectedVenues, $affectedScreens));
 
 			return $this->getLineItem($id);
 		});
@@ -169,18 +157,34 @@ class DeliveryService
 		foreach ($items as $itemData) {
 			$created[] = $this->createLineItem($itemData);
 		}
+
 		return $created;
 	}
 
 	public function deleteLineItem(int|string $id): bool
 	{
-		/** @var LineItem|null $item */
 		$item = $this->lineItemRepo->find($id);
-		if ($item) {
-			PlaylistCacheHelper::evictVenues($item->venues->pluck('id')->all());
+		$venueIds = $item ? $item->venues->pluck('id')->all() : [];
+		$screenIds = $item ? $item->screens->pluck('id')->all() : [];
+
+		$deleted = $this->lineItemRepo->delete($id);
+		if ($deleted) {
+			PlaylistCacheHelper::evictTargets($venueIds, $screenIds);
 		}
 
-		return $this->lineItemRepo->delete($id);
+		return $deleted;
+	}
+
+	protected function extractCampaignTargets(?Campaign $campaign): array
+	{
+		if (!$campaign) {
+			return [[], []];
+		}
+
+		$venueIds = $campaign->lineItems->flatMap(fn ($li) => $li->venues->pluck('id'))->unique()->all();
+		$screenIds = $campaign->lineItems->flatMap(fn ($li) => $li->screens->pluck('id'))->unique()->all();
+
+		return [$venueIds, $screenIds];
 	}
 
 	protected function generateUniqueCode(string $prefix, string $name): string

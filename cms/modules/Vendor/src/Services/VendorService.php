@@ -6,6 +6,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\Core\Support\HmacKeyUtil;
+use Modules\Core\Support\PlaylistCacheHelper;
 use Modules\User\Services\UserService;
 use Modules\Vendor\Models\Vendor;
 use Modules\Vendor\Repositories\Interfaces\VendorRepositoryInterface;
@@ -89,15 +90,24 @@ class VendorService
 				$this->userService->updateUser((int) $existing->user_id, ['name' => $data['contact_name']]);
 			}
 
+			$apiKeyHash = $existing->api_key_hash;
+			DB::afterCommit(fn () => PlaylistCacheHelper::evictVendorAuth($apiKeyHash));
+
 			return $this->getVendor($id);
 		});
 	}
 
 	public function deleteVendor(int|string $id): bool
 	{
+		$existing = $this->getVendor($id);
 		$this->vendorRepo->update($id, ['user_id' => null]);
+		$deleted = $this->vendorRepo->delete($id);
 
-		return $this->vendorRepo->delete($id);
+		if ($deleted && $existing) {
+			PlaylistCacheHelper::evictVendorAuth($existing->api_key_hash);
+		}
+
+		return $deleted;
 	}
 
 	public function regenerateApiKey(int|string $id): ?array
@@ -107,11 +117,14 @@ class VendorService
 			return null;
 		}
 
+		$oldHash = $vendor->api_key_hash;
 		$keyData = $this->generateApiKey();
 		$this->vendorRepo->update($id, [
 			'api_key_hash' => $keyData['hash'],
 			'api_key_prefix' => $keyData['prefix'],
 		]);
+
+		PlaylistCacheHelper::evictVendorAuth($oldHash);
 
 		return [
 			'vendor' => $this->getVendor($id),
