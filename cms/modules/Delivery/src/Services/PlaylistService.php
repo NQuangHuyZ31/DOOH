@@ -153,6 +153,7 @@ class PlaylistService
 			'type' => $creative->type ?? 'video',
 			'media_url' => $creative->media_url ?? '',
 			'duration' => (int) ($creative->duration_seconds ?: self::DEFAULT_DURATION_SECONDS),
+			'daily_impression_cap' => (int) ($item->daily_impression_cap ?? 0),
 		];
 	}
 }

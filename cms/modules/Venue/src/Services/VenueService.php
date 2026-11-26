@@ -48,9 +48,10 @@ class VenueService
             $data['code'] = strtoupper(trim($data['code']));
         }
 
+        $venue = $this->getVenue($id);
         $updated = $this->venueRepo->update($id, $data);
         if ($updated) {
-            PlaylistCacheHelper::evictVenue($id);
+            $this->evictVenueAndChildScreens($id, $venue);
         }
 
         return $updated;
@@ -58,12 +59,25 @@ class VenueService
 
     public function deleteVenue(int|string $id): bool
     {
+        $venue = $this->getVenue($id);
         $deleted = $this->venueRepo->delete($id);
         if ($deleted) {
-            PlaylistCacheHelper::evictVenue($id);
+            $this->evictVenueAndChildScreens($id, $venue);
         }
 
         return $deleted;
+    }
+
+    protected function evictVenueAndChildScreens(int|string $venueId, ?Venue $venue): void
+    {
+        if (!$venue) {
+            PlaylistCacheHelper::evictVenue($venueId);
+
+            return;
+        }
+
+        $screens = $venue->screens()->get(['id', 'code']);
+        PlaylistCacheHelper::evictTargets([$venueId], $screens->pluck('id')->all(), $screens->pluck('code')->all());
     }
 
     public function generateUniqueCode(?string $city, string $name): string

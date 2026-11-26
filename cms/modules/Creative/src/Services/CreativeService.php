@@ -7,6 +7,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\Core\Support\DisplaySpecHelper;
+use Modules\Creative\Events\CreativeChanged;
 use Modules\Creative\Models\Creative;
 use Modules\Creative\Repositories\Interfaces\CreativeRepositoryInterface;
 
@@ -93,6 +94,10 @@ class CreativeService
 		$data = $this->enrichCreativeSpecs($data, $existing);
 
 		$updated = $this->creativeRepository->update($id, $data);
+		if ($updated) {
+			CreativeChanged::dispatch([(int) $id]);
+		}
+
 		return $updated ? $this->getCreativeById($id) : null;
 	}
 
@@ -131,7 +136,12 @@ class CreativeService
 
 	public function deleteCreative(int|string $id): bool
 	{
-		return $this->creativeRepository->delete($id);
+		$deleted = $this->creativeRepository->delete($id);
+		if ($deleted) {
+			CreativeChanged::dispatch([(int) $id]);
+		}
+
+		return $deleted;
 	}
 
 	public function reviewCreative(int|string $id, string $status, ?string $rejectionReason = null, ?int $approverId = null): ?Creative
@@ -145,12 +155,22 @@ class CreativeService
 			throw new \DomainException('Approved creatives cannot have their status changed.');
 		}
 
-		return $this->creativeRepository->updateStatus($id, $status, $rejectionReason, $approverId);
+		$reviewed = $this->creativeRepository->updateStatus($id, $status, $rejectionReason, $approverId);
+		if ($reviewed) {
+			CreativeChanged::dispatch([(int) $id]);
+		}
+
+		return $reviewed;
 	}
 
 	public function batchReview(array $ids, string $status, ?string $rejectionReason = null, ?int $approverId = null): int
 	{
-		return $this->creativeRepository->batchUpdateStatus($ids, $status, $rejectionReason, $approverId);
+		$count = $this->creativeRepository->batchUpdateStatus($ids, $status, $rejectionReason, $approverId);
+		if ($count > 0) {
+			CreativeChanged::dispatch(array_map('intval', $ids));
+		}
+
+		return $count;
 	}
 
 	public function parseVast(string $urlOrXml): array

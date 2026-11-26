@@ -63,19 +63,20 @@ class ScreenService
             });
         }
 
-        PlaylistCacheHelper::evictVenue($screen->venue_id);
+        PlaylistCacheHelper::evictTargets([$screen->venue_id], [$screen->id]);
 
         return $screen;
     }
 
     public function updateScreen(int|string $id, array $data): bool
     {
+        $existing = $this->getScreen($id);
+
         if (!empty($data['code'])) {
             $data['code'] = strtoupper(trim($data['code']));
         }
 
         if (isset($data['resolution_width']) || isset($data['resolution_height'])) {
-            $existing = $this->getScreen($id);
             $width = (int) ($data['resolution_width'] ?? $existing?->resolution_width);
             $height = (int) ($data['resolution_height'] ?? $existing?->resolution_height);
             if ($width > 0 && $height > 0) {
@@ -86,9 +87,7 @@ class ScreenService
         $updated = $this->screenRepo->update($id, $data);
         if ($updated) {
             $screen = $this->getScreen($id);
-            if ($screen) {
-                PlaylistCacheHelper::evictVenue($screen->venue_id);
-            }
+            PlaylistCacheHelper::evictTargets([$existing?->venue_id, $screen?->venue_id], [$id], [$existing?->code, $screen?->code]);
         }
 
         return $updated;
@@ -99,7 +98,7 @@ class ScreenService
         $screen = $this->getScreen($id);
         $deleted = $this->screenRepo->delete($id);
         if ($deleted && $screen) {
-            PlaylistCacheHelper::evictVenue($screen->venue_id);
+            PlaylistCacheHelper::evictTargets([$screen->venue_id], [$screen->id], [$screen->code]);
         }
 
         return $deleted;
@@ -114,7 +113,7 @@ class ScreenService
 
         $newKey = HmacKeyUtil::generateScopedKey('screen', $screen->code, config('venue.screen_master_secret'));
         $this->screenRepo->update($id, ['secret_key' => $newKey]);
-        PlaylistCacheHelper::evictVenue($screen->venue_id);
+        PlaylistCacheHelper::evictTargets([$screen->venue_id], [$screen->id], [$screen->code]);
 
         return $newKey;
     }
