@@ -20,16 +20,7 @@ const getStatusColor = (status: BeaconLogEntry['statusCode']): string => {
 	return 'error';
 };
 
-export const EventDebugPanel: React.FC<EventDebugPanelProps> = ({
-	playlistData,
-	activeIndex,
-	remainingSeconds,
-	refreshCountdown,
-	offlineQueuedCount,
-	beaconLogs,
-	onSelectSlot,
-	onClearLogs,
-}) => {
+export const EventDebugPanel: React.FC<EventDebugPanelProps> = ({ playlistData, activeIndex, remainingSeconds, refreshCountdown, offlineQueuedCount, beaconLogs, onSelectSlot, onClearLogs }) => {
 	const slots = playlistData?.playlist || [];
 
 	return (
@@ -110,12 +101,20 @@ export const EventDebugPanel: React.FC<EventDebugPanelProps> = ({
 						renderItem={(log) => (
 							<List.Item style={{ padding: '4px 6px' }}>
 								<Space size={6} wrap>
-									<Typography.Text code style={{ fontSize: 11 }}>{log.timestamp}</Typography.Text>
-									<Tag color="cyan" style={{ margin: 0 }}>{log.event}</Tag>
-									<Tag color={getStatusColor(log.statusCode)} style={{ margin: 0 }}>{String(log.statusCode)}</Tag>
+									<Typography.Text code style={{ fontSize: 11 }}>
+										{log.timestamp}
+									</Typography.Text>
+									<Tag color="cyan" style={{ margin: 0 }}>
+										{log.event}
+									</Tag>
+									<Tag color={getStatusColor(log.statusCode)} style={{ margin: 0 }}>
+										{String(log.statusCode)}
+									</Tag>
 									<Typography.Text style={{ fontSize: 12 }}>{log.lineItemName || (log.lineItemId ? `LI #${log.lineItemId}` : log.detail || '')}</Typography.Text>
 								</Space>
-								<Typography.Text type="secondary" style={{ fontSize: 11 }}>{log.latencyMs}ms</Typography.Text>
+								<Typography.Text type="secondary" style={{ fontSize: 11 }}>
+									{log.latencyMs}ms
+								</Typography.Text>
 							</List.Item>
 						)}
 					/>

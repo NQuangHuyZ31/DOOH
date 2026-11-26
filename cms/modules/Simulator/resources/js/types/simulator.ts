@@ -14,9 +14,60 @@ export interface SimulatorSlot {
 	tracking?: SimulatorTrackingUrls;
 }
 
+export interface CreateLocalScreenPayload {
+	name: string;
+	location_name: string;
+	city: string;
+	sub_location?: string;
+	screen_type?: string;
+	resolution_width: number;
+	resolution_height: number;
+	has_audio?: boolean;
+	loop_duration_seconds?: number;
+	default_slot_seconds?: number;
+	hardware_device_uid?: string;
+}
+
+export interface SimulatorScreenItem {
+	id: number;
+	name: string;
+	location_name: string;
+	city: string;
+	sub_location?: string | null;
+	screen_type: string;
+	resolution_width: number;
+	resolution_height: number;
+	orientation: string;
+	aspect_ratio: string | null;
+	has_audio: boolean;
+	loop_duration_seconds: number;
+	default_slot_seconds: number;
+	hardware_device_uid?: string | null;
+	sync_status: 'unsynced' | 'synced';
+	code: string | null;
+	secret_key: string | null;
+	node_api_url: string;
+	synced_at?: string | null;
+	created_at?: string | null;
+}
+
+export interface BatchSyncFailedItem {
+	index: number;
+	hardware_device_uid?: string | null;
+	name?: string | null;
+	error: string;
+}
+
+export interface BatchSyncResult {
+	total: number;
+	synced_count: number;
+	failed_count: number;
+	synced: SimulatorScreenItem[];
+	failed: BatchSyncFailedItem[];
+}
+
 export interface SimulatorScreenMeta {
 	id: number;
-	venue_id: number;
 	code: string;
 	name: string;
 	secret_key?: string;
@@ -30,13 +81,8 @@ export interface SimulatorScreenMeta {
 	status: string;
 }
 
-export interface SimulatorDeviceConfig {
-	node_api_url: string;
-	screen: SimulatorScreenMeta;
-}
-
 export interface SimulatorPlaylistData {
-	source: 'node_api' | 'cms_fallback';
+	source: 'node_api';
 	screen: SimulatorScreenMeta;
 	screen_id?: number;
 	venue_id?: number;

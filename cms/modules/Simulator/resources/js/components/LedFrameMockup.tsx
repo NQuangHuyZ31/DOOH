@@ -112,8 +112,12 @@ export const LedFrameMockup: React.FC<LedFrameMockupProps> = ({
 
 				{isPlaying && activeSlot && (
 					<div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 6 }}>
-						<Tag color="magenta" style={{ margin: 0 }}>{activeSlot.type.toUpperCase()}</Tag>
-						<Tag color="#111827" style={{ margin: 0, border: '1px solid #374151' }}>{remainingSeconds}s</Tag>
+						<Tag color="magenta" style={{ margin: 0 }}>
+							{activeSlot.type.toUpperCase()}
+						</Tag>
+						<Tag color="#111827" style={{ margin: 0, border: '1px solid #374151' }}>
+							{remainingSeconds}s
+						</Tag>
 					</div>
 				)}
 			</div>

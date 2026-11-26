@@ -3,6 +3,8 @@
 namespace Modules\Simulator\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Modules\Simulator\Repositories\Interfaces\SimulatorScreenRepositoryInterface;
+use Modules\Simulator\Repositories\SimulatorScreenRepository;
 
 class SimulatorServiceProvider extends ServiceProvider
 {
@@ -12,6 +14,8 @@ class SimulatorServiceProvider extends ServiceProvider
 		if (file_exists($configPath)) {
 			$this->mergeConfigFrom($configPath, 'simulator');
 		}
+
+		$this->app->bind(SimulatorScreenRepositoryInterface::class, SimulatorScreenRepository::class);
 	}
 
 	public function boot(): void {}
