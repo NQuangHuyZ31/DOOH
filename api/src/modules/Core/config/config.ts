@@ -35,6 +35,8 @@ export interface AppConfig {
 		playlistTtlSeconds: number;
 		playlistDefaultRefreshSeconds: number;
 		tokenGraceSeconds: number;
+		dedupTtlSeconds: number;
+		statTtlSeconds: number;
 	};
 	allowedOrigins: string[];
 }
@@ -78,6 +80,8 @@ export const config: AppConfig = {
 		playlistTtlSeconds: Number(process.env.PLAYLIST_CACHE_TTL_SECONDS || (isProduction ? 1800 : 120)),
 		playlistDefaultRefreshSeconds: Number(process.env.PLAYLIST_DEFAULT_REFRESH_SECONDS || 120),
 		tokenGraceSeconds: Number(process.env.TOKEN_GRACE_SECONDS || 300),
+		dedupTtlSeconds: Number(process.env.DEDUP_TTL_SECONDS || 10),
+		statTtlSeconds: Number(process.env.STAT_TTL_SECONDS || 172800),
 	},
 	allowedOrigins: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean) : [],
 };

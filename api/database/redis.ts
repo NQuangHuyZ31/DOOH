@@ -15,8 +15,8 @@ export const RedisKeyHelper = {
 	capDaily: (date: string, lineItemId: string | number): string => `cap:daily:${date}:${lineItemId}`,
 	vendorAuth: (keyHash: string): string => `vendor:auth:${keyHash}`,
 	screenAuth: (screenCode: string): string => `screen:auth:${screenCode}`,
-	dedup: (hash: string): string => `dedup:${hash}`,
-	stat: (date: string, lineItemId: string | number, venueId: string | number): string => `stat:${date}:${lineItemId}:${venueId}`,
+	dedup: (eventType: string, hash: string): string => `dedup:${eventType}:${hash}`,
+	stat: (date: string, lineItemId: string | number, venueId: string | number, screenId: string | number = 0): string => `stat:${date}:${lineItemId}:${venueId}:${screenId}`,
 	rawQueue: (): string => 'queue:raw_tracking_logs',
 };
 
