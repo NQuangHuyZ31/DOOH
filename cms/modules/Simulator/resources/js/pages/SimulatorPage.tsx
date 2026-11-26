@@ -92,7 +92,7 @@ export const SimulatorPage: React.FC = () => {
 		handleFetchNodePlaylist(screen);
 	};
 
-	const engine = usePlayerEngine(playlistData, () => handleFetchNodePlaylist(selectedScreen));
+	const engine = usePlayerEngine(playlistData, () => handleFetchNodePlaylist(selectedScreen), selectedScreen);
 	const activeScreenMeta = selectedScreen ? toScreenMeta(selectedScreen) : null;
 
 	return (

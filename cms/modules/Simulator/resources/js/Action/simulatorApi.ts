@@ -145,4 +145,20 @@ export const simulatorApi = {
 			return { statusCode: 'ERR', latencyMs: Math.round(performance.now() - started) };
 		}
 	},
+
+	sendHeartbeat: async (screen: SimulatorScreenItem): Promise<{ statusCode: number | 'ERR'; latencyMs: number }> => {
+		const code = encodeURIComponent(screen.code || '');
+		const url = `${screen.node_api_url.replace(/\/+$/, '')}/venue/screens/${code}/heartbeat`;
+		const started = performance.now();
+		try {
+			const res = await fetch(url, {
+				method: 'POST',
+				headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-DOOH-SCREEN-KEY': screen.secret_key || '' },
+				body: JSON.stringify({ player_app_version: 'simulator-web-1.0.0', storage_free_mb: 4096 }),
+			});
+			return { statusCode: res.status, latencyMs: Math.round(performance.now() - started) };
+		} catch {
+			return { statusCode: 'ERR', latencyMs: Math.round(performance.now() - started) };
+		}
+	},
 };

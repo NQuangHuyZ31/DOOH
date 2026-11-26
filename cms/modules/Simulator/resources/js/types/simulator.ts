@@ -102,7 +102,7 @@ export interface ParsedVastResult {
 export interface BeaconLogEntry {
 	id: string;
 	timestamp: string;
-	event: 'IMP' | 'COMPLETE' | 'VAST_IMP' | 'VAST_COMPLETE' | 'SKIP' | 'CMS_SYNC' | 'NODE_PLAYLIST';
+	event: 'IMP' | 'COMPLETE' | 'VAST_IMP' | 'VAST_COMPLETE' | 'SKIP' | 'CMS_SYNC' | 'NODE_PLAYLIST' | 'HEARTBEAT';
 	lineItemId?: number;
 	lineItemName?: string;
 	url?: string;

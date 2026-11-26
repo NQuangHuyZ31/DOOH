@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppDispatch } from '@core/store/hooks';
 import { simulatorApi } from '../Action/simulatorApi';
 import { appendBeaconLog } from '../store/simulatorSlice';
-import type { BeaconLogEntry, ParsedVastResult, SimulatorPlaylistData, SimulatorSlot } from '../types/simulator';
+import type { BeaconLogEntry, ParsedVastResult, SimulatorPlaylistData, SimulatorScreenItem, SimulatorSlot } from '../types/simulator';
 
 interface QueuedBeacon {
 	url: string;
@@ -17,7 +17,7 @@ const makeLog = (partial: Omit<BeaconLogEntry, 'id' | 'timestamp'>): BeaconLogEn
 	...partial,
 });
 
-export const usePlayerEngine = (playlistData: SimulatorPlaylistData | null, onAutoRefresh: () => void) => {
+export const usePlayerEngine = (playlistData: SimulatorPlaylistData | null, onAutoRefresh: () => void, selectedScreen: SimulatorScreenItem | null = null) => {
 	const dispatch = useAppDispatch();
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [isMuted, setIsMuted] = useState(true);
@@ -61,6 +61,20 @@ export const usePlayerEngine = (playlistData: SimulatorPlaylistData | null, onAu
 		window.addEventListener('online', replayOfflineQueue);
 		return () => window.removeEventListener('online', replayOfflineQueue);
 	}, [isOffline, sendBeacon]);
+
+	// Send device heartbeat immediately when synced screen loads and every 60s while online
+	useEffect(() => {
+		if (!selectedScreen || selectedScreen.sync_status !== 'synced' || !selectedScreen.code || isOffline) return;
+
+		const pingHeartbeat = async () => {
+			const { statusCode, latencyMs } = await simulatorApi.sendHeartbeat(selectedScreen);
+			dispatch(appendBeaconLog(makeLog({ event: 'HEARTBEAT', statusCode, latencyMs, detail: `${selectedScreen.code} → online` })));
+		};
+
+		pingHeartbeat();
+		const timer = window.setInterval(pingHeartbeat, 60000);
+		return () => window.clearInterval(timer);
+	}, [selectedScreen, isOffline, dispatch]);
 
 	// Reset playback position when playlist changes
 	useEffect(() => {
