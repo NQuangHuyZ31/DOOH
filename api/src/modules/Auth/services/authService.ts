@@ -4,8 +4,6 @@ import { CmsClient, defaultCmsClient } from '@core/utils/cmsClient.js';
 import type { AuthFallbackResolver, AuthResult, ScreenAuthRecord, SignatureVerifyResult, VendorAuthRecord } from '../types/auth.types.js';
 import { sha256Hex, verifyKeyMatch, verifyPayload, verifyScopedKey } from '../utils/hmacUtil.js';
 
-const AUTH_CACHE_TTL_SECONDS = 300;
-
 export interface AuthServiceOptions {
 	store?: CacheStore;
 	masterSecret?: string;
@@ -43,7 +41,7 @@ export class AuthService {
 
 		if (!record && this.fallback.resolveVendor) {
 			record = await this.fallback.resolveVendor(keyHash);
-			if (record) await writeCacheJson(this.store, cacheKey, AUTH_CACHE_TTL_SECONDS, record);
+			if (record) await writeCacheJson(this.store, cacheKey, config.cache.authTtlSeconds, record);
 		}
 
 		if (!record || record.status !== 'active') {
@@ -69,7 +67,7 @@ export class AuthService {
 
 		if (!record && this.fallback.resolveScreen) {
 			record = await this.fallback.resolveScreen(screenCode, screenKey);
-			if (record) await writeCacheJson(this.store, cacheKey, AUTH_CACHE_TTL_SECONDS, record);
+			if (record) await writeCacheJson(this.store, cacheKey, config.cache.authTtlSeconds, record);
 		}
 
 		if (!record || record.status !== 'active' || !verifyKeyMatch(screenKey, record.secret_key)) {

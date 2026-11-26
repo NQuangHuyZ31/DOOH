@@ -1,11 +1,14 @@
 import http from 'node:http';
 import { coreRouter, createApp } from './app.js';
-import { config } from './config/config.js';
+import { assertProductionConfig, config } from './config/config.js';
 import { closeRedisConnection, closeMongoConnection } from '@database';
 import { createAuthGuard } from '@modules/Auth/index.js';
 import { createDeliveryRouter } from '@modules/Delivery/index.js';
+import { createLogRouter } from '@modules/Log/index.js';
 
+assertProductionConfig();
 coreRouter.mount(`${config.apiPrefix}/delivery`, createDeliveryRouter());
+coreRouter.mount(`${config.apiPrefix}/log`, createLogRouter());
 
 const app = createApp(coreRouter, [createAuthGuard()]);
 const server = http.createServer(app);

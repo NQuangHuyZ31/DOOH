@@ -1,14 +1,12 @@
 import { defaultCacheStore, readCacheJson, RedisKeyHelper, writeCacheJson, type CacheStore } from '@database';
+import { config } from '@core/config/config.js';
 import { CmsClient, defaultCmsClient } from '@core/utils/cmsClient.js';
 import type { AuthContext, ScreenAuthRecord } from '@modules/Auth/types/auth.types.js';
 import { buildTrackingUrls } from '@modules/Log/index.js';
 import type { CachedPlaylist, CachedPlaylistSlot, DeliveredPlaylistSlot, DeliveryFallbackResolver, DeliveryResult, TrackingUrlBuilder } from '../types/delivery.types.js';
 
-const DEFAULT_REFRESH_SECONDS = 120;
-const MAX_CACHE_TTL_SECONDS = 300;
 const NEAR_CAP_REFRESH_SECONDS = 60;
 const NEAR_CAP_RATIO = 0.9;
-const TOKEN_GRACE_SECONDS = 300;
 
 export interface DeliveryServiceOptions {
 	store?: CacheStore;
@@ -41,17 +39,18 @@ export class DeliveryService {
 
 		const { screenId, venueId } = target;
 		const playlistData = await this.readPlaylist(screenId, venueId);
+		const defaultRefresh = config.cache.playlistDefaultRefreshSeconds;
 		if (!playlistData || playlistData.playlist.length === 0) {
 			return {
 				ok: true,
-				data: { screen_id: screenId, venue_id: venueId, orientation: playlistData?.orientation, refresh_seconds: DEFAULT_REFRESH_SECONDS, total_duration_seconds: 0, slots_count: 0, playlist: [] },
+				data: { screen_id: screenId, venue_id: venueId, orientation: playlistData?.orientation, refresh_seconds: defaultRefresh, total_duration_seconds: 0, slots_count: 0, playlist: [] },
 			};
 		}
 
 		const { eligibleSlots, nearCap } = await this.filterByDailyCap(playlistData.playlist);
-		const baseRefresh = playlistData.refresh_seconds && playlistData.refresh_seconds > 0 ? playlistData.refresh_seconds : DEFAULT_REFRESH_SECONDS;
+		const baseRefresh = playlistData.refresh_seconds && playlistData.refresh_seconds > 0 ? playlistData.refresh_seconds : defaultRefresh;
 		const refreshSeconds = nearCap ? Math.min(baseRefresh, NEAR_CAP_REFRESH_SECONDS) : baseRefresh;
-		const ttlSeconds = refreshSeconds + TOKEN_GRACE_SECONDS;
+		const ttlSeconds = refreshSeconds + config.cache.tokenGraceSeconds;
 
 		const delivered: DeliveredPlaylistSlot[] = eligibleSlots.map((slot) => ({
 			line_item_id: slot.line_item_id,
@@ -116,8 +115,7 @@ export class DeliveryService {
 		const fresh = await this.fallback.fetchPlaylist({ screenId, venueId });
 		if (fresh) {
 			const cacheKey = screenId ? RedisKeyHelper.playlistScreen(screenId) : RedisKeyHelper.playlist(venueId);
-			const ttl = Math.max(DEFAULT_REFRESH_SECONDS, Math.min(MAX_CACHE_TTL_SECONDS, fresh.refresh_seconds ?? DEFAULT_REFRESH_SECONDS));
-			await writeCacheJson(this.store, cacheKey, ttl, fresh);
+			await writeCacheJson(this.store, cacheKey, config.cache.playlistTtlSeconds, fresh);
 		}
 		return fresh;
 	}

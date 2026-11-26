@@ -78,7 +78,8 @@ export const createApp = (mainRouter: Router = coreRouter, globalMiddlewares: Mi
 			});
 		} catch (err: unknown) {
 			if (res.headersSent) return;
-			const msg = err instanceof Error ? err.message : 'Internal Server Error';
+			const msg = !config.isProduction && err instanceof Error ? err.message : 'Internal Server Error';
+			if (config.isProduction) console.error('[DOOH API Error]', err);
 			sendError(res, 500, msg);
 		}
 	};
