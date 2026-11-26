@@ -9,8 +9,14 @@ export interface CmsClientOptions {
 
 interface CmsEnvelope<T> {
 	status: string;
+	message?: string;
 	data?: T;
+	errors?: Record<string, string[]>;
 }
+
+export type CmsPostResult<T> =
+	| { ok: true; status: number; data: T }
+	| { ok: false; status: number; message: string; errors?: Record<string, string[]> };
 
 export class CmsClient {
 	private baseUrl: string;
@@ -69,6 +75,42 @@ export class CmsClient {
 			return body.status === 'success' && body.data !== undefined ? body.data : null;
 		} catch {
 			return null;
+		}
+	}
+
+	public async postJson<T>(path: string, payload: Record<string, unknown>): Promise<CmsPostResult<T>> {
+		if (!this.isConfigured()) {
+			return { ok: false, status: 503, message: 'CMS internal client is not configured' };
+		}
+
+		const cleanPath = '/' + path.replace(/^\/+/, '');
+		const url = `${this.baseUrl}${this.internalPrefix}${cleanPath}`;
+
+		try {
+			const res = await fetch(url, {
+				method: 'POST',
+				headers: {
+					Accept: 'application/json',
+					'Content-Type': 'application/json',
+					'X-INTERNAL-SECRET': this.internalSecret,
+				},
+				body: JSON.stringify(payload),
+				signal: AbortSignal.timeout(this.timeoutMs),
+			});
+
+			const body = (await res.json().catch(() => null)) as CmsEnvelope<T> | null;
+			if (res.ok && body?.status === 'success' && body.data !== undefined) {
+				return { ok: true, status: res.status, data: body.data };
+			}
+
+			return {
+				ok: false,
+				status: res.status || 502,
+				message: body?.message || 'Upstream CMS request failed',
+				errors: body?.errors,
+			};
+		} catch {
+			return { ok: false, status: 502, message: 'Failed to reach upstream CMS' };
 		}
 	}
 }

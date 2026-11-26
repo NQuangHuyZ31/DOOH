@@ -5,10 +5,12 @@ import { closeRedisConnection, closeMongoConnection } from '@database';
 import { createAuthGuard } from '@modules/Auth/index.js';
 import { createDeliveryRouter } from '@modules/Delivery/index.js';
 import { createLogRouter } from '@modules/Log/index.js';
+import { createVenueRouter } from '@modules/Venue/index.js';
 
 assertProductionConfig();
 coreRouter.mount(`${config.apiPrefix}/delivery`, createDeliveryRouter());
 coreRouter.mount(`${config.apiPrefix}/log`, createLogRouter());
+coreRouter.mount(`${config.apiPrefix}/venue`, createVenueRouter());
 
 const app = createApp(coreRouter, [createAuthGuard()]);
 const server = http.createServer(app);

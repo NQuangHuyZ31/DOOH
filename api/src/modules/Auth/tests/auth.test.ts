@@ -51,6 +51,9 @@ describe('Auth Module - HMAC & Scoped Key Parity', () => {
 
 	it('builds auth route rules dynamically from configurable API prefix', () => {
 		const v2Rules = buildDefaultAuthRules('/api/v2/');
+		assert.ok(v2Rules.some((r) => r.prefix === '/api/v2/venue/screens' && r.exact === true && r.policy === 'vendor'));
+		assert.ok(v2Rules.some((r) => r.prefix === '/api/v2/venue/screens/batch' && r.exact === true && r.policy === 'vendor'));
+		assert.ok(v2Rules.some((r) => r.prefix === '/api/v2/venue/screens/' && r.policy === 'screen'));
 		assert.ok(v2Rules.some((r) => r.prefix === '/api/v2/venue/' && r.policy === 'screen_or_vendor'));
 		assert.ok(v2Rules.some((r) => r.prefix === '/api/v2/partner/' && r.policy === 'vendor'));
 		assert.ok(v2Rules.some((r) => r.prefix === '/api/v2/log/' && r.policy === 'public'));
