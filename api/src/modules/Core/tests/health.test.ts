@@ -2,6 +2,7 @@ import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { closeRedisConnection } from '@database';
 import { createApp } from '../app.js';
 
 describe('Core Module - Health and Route Tests', () => {
@@ -24,6 +25,7 @@ describe('Core Module - Health and Route Tests', () => {
 		await new Promise<void>((resolve) => {
 			server.close(() => resolve());
 		});
+		await closeRedisConnection();
 	});
 
 	it('GET /health returns 200 with operational status', async () => {

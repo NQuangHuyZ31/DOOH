@@ -21,17 +21,18 @@ export const RedisKeyHelper = {
 };
 
 export const getRedisClient = (): Redis => {
-	if (!redisInstance) {
+	if (!redisInstance || redisInstance.status === 'end') {
 		redisInstance = new Redis({
 			host: config.redis.host,
 			port: config.redis.port,
+			username: config.redis.username,
 			password: config.redis.password,
 			db: config.redis.db,
 			lazyConnect: true,
 			enableOfflineQueue: false,
-			maxRetriesPerRequest: 0,
-			connectTimeout: 1000,
-			retryStrategy: () => null,
+			maxRetriesPerRequest: config.isTest ? 0 : 1,
+			connectTimeout: config.redis.connectTimeoutMs,
+			retryStrategy: config.isTest ? () => null : (times: number) => Math.min(times * 200, 3000),
 		});
 
 		redisInstance.on('error', () => {
@@ -44,7 +45,9 @@ export const getRedisClient = (): Redis => {
 
 const getReadyRedis = async (): Promise<Redis | null> => {
 	const client = getRedisClient();
-	if (client.status === 'wait') await client.connect().catch(() => {});
+	if (client.status === 'wait' || client.status === 'close') {
+		await client.connect().catch(() => {});
+	}
 	return client.status === 'ready' ? client : null;
 };
 
@@ -60,7 +63,12 @@ export const defaultCacheStore: CacheStore = {
 	},
 	setex: async (key: string, ttlSeconds: number, value: string): Promise<void> => {
 		const client = await getReadyRedis();
-		if (client) await client.setex(key, ttlSeconds, value).catch(() => {});
+		if (!client) return;
+		await client.setex(key, ttlSeconds, value).catch((err: unknown) => {
+			if (!config.isTest) {
+				console.error(`[Redis] SETEX failed for ${key}:`, err instanceof Error ? err.message : err);
+			}
+		});
 	},
 };
 

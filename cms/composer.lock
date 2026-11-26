@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "cd3459e36b61a3d5a1ba8953429729fe",
+    "content-hash": "6bdbb4596e4db34beb8ceb54ec8671d7",
     "packages": [
         {
             "name": "brick/math",
@@ -2691,6 +2691,69 @@
                 }
             ],
             "time": "2026-08-24T00:54:40+00:00"
+        },
+        {
+            "name": "predis/predis",
+            "version": "v3.8.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/predis/predis.git",
+                "reference": "874b4e62982c541ffeea4dc7227a8965e695462d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/predis/predis/zipball/874b4e62982c541ffeea4dc7227a8965e695462d",
+                "reference": "874b4e62982c541ffeea4dc7227a8965e695462d",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.2 || ^8.0",
+                "psr/http-message": "^1.0|^2.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.3",
+                "phpstan/phpstan": "^1.9",
+                "phpunit/phpcov": "^6.0 || ^8.0",
+                "phpunit/phpunit": "^8.0 || ^9.6"
+            },
+            "suggest": {
+                "ext-relay": "Faster connection with in-memory caching (>=0.6.2)"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Predis\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Till Krüss",
+                    "homepage": "https://till.im",
+                    "role": "Maintainer"
+                }
+            ],
+            "description": "A flexible and feature-complete Redis/Valkey client for PHP.",
+            "homepage": "http://github.com/predis/predis",
+            "keywords": [
+                "nosql",
+                "predis",
+                "redis"
+            ],
+            "support": {
+                "issues": "https://github.com/predis/predis/issues",
+                "source": "https://github.com/predis/predis/tree/v3.8.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/sponsors/tillkruss",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-11-23T20:38:59+00:00"
         },
         {
             "name": "psr/clock",
@@ -6309,7 +6372,7 @@
             "dist": {
                 "type": "path",
                 "url": "modules/Auth",
-                "reference": "9a4c3123bfc763c822cb9faa6b04562aa8042520"
+                "reference": "14c862cf75eba4b1d230c8ed172f7a17ad1d71b6"
             },
             "require": {
                 "dooh/module-core": "^1.0.0",
@@ -6327,6 +6390,11 @@
             "autoload": {
                 "psr-4": {
                     "Modules\\Auth\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Modules\\Auth\\Tests\\": "tests/"
                 }
             },
             "license": [
@@ -6349,7 +6417,7 @@
             "dist": {
                 "type": "path",
                 "url": "modules/Core",
-                "reference": "de68a14e5e1f1b5c89f7b924e5c82c4e40036ffe"
+                "reference": "4165525f0a26f73929cbcb52b45104807bb178c5"
             },
             "require": {
                 "illuminate/support": "^11.0|^12.0|^13.0",
@@ -6366,6 +6434,11 @@
             "autoload": {
                 "psr-4": {
                     "Modules\\Core\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Modules\\Core\\Tests\\": "tests/"
                 }
             },
             "license": [
@@ -6577,6 +6650,47 @@
                 }
             ],
             "description": "DOOH LED screen simulator and playback debugger module for DOOH CMS",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "dooh/module-user",
+            "version": "1.0.0",
+            "dist": {
+                "type": "path",
+                "url": "modules/User",
+                "reference": "2d94f18cc24945ca975f9f8bb79b28212e22cec0"
+            },
+            "require": {
+                "dooh/module-core": "^1.0.0",
+                "illuminate/support": "^11.0|^12.0|^13.0",
+                "php": "^8.3"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Modules\\User\\Providers\\UserServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Modules\\User\\": "src/",
+                    "Modules\\User\\Database\\Seeders\\": "database/seeders/"
+                }
+            },
+            "license": [
+                "proprietary"
+            ],
+            "authors": [
+                {
+                    "name": "DOOH"
+                }
+            ],
+            "description": "User and RBAC management module for DOOH CMS",
             "transport-options": {
                 "symlink": true,
                 "relative": true
