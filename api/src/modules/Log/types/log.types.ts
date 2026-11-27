@@ -36,3 +36,30 @@ export interface AtomicBeaconRecordParams {
 export interface LogBeaconStore {
 	recordAtomic(params: AtomicBeaconRecordParams): Promise<boolean>;
 }
+
+export interface DailyAggregatedDelta {
+	date: string;
+	line_item_id: number;
+	venue_id: number;
+	screen_id: number;
+	impressions: number;
+	completes: number;
+}
+
+export interface LogFlushResult {
+	popped: number;
+	insertedRaw: number;
+	skippedDuplicates: number;
+	aggregatedBuckets: number;
+}
+
+export interface LogFlushQueueStore {
+	peekBatch(queueKey: string, count: number): Promise<string[]>;
+	trimBatch(queueKey: string, count: number): Promise<void>;
+}
+
+export interface LogFlushMongoSink {
+	ensureIndexes(): Promise<void>;
+	insertRawLogs(events: RawTrackingLogEvent[]): Promise<Set<number>>;
+	upsertDailyAggregates(deltas: DailyAggregatedDelta[]): Promise<void>;
+}

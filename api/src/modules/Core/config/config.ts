@@ -38,6 +38,11 @@ export interface AppConfig {
 		dedupTtlSeconds: number;
 		statTtlSeconds: number;
 	};
+	worker: {
+		enabled: boolean;
+		flushIntervalMs: number;
+		flushBatchSize: number;
+	};
 	allowedOrigins: string[];
 }
 
@@ -82,6 +87,11 @@ export const config: AppConfig = {
 		tokenGraceSeconds: Number(process.env.TOKEN_GRACE_SECONDS || 300),
 		dedupTtlSeconds: Number(process.env.DEDUP_TTL_SECONDS || 10),
 		statTtlSeconds: Number(process.env.STAT_TTL_SECONDS || 172800),
+	},
+	worker: {
+		enabled: process.env.LOG_FLUSH_WORKER_ENABLED !== 'false' && !isTest,
+		flushIntervalMs: Math.max(1000, Number(process.env.LOG_FLUSH_INTERVAL_MS || 5000)),
+		flushBatchSize: Math.min(2000, Math.max(10, Number(process.env.LOG_FLUSH_BATCH_SIZE || 500))),
 	},
 	allowedOrigins: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean) : [],
 };
