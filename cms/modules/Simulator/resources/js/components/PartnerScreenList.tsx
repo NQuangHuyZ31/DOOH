@@ -67,6 +67,7 @@ export const PartnerScreenList: React.FC<PartnerScreenListProps> = ({ screens, s
 									<Typography.Text strong>{screen.name}</Typography.Text>
 									<Tag color={isSynced ? 'success' : 'warning'}>{isSynced ? 'SYNCED' : 'UNSYNCED'}</Tag>
 									{screen.code && <Tag color="magenta">{screen.code}</Tag>}
+									<Tag color="blue">{screen.is_24_7 ? '24/7' : `${(screen.opening_time || '06:00').slice(0, 5)}–${(screen.closing_time || '23:00').slice(0, 5)}`}</Tag>
 									<Typography.Text type="secondary" style={{ fontSize: 12 }}>
 										{`${screen.resolution_width}×${screen.resolution_height} (${screen.orientation}) • ${screen.location_name}, ${screen.city}`}
 									</Typography.Text>

@@ -32,6 +32,9 @@ class SimulatorApiTest extends TestCase
 			'screen_type' => 'led',
 			'resolution_width' => 1920,
 			'resolution_height' => 1080,
+			'opening_time' => '08:00:00',
+			'closing_time' => '22:00:00',
+			'is_24_7' => false,
 			'hardware_device_uid' => 'HW-LM81-01',
 		]);
 
@@ -39,6 +42,9 @@ class SimulatorApiTest extends TestCase
 			->assertJsonPath('data.sync_status', 'unsynced')
 			->assertJsonPath('data.location_name', 'Landmark 81')
 			->assertJsonPath('data.city', 'Ho Chi Minh')
+			->assertJsonPath('data.opening_time', '08:00:00')
+			->assertJsonPath('data.closing_time', '22:00:00')
+			->assertJsonPath('data.is_24_7', false)
 			->assertJsonMissingPath('data.venue_id')
 			->assertJsonMissingPath('data.cms_screen_id');
 

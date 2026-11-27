@@ -25,6 +25,9 @@ class SimulatorScreen extends Model
 		'has_audio',
 		'loop_duration_seconds',
 		'default_slot_seconds',
+		'opening_time',
+		'closing_time',
+		'is_24_7',
 		'hardware_device_uid',
 		'sync_status',
 		'synced_code',
@@ -43,6 +46,7 @@ class SimulatorScreen extends Model
 		'has_audio' => 'boolean',
 		'loop_duration_seconds' => 'integer',
 		'default_slot_seconds' => 'integer',
+		'is_24_7' => 'boolean',
 		'synced_at' => 'datetime',
 		'deleted_at' => 'datetime',
 	];

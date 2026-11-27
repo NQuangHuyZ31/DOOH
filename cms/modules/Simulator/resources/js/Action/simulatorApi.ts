@@ -1,5 +1,5 @@
 import { http } from '@core/Action/api';
-import type { BatchSyncFailedItem, BatchSyncResult, CreateLocalScreenPayload, ParsedVastResult, SimulatorPlaylistData, SimulatorScreenItem, SimulatorScreenMeta } from '../types/simulator';
+import type { BatchSyncFailedItem, BatchSyncResult, CreateLocalScreenPayload, ParsedVastResult, SimulatorPlaylistData, SimulatorScreenItem, SimulatorScreenMeta, VastMediaFile } from '../types/simulator';
 
 interface ApiEnvelope<T> {
 	status: string;
@@ -26,8 +26,33 @@ const buildPartnerPayload = (s: SimulatorScreenItem): Record<string, unknown> =>
 	has_audio: s.has_audio,
 	loop_duration_seconds: s.loop_duration_seconds,
 	default_slot_seconds: s.default_slot_seconds,
+	...(s.opening_time ? { opening_time: s.opening_time } : {}),
+	...(s.closing_time ? { closing_time: s.closing_time } : {}),
+	is_24_7: Boolean(s.is_24_7),
 	...(s.hardware_device_uid ? { hardware_device_uid: s.hardware_device_uid } : {}),
 });
+
+// Player-side IAB VAST media selection: MIME -> aspect ratio -> closest resolution -> bitrate
+export const selectBestVastMedia = (mediaFiles: VastMediaFile[], screenWidth: number, screenHeight: number): VastMediaFile | null => {
+	if (mediaFiles.length === 0) return null;
+	const mp4Files = mediaFiles.filter((m) => m.type.toLowerCase().includes('mp4'));
+	const candidates = mp4Files.length > 0 ? mp4Files : mediaFiles.filter((m) => m.type.toLowerCase().startsWith('video/'));
+	const pool = candidates.length > 0 ? candidates : mediaFiles;
+	const targetRatio = screenWidth / Math.max(1, screenHeight);
+	const targetPixels = screenWidth * screenHeight;
+
+	return [...pool].sort((a, b) => {
+		const ratioDiffA = Math.abs(a.width / Math.max(1, a.height) - targetRatio);
+		const ratioDiffB = Math.abs(b.width / Math.max(1, b.height) - targetRatio);
+		if (Math.abs(ratioDiffA - ratioDiffB) > 0.05) return ratioDiffA - ratioDiffB;
+
+		const resDiffA = Math.abs(a.width * a.height - targetPixels);
+		const resDiffB = Math.abs(b.width * b.height - targetPixels);
+		if (resDiffA !== resDiffB) return resDiffA - resDiffB;
+
+		return (b.bitrate || 0) - (a.bitrate || 0);
+	})[0];
+};
 
 export const toScreenMeta = (s: SimulatorScreenItem): SimulatorScreenMeta => ({
 	id: s.id,

@@ -1,7 +1,13 @@
 import React, { useEffect } from 'react';
-import { Col, Form, Input, InputNumber, Modal, Row, Select, Switch } from 'antd';
+import { Col, Form, Input, InputNumber, Modal, Row, Select, Switch, TimePicker } from 'antd';
+import dayjs, { type Dayjs } from 'dayjs';
 import { useAppSelector } from '@core/store/hooks';
 import type { CreateLocalScreenPayload } from '../types/simulator';
+
+interface LocalScreenFormValues extends Omit<CreateLocalScreenPayload, 'opening_time' | 'closing_time'> {
+	opening_time?: Dayjs;
+	closing_time?: Dayjs;
+}
 
 interface LocalScreenFormModalProps {
 	open: boolean;
@@ -11,23 +17,38 @@ interface LocalScreenFormModalProps {
 }
 
 export const LocalScreenFormModal: React.FC<LocalScreenFormModalProps> = ({ open, loading, onCancel, onSubmit }) => {
-	const [form] = Form.useForm<CreateLocalScreenPayload>();
+	const [form] = Form.useForm<LocalScreenFormValues>();
 	const screenTypeOptions = useAppSelector((state) => state.metadata.data?.enums?.screen_types) || [];
+	const is247 = Form.useWatch('is_24_7', form);
 
 	useEffect(() => {
 		if (open) {
 			form.resetFields();
-			form.setFieldsValue({ screen_type: 'led', resolution_width: 1920, resolution_height: 1080, has_audio: false, loop_duration_seconds: 120, default_slot_seconds: 15 });
+			form.setFieldsValue({
+				screen_type: 'led',
+				resolution_width: 1920,
+				resolution_height: 1080,
+				has_audio: false,
+				loop_duration_seconds: 120,
+				default_slot_seconds: 15,
+				is_24_7: false,
+				opening_time: dayjs('06:00:00', 'HH:mm:ss'),
+				closing_time: dayjs('23:00:00', 'HH:mm:ss'),
+			});
 		}
 	}, [open, form]);
 
 	const handleOk = async () => {
 		const values = await form.validateFields();
-		onSubmit(values);
+		onSubmit({
+			...values,
+			opening_time: values.is_24_7 ? '00:00:00' : values.opening_time?.format('HH:mm:ss') || '06:00:00',
+			closing_time: values.is_24_7 ? '23:59:59' : values.closing_time?.format('HH:mm:ss') || '23:00:00',
+		});
 	};
 
 	return (
-		<Modal open={open} title="Add Partner Local Screen" okText="Save Local Screen" confirmLoading={loading} onCancel={onCancel} onOk={handleOk} width={620} destroyOnHidden>
+		<Modal open={open} title="Add Partner Local Screen" okText="Save Local Screen" confirmLoading={loading} onCancel={onCancel} onOk={handleOk} width={640} destroyOnHidden>
 			<Form form={form} layout="vertical">
 				<Row gutter={12}>
 					<Col span={14}>
@@ -79,6 +100,23 @@ export const LocalScreenFormModal: React.FC<LocalScreenFormModalProps> = ({ open
 					<Col span={8}>
 						<Form.Item name="has_audio" label="Audio Support" valuePropName="checked">
 							<Switch />
+						</Form.Item>
+					</Col>
+				</Row>
+				<Row gutter={12}>
+					<Col span={8}>
+						<Form.Item name="is_24_7" label="24/7 Playback" valuePropName="checked">
+							<Switch />
+						</Form.Item>
+					</Col>
+					<Col span={8}>
+						<Form.Item name="opening_time" label="Opening Time">
+							<TimePicker format="HH:mm" disabled={Boolean(is247)} style={{ width: '100%' }} />
+						</Form.Item>
+					</Col>
+					<Col span={8}>
+						<Form.Item name="closing_time" label="Closing Time">
+							<TimePicker format="HH:mm" disabled={Boolean(is247)} style={{ width: '100%' }} />
 						</Form.Item>
 					</Col>
 				</Row>

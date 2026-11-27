@@ -9,6 +9,9 @@ export interface PartnerScreenPayload {
 	has_audio?: boolean;
 	loop_duration_seconds?: number;
 	default_slot_seconds?: number;
+	opening_time?: string;
+	closing_time?: string;
+	is_24_7?: boolean;
 	hardware_device_uid?: string;
 }
 
@@ -27,6 +30,9 @@ export interface PartnerScreenRecord {
 	has_audio: boolean;
 	loop_duration_seconds: number;
 	default_slot_seconds: number;
+	opening_time?: string | null;
+	closing_time?: string | null;
+	is_24_7?: boolean | null;
 	hardware_device_uid?: string | null;
 	connectivity_status?: string | null;
 	last_heartbeat_at?: string | null;
