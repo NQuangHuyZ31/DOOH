@@ -65,14 +65,14 @@ class SimulatorServiceTest extends TestCase
 		$this->assertSame('SCR-01', $result?->synced_code);
 	}
 
-	public function test_parse_vast_tag_injects_cache_buster_before_parsing(): void
+	public function test_parse_vast_tag_delegates_to_vast_parser_service(): void
 	{
 		$repo = Mockery::mock(SimulatorScreenRepositoryInterface::class);
 		$vast = Mockery::mock(VastParserService::class);
 
 		$vast->shouldReceive('parse')
 			->once()
-			->withArgs(fn (string $url) => !str_contains($url, '[TIMESTAMP]') && str_contains($url, 'https://ads.example.com/vast?ts='))
+			->with('https://ads.example.com/vast?ts=[TIMESTAMP]')
 			->andReturn(['primary_media_url' => 'https://cdn.example.com/ad.mp4']);
 
 		$service = new SimulatorService($repo, $vast);

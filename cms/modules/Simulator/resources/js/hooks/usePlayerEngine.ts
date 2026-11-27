@@ -97,7 +97,7 @@ export const usePlayerEngine = (playlistData: SimulatorPlaylistData | null, onAu
 
 		const current = activePlaylistRef.current;
 		const isSameScreen = Boolean(playlistData?.screen.code && current?.screen.code === playlistData.screen.code);
-		const canDefer = Boolean(isSameScreen && isPlayingRef.current && current && current.playlist.length > 0 && playlistData && playlistData.playlist.length > 0);
+		const canDefer = Boolean(isSameScreen && (isPlayingRef.current || impressionSentRef.current) && current && current.playlist.length > 0 && playlistData && playlistData.playlist.length > 0);
 
 		if (canDefer) {
 			pendingPlaylistRef.current = playlistData;

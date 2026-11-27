@@ -69,19 +69,6 @@ class SimulatorService
 
 	public function parseVastTag(string $vastUrl): array
 	{
-		// Inject dynamic correlator to avoid GAM returning empty <VAST/>
-		return $this->vastParserService->parse($this->injectCacheBuster($vastUrl));
-	}
-
-	protected function injectCacheBuster(string $url): string
-	{
-		$buster = (string) (now()->getTimestampMs() . random_int(100, 999));
-		$replaced = str_ireplace(['[TIMESTAMP]', '[CORRELATOR]', '[CACHEBUSTING]', '{timestamp}'], $buster, $url);
-
-		if (preg_match('/([?&]correlator=)(&|$)/i', $replaced)) {
-			return (string) preg_replace('/([?&]correlator=)(&|$)/i', '$1' . $buster . '$2', $replaced);
-		}
-
-		return $replaced;
+		return $this->vastParserService->parse($vastUrl);
 	}
 }

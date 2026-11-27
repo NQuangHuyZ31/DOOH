@@ -111,13 +111,15 @@ class CreativeService
 			try {
 				$parsedVast = $this->vastParserService->parse($mediaUrl);
 				$data['metadata'] = array_merge($existing?->metadata ?? [], $data['metadata'] ?? [], ['vast' => $parsedVast]);
-				if (!empty($parsedVast['duration_seconds'])) {
-					$data['duration_seconds'] = $parsedVast['duration_seconds'];
-				}
-				if (!empty($parsedVast['width']) && !empty($parsedVast['height'])) {
-					$data['width'] = $parsedVast['width'];
-					$data['height'] = $parsedVast['height'];
-					$data['aspect_ratio'] = $parsedVast['aspect_ratio'];
+				if (!empty($parsedVast['has_ad'])) {
+					if (empty($data['duration_seconds']) && !empty($parsedVast['duration_seconds'])) {
+						$data['duration_seconds'] = $parsedVast['duration_seconds'];
+					}
+					if ((empty($data['width']) || empty($data['height'])) && !empty($parsedVast['width']) && !empty($parsedVast['height'])) {
+						$data['width'] = $parsedVast['width'];
+						$data['height'] = $parsedVast['height'];
+						$data['aspect_ratio'] = $parsedVast['aspect_ratio'];
+					}
 				}
 			} catch (\Exception $e) {
 				if ($e instanceof \DomainException) {

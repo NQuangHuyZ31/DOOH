@@ -30,9 +30,9 @@ class VastParserService
 				'ad_title' => null,
 				'ad_system' => null,
 				'duration_seconds' => null,
-				'width' => 1920,
-				'height' => 1080,
-				'aspect_ratio' => '16:9',
+				'width' => null,
+				'height' => null,
+				'aspect_ratio' => null,
 				'primary_media_url' => null,
 				'impressions' => [],
 				'error_beacons' => [],
@@ -142,7 +142,7 @@ class VastParserService
 		}
 
 		try {
-			$response = Http::timeout(5)->get($input);
+			$response = Http::timeout(5)->get($this->injectCacheBuster($input));
 			if (!$response->successful()) {
 				throw new \DomainException("VAST_UNREACHABLE: HTTP request returned status {$response->status()}.");
 			}
@@ -154,6 +154,19 @@ class VastParserService
 			}
 			throw new \DomainException('VAST_UNREACHABLE: ' . $e->getMessage());
 		}
+	}
+
+	protected function injectCacheBuster(string $url): string
+	{
+		$buster = (string) random_int(100000000, 2147483647);
+		$replaced = str_ireplace(['[TIMESTAMP]', '[CORRELATOR]', '[CACHEBUSTING]', '{timestamp}'], $buster, $url);
+
+		if (preg_match('/([?&]correlator=)(&|$)/i', $replaced)) {
+			// Use ${1} so PHP preg_replace never misreads $1 + leading digit as backreference $10-$19
+			return (string) preg_replace('/([?&]correlator=)(&|$)/i', '${1}' . $buster . '$2', $replaced);
+		}
+
+		return $replaced;
 	}
 
 	public function parseDuration(string $durationStr): int

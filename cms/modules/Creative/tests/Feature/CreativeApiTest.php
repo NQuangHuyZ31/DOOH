@@ -409,4 +409,27 @@ class CreativeApiTest extends TestCase
 			'approved_at' => null,
 		]);
 	}
+
+	public function test_create_vast_creative_preserves_submitted_dimensions_and_duration_even_on_empty_reparse(): void
+	{
+		$this->authenticateAsSuperAdmin();
+		\Illuminate\Support\Facades\Http::fake([
+			'https://ads.example.com/vast*' => \Illuminate\Support\Facades\Http::response('<VAST version="3.0"></VAST>', 200),
+		]);
+
+		$response = $this->postJson('/admin/api/creative', [
+			'name' => 'GAM VAST 720p',
+			'type' => 'vast',
+			'media_url' => 'https://ads.example.com/vast?correlator=[TIMESTAMP]',
+			'width' => 1280,
+			'height' => 720,
+			'duration_seconds' => 10,
+		]);
+
+		$response->assertStatus(201)
+			->assertJsonPath('data.width', 1280)
+			->assertJsonPath('data.height', 720)
+			->assertJsonPath('data.duration_seconds', 10)
+			->assertJsonPath('data.aspect_ratio', '16:9');
+	}
 }

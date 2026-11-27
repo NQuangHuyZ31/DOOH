@@ -41,13 +41,18 @@ export const CreativeBatchRow: React.FC<CreativeBatchRowProps> = ({ row, index, 
 			const res = await creativeApi.parseVast({ url: row.media_url.trim() });
 			const d = res.data?.data;
 			if (d) {
+				if (d.has_ad === false) {
+					message.warning(`VAST ${d.version || ''} responded with empty <VAST/> (no ad fill). Keeping current W/H/Duration.`);
+					return;
+				}
 				onChange(row.id, {
-					width: Number(d.width) || 1920, height: Number(d.height) || 1080,
+					width: d.width ? Number(d.width) : row.width,
+					height: d.height ? Number(d.height) : row.height,
 					duration_seconds: d.duration_seconds ? Number(d.duration_seconds) : row.duration_seconds,
 					name: row.name || (d.ad_title as string) || row.name,
 					error: row.error ? { ...row.error, media: undefined } : undefined,
 				});
-				message.success(`VAST verified: ${d.version} (${d.width}×${d.height}, ${d.duration_seconds || 15}s)`);
+				message.success(`VAST verified: ${d.version} (${d.width || row.width}×${d.height || row.height}, ${d.duration_seconds || row.duration_seconds || 15}s)`);
 			}
 		} catch (e: unknown) {
 			message.error(extractErrorMessage(e, 'Failed to inspect VAST XML.'));
