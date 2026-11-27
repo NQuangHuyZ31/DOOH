@@ -50,6 +50,9 @@ class InternalVenueApiTest extends TestCase
 			'city' => 'Ho Chi Minh',
 			'resolution_width' => 1920,
 			'resolution_height' => 1080,
+			'opening_time' => '07:30:00',
+			'closing_time' => '22:30:00',
+			'is_24_7' => false,
 			'hardware_device_uid' => 'HW-LM81-01',
 		], $this->headers);
 
@@ -60,6 +63,9 @@ class InternalVenueApiTest extends TestCase
 			->assertJsonPath('data.city', 'Ho Chi Minh')
 			->assertJsonPath('data.orientation', 'landscape')
 			->assertJsonPath('data.aspect_ratio', '16:9')
+			->assertJsonPath('data.opening_time', '07:30:00')
+			->assertJsonPath('data.closing_time', '22:30:00')
+			->assertJsonPath('data.is_24_7', false)
 			->assertJsonMissingPath('data.venue_id')
 			->assertJsonMissingPath('data.screen_id');
 

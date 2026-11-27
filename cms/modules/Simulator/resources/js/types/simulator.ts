@@ -25,6 +25,9 @@ export interface CreateLocalScreenPayload {
 	has_audio?: boolean;
 	loop_duration_seconds?: number;
 	default_slot_seconds?: number;
+	opening_time?: string;
+	closing_time?: string;
+	is_24_7?: boolean;
 	hardware_device_uid?: string;
 }
 
@@ -42,6 +45,9 @@ export interface SimulatorScreenItem {
 	has_audio: boolean;
 	loop_duration_seconds: number;
 	default_slot_seconds: number;
+	opening_time?: string | null;
+	closing_time?: string | null;
+	is_24_7?: boolean | null;
 	hardware_device_uid?: string | null;
 	sync_status: 'unsynced' | 'synced';
 	code: string | null;
@@ -92,11 +98,21 @@ export interface SimulatorPlaylistData {
 	playlist: SimulatorSlot[];
 }
 
+export interface VastMediaFile {
+	url: string;
+	type: string;
+	delivery?: string;
+	width: number;
+	height: number;
+	bitrate?: number | null;
+}
+
 export interface ParsedVastResult {
 	primary_media_url?: string;
 	duration_seconds?: number;
 	impressions?: string[];
 	tracking_events?: Record<string, string[]>;
+	media_files?: VastMediaFile[];
 }
 
 export interface BeaconLogEntry {

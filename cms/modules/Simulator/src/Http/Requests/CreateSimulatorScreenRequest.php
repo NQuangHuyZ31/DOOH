@@ -24,6 +24,9 @@ class CreateSimulatorScreenRequest extends FormRequest
 			'has_audio' => ['nullable', 'boolean'],
 			'loop_duration_seconds' => ['nullable', 'integer', 'min:10', 'max:3600'],
 			'default_slot_seconds' => ['nullable', 'integer', 'min:3', 'max:300'],
+			'opening_time' => ['nullable', 'string', 'regex:/^\d{2}:\d{2}(:\d{2})?$/'],
+			'closing_time' => ['nullable', 'string', 'regex:/^\d{2}:\d{2}(:\d{2})?$/'],
+			'is_24_7' => ['nullable', 'boolean'],
 			'hardware_device_uid' => ['nullable', 'string', 'max:128'],
 		];
 	}

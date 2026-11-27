@@ -30,11 +30,15 @@ class PartnerScreenService
 		$city = trim((string) $payload['city']);
 		$venue = $this->venueRepo->findByOwnerAndLocation($ownerId, $locationName, $city);
 		if (!$venue) {
+			$is247 = (bool) ($payload['is_24_7'] ?? false);
 			$venue = $this->venueService->createVenue([
 				'name' => $locationName,
 				'city_province' => $city,
 				'media_owner_id' => $ownerId,
 				'venue_type' => $payload['venue_type'] ?? 'commercial',
+				'is_24_7' => $is247,
+				'opening_time' => $is247 ? '00:00:00' : ($payload['opening_time'] ?? '06:00:00'),
+				'closing_time' => $is247 ? '23:59:59' : ($payload['closing_time'] ?? '23:00:00'),
 				'status' => 'active',
 			]);
 		}

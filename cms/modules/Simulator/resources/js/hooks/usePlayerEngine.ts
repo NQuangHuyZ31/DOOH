@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppDispatch } from '@core/store/hooks';
-import { simulatorApi } from '../Action/simulatorApi';
+import { selectBestVastMedia, simulatorApi } from '../Action/simulatorApi';
 import { appendBeaconLog } from '../store/simulatorSlice';
 import type { BeaconLogEntry, ParsedVastResult, SimulatorPlaylistData, SimulatorScreenItem, SimulatorSlot } from '../types/simulator';
 
@@ -189,11 +189,13 @@ export const usePlayerEngine = (playlistData: SimulatorPlaylistData | null, onAu
 			.parseVast(activeSlot.media_url)
 			.then((parsed) => {
 				if (cancelled) return;
-				if (!parsed.primary_media_url) {
+				const bestMedia = selectBestVastMedia(parsed.media_files || [], selectedScreen?.resolution_width || 1920, selectedScreen?.resolution_height || 1080);
+				const resolvedUrl = bestMedia?.url || parsed.primary_media_url;
+				if (!resolvedUrl) {
 					handleErrorRef.current('Empty VAST XML (no playable MediaFile)');
 					return;
 				}
-				setResolvedVast(parsed);
+				setResolvedVast({ ...parsed, primary_media_url: resolvedUrl });
 				if (parsed.duration_seconds && parsed.duration_seconds > 0) {
 					remainingRef.current = parsed.duration_seconds;
 					setRemainingSeconds(parsed.duration_seconds);
