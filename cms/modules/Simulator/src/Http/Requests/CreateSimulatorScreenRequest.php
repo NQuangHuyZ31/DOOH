@@ -18,7 +18,7 @@ class CreateSimulatorScreenRequest extends FormRequest
 			'location_name' => ['required', 'string', 'max:255'],
 			'city' => ['required', 'string', 'max:120'],
 			'sub_location' => ['nullable', 'string', 'max:255'],
-			'screen_type' => ['nullable', 'string', 'in:led,lcd,billboard,kiosk,elevator,transit'],
+			'screen_type' => ['nullable', 'string', 'in:outdoor_led,indoor_led,lcd_commercial,elevator_screen,kiosk_totem'],
 			'resolution_width' => ['required', 'integer', 'min:100', 'max:16384'],
 			'resolution_height' => ['required', 'integer', 'min:100', 'max:16384'],
 			'has_audio' => ['nullable', 'boolean'],

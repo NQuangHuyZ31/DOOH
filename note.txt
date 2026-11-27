@@ -53,6 +53,191 @@ Auth: key -> cấu hình env hask key env bên cms lưu vào database
 log: tự sinh 
 Redis, log stack -> log imp và compplele -> hash venneid, line item, timestamp, thêm thời gian 
 
-khi call api delivery vào cms -> {
-	
-}
+	--------------------------------------------------------------------------------
+	1. LUONG TONG THE (Partner / Simulator <-> Node API <-> Redis <-> CMS)
+	--------------------------------------------------------------------------------
+	He thong chia lam 3 ben doc lap:
+	  - Partner / Simulator (ben cung cap man hinh - Mini CMS + Edge Player):
+	      Khong biet venue_id / screen_id noi bo cua CMS.
+	      Chi giu 1 Vendor API Key (X-DOOH-API-KEY) do CMS cap de dang ky man hinh.
+	      Sau khi dang ky, nhan ve { code, secret_key } rieng cho tung man hinh.
+	  - Node API (api/ - High-throughput Edge Gateway):
+	      Tiep nhan 100% traffic tu man hinh / doi tac (Auth, Venue, Delivery, Log).
+	      Doc/ghi nhanh tren Redis (cache hit > 90%). Chi goi nguoc CMS khi cache miss hoac ghi DB.
+	  - CMS (cms/ - Laravel + MySQL + MongoDB):
+	      Quan ly Vendor, Venue, Screen, Campaign, LineItem, Creative, Report.
+	      Khi du lieu thay doi (Screen/Vendor/Creative/Delivery) -> CMS tu dong xoa (evict) Redis key.
+
+	[Pha 1 - Dang ky & Dong bo man hinh (Venue)]
+	  Partner/Simulator --(POST /api/v1/venue/screens + X-DOOH-API-KEY)--> Node API
+	      --> Verify Vendor Key (Redis vendor:auth:{hash} / fallback CMS)
+	      --> Forward CMS Internal (POST /admin/api/internal/venue/screens + X-INTERNAL-SECRET)
+	      --> CMS tu tao/tim Venue theo (vendor + location_name + city) & tao Screen
+	      --> Tra ve cho Partner: { code, secret_key, ... } (khong lo venue_id / screen_id)
+
+	[Pha 2 - Lay lich phat quang cao (Delivery)]
+	  Edge Player --(GET /api/v1/delivery/playlist?screen_code=SCR-XXX + X-DOOH-SCREEN-KEY)--> Node API
+	      --> Verify Screen Key (Redis screen:auth:{code} / fallback CMS)
+	      --> Lay playlist (Redis playlist:screen:{id} -> playlist:venue:{id} -> fallback CMS)
+	      --> Loc bo LineItem da vuot daily_impression_cap (check Redis cap:daily:{date}:{line_item_id})
+	      --> Sinh dong tracking URLs (ma hoa AES-256-GCM: line_item_id, venue_id, screen_id, exp)
+	      --> Tra JSON playlist ve Player (kem refresh_seconds)
+
+	[Pha 3 - Phat quang cao & Ban Beacon (Log)]
+	  Edge Player phat tung slot (image / video / html5 / vast):
+	      - Bat dau hien thi  --> GET /api/v1/log/imp/:hash      (204 No Content | 404 neu hash sai/het han)
+	      - Phat het duration --> GET /api/v1/log/complete/:hash (204 No Content | 404 neu hash sai/het han)
+	  Node API giai ma :hash -> chay 1 Redis Lua Script atomic:
+	      1) Check & SET dedup:{event}:{hash} (TTL 10s -> chong double-fire, khong chan loop 15s)
+	      2) Neu la "imp" -> INCR cap:daily:{YYYY-MM-DD}:{line_item_id} (TTL 48h)
+	      3) HINCRBY stat:{YYYY-MM-DD}:{line_item_id}:{venue_id}:{screen_id} {imp|complete} 1 (TTL 48h)
+	      4) RPUSH queue:raw_tracking_logs (raw JSON event cho worker flush vao MongoDB)
+
+	--------------------------------------------------------------------------------
+	2. CONTRACT CAC API CHINH (Node API - Prefix: /api/v1)
+	--------------------------------------------------------------------------------
+
+	[2.1] Dang ky man hinh (Partner S2S - Xac thuc: X-DOOH-API-KEY)
+	  POST /api/v1/venue/screens
+	  Headers:
+	    X-DOOH-API-KEY: <vendor_api_key>
+	  Request Body:
+	    {
+	        "name": "Landmark 81 - Lobby LED 01",     // bat buoc
+	        "location_name": "Landmark 81",           // bat buoc (CMS gom nhom Venue)
+	        "city": "Ho Chi Minh",                    // bat buoc
+	        "resolution_width": 1920,                 // bat buoc
+	        "resolution_height": 1080,                // bat buoc
+	        "screen_type": "led",                     // tuy chon (default: led)
+	        "sub_location": "Tang 1 - Sanh chinh",    // tuy chon
+	        "has_audio": false,                       // tuy chon
+	        "loop_duration_seconds": 120,             // tuy chon (default: 120)
+	        "default_slot_seconds": 15,               // tuy chon (default: 15)
+	        "hardware_device_uid": "HW-ABC-123"       // tuy chon (chong dang ky trung)
+	    }
+	  Response (201 Created):
+	    {
+	        "status": "success",
+	        "data": {
+	            "code": "SCR-A1B2C3",                 // dung de goi Delivery / Config / Heartbeat
+	            "secret_key": "dsk_live_xxxxxxxx",    // luu 1 lan duy nhat -> gui qua X-DOOH-SCREEN-KEY
+	            "name": "Landmark 81 - Lobby LED 01",
+	            "location_name": "Landmark 81",
+	            "city": "Ho Chi Minh",
+	            "screen_type": "led",
+	            "resolution_width": 1920,
+	            "resolution_height": 1080,
+	            "orientation": "landscape",
+	            "aspect_ratio": "16:9",
+	            "loop_duration_seconds": 120,
+	            "default_slot_seconds": 15
+	        }
+	    }
+
+	  Cac endpoint Venue khac:
+	    POST /api/v1/venue/screens/batch            (X-DOOH-API-KEY)    -> dang ky hang loat (toi da 100 man hinh / request, Partial Success)
+	    GET  /api/v1/venue/screens                  (X-DOOH-API-KEY)    -> danh sach man hinh cua Vendor
+	    GET  /api/v1/venue/screens/:code/config     (X-DOOH-SCREEN-KEY) -> cau hinh moi nhat cua man hinh
+	    POST /api/v1/venue/screens/:code/heartbeat  (X-DOOH-SCREEN-KEY) -> bao online / trang thai thiet bi
+
+	  Mau Batch Register (POST /api/v1/venue/screens/batch):
+	    Request:  { "screens": [ { ...item1 }, { ...item2 } ] }
+	    Response (200 OK - Partial Success, dung hardware_device_uid chong trung):
+	      {
+	          "status": "success",
+	          "data": {
+	              "total": 2,
+	              "created_count": 1,
+	              "failed_count": 1,
+	              "created": [ { "index": 0, "hardware_device_uid": "HW-01", "code": "SCR-...", "secret_key": "dsk_...", ... } ],
+	              "failed":  [ { "index": 1, "hardware_device_uid": "HW-02", "name": "...", "error": "hardware_device_uid already registered" } ]
+	          }
+	      }
+
+	[2.2] Lay Playlist (Edge Player - Xac thuc: X-DOOH-SCREEN-KEY hoac X-DOOH-API-KEY)
+	  GET /api/v1/delivery/playlist?screen_code=SCR-A1B2C3
+	  Headers:
+	    X-DOOH-SCREEN-KEY: <screen_secret_key>
+	  Response (200 OK):
+	    {
+	        "status": "success",
+	        "data": {
+	            "screen_id": 12,
+	            "venue_id": 5,
+	            "orientation": "landscape",
+	            "refresh_seconds": 120,
+	            "total_duration_seconds": 30,
+	            "slots_count": 2,
+	            "playlist": [
+	                {
+	                    "line_item_id": 101,
+	                    "line_item_name": "Tet Promo 2026",
+	                    "campaign_id": 20,
+	                    "creative_id": 55,
+	                    "type": "video",          // image | video | html5 | vast
+	                    "media_url": "https://cdn.example.com/creatives/55.mp4",
+	                    "duration": 15,
+	                    "tracking": {
+	                        "impression_url": "http://api-host/api/v1/log/imp/<aes256gcm_hash>",
+	                        "complete_url":   "http://api-host/api/v1/log/complete/<aes256gcm_hash>"
+	                    }
+	                }
+	            ]
+	        }
+	    }
+
+	[2.3] Tracking Beacon (Public - Xac thuc bang AES-256-GCM token trong :hash)
+	  GET /api/v1/log/imp/:hash
+	  GET /api/v1/log/complete/:hash
+	  - Payload ben trong :hash: { li: line_item_id, v: venue_id, s: screen_id, cr: creative_id, exp: unix_ts }
+	  - Response:
+	      204 No Content -> hop le (hoac trung trong cua so dedup 10s, van tra 204 de Player khong retry)
+	      404 Not Found  -> :hash bi sua, giai ma loi, hoac da het han (exp + TOKEN_GRACE_SECONDS)
+
+	--------------------------------------------------------------------------------
+	3. SO DO AUTH & REDIS KEYS + TTL
+	--------------------------------------------------------------------------------
+
+	[3.1] Co che Auth (2 lop Key + HMAC-SHA256)
+	  - CMS sinh raw key -> hash bang HMAC-SHA256(key, DOOH_HMAC_SECRET) -> chi luu hash vao MySQL.
+	  - Node API va CMS dung chung DOOH_HMAC_SECRET (trong .env) de verify bang timingSafeEqual.
+	  - Goi noi bo Node <-> CMS: dung header X-INTERNAL-SECRET (middleware VerifyInternalSecret).
+	  - Phan quyen route tren Node AuthGuard:
+	      /api/v1/health                       -> public
+	      /api/v1/log/*                        -> public (bao ve bang AES-256-GCM :hash)
+	      /api/v1/delivery/playlist            -> screen_or_vendor (X-DOOH-SCREEN-KEY | X-DOOH-API-KEY)
+	      /api/v1/venue/screens                -> vendor (X-DOOH-API-KEY)
+	      /api/v1/venue/screens/:code/*        -> screen (X-DOOH-SCREEN-KEY)
+
+	[3.2] Danh sach Redis Keys & TTL (CMS phai set REDIS_PREFIX="" de dung chung key voi Node)
+	  - screen:auth:{screen_code}
+	      Luu: { screen_id, venue_id, vendor_id, key_hash, status }
+	      TTL: AUTH_CACHE_TTL_SECONDS (prod: 600s | dev: 300s)
+	      Xoa khi: CMS sua/xoa/doi key Screen.
+
+	  - vendor:auth:{sha256(api_key)}
+	      Luu: { vendor_id, key_hash, status }
+	      TTL: AUTH_CACHE_TTL_SECONDS (prod: 600s | dev: 300s)
+	      Xoa khi: CMS sua/xoa/doi key Vendor.
+
+	  - playlist:screen:{screen_id}  &  playlist:venue:{venue_id}
+	      Luu: CachedPlaylist (danh sach slot + daily_impression_cap + refresh_seconds)
+	      TTL: PLAYLIST_CACHE_TTL_SECONDS (prod: 1800s | dev: 120s)
+	           (Tach biet voi refresh_seconds 120-300s de dat cache hit > 90%)
+	      Xoa khi: CMS sua/xoa LineItem, Creative, Venue, Screen (evict trong DB::afterCommit).
+
+	  - dedup:{event_type}:{hash}
+	      Luu: "1" (SET NX)
+	      TTL: DEDUP_TTL_SECONDS (10s - chong double-fire, cho phep loop 15s & khong chan complete)
+
+	  - cap:daily:{YYYY-MM-DD}:{line_item_id}
+	      Luu: integer counter (chi INCR khi event_type = "imp")
+	      TTL: 48h (172800s)
+
+	  - stat:{YYYY-MM-DD}:{line_item_id}:{venue_id}:{screen_id}
+	      Luu: Redis Hash { imp: N, complete: M } (chi tiet toi tung man hinh)
+	      TTL: 48h (172800s)
+
+	  - queue:raw_tracking_logs
+	      Luu: Redis List (RPUSH raw event JSON: event_type, line_item_id, venue_id, screen_id, creative_id, ip_masked, ts)
+	      TTL: khong co (Worker se doc batch LRANGE -> bulkWrite MongoDB -> LTRIM)
