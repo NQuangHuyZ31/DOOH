@@ -27,7 +27,13 @@ class VenueServiceProvider extends ServiceProvider
 	public function boot(): void
 	{
 		$prefix = trim((string) config('modules.api_prefix', 'admin/api'), '/');
-		Route::middleware(['api', VerifyInternalSecret::class])
-			->get("{$prefix}/internal/auth/screen", [InternalScreenController::class, 'showByCode']);
+		Route::middleware(['api', VerifyInternalSecret::class])->prefix("{$prefix}/internal")->group(function () {
+			Route::get('auth/screen', [InternalScreenController::class, 'showByCode']);
+			Route::get('venue/screens', [InternalScreenController::class, 'listByVendor']);
+			Route::post('venue/screens', [InternalScreenController::class, 'register']);
+			Route::post('venue/screens/batch', [InternalScreenController::class, 'registerBatch']);
+			Route::get('venue/screens/config', [InternalScreenController::class, 'configByCode']);
+			Route::post('venue/screens/heartbeat', [InternalScreenController::class, 'heartbeat']);
+		});
 	}
 }

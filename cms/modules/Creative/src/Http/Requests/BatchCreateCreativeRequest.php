@@ -46,8 +46,8 @@ class BatchCreateCreativeRequest extends FormRequest
 					$validator->errors()->add("items.{$idx}.media_url", "Item #{$idx}: Video creative must have a valid video URL (.mp4, .mov, .avi).");
 				}
 
-				if ($type === 'html5' && !preg_match('/\.(zip)(\?.*)?$/i', $mediaUrl) && !str_starts_with($mediaUrl, 'http')) {
-					$validator->errors()->add("items.{$idx}.media_url", "Item #{$idx}: HTML5 creative must be a .zip file or valid URL.");
+				if ($type === 'html5' && !preg_match('/\.(zip)(\?.*)?$/i', $mediaUrl) && !str_starts_with($mediaUrl, 'https://')) {
+					$validator->errors()->add("items.{$idx}.media_url", "Item #{$idx}: HTML5 creative must be a .zip file or an HTTPS URL.");
 				}
 			}
 		});

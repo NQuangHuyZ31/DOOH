@@ -2,19 +2,19 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Router, type MiddlewareHandler, type RouteContext } from './router/router.js';
 import { sendError, sendSuccess } from './utils/httpUtil.js';
 import { config } from './config/config.js';
-import { checkRedisHealth } from '@database';
+import { checkMongoHealth, checkRedisHealth } from '@database';
 
 export const coreRouter = new Router();
 
 coreRouter.get('/health', async (_req, res) => {
-	const redisHealthy = await checkRedisHealth();
+	const [redisHealthy, mongoHealthy] = await Promise.all([checkRedisHealth(), checkMongoHealth()]);
 	sendSuccess(
 		res,
 		{
-			status: 'healthy',
+			status: redisHealthy && mongoHealthy ? 'healthy' : 'degraded',
 			uptime_seconds: Math.round(process.uptime()),
 			timestamp: new Date().toISOString(),
-			services: { redis: redisHealthy ? 'connected' : 'disconnected' },
+			services: { redis: redisHealthy ? 'connected' : 'disconnected', mongo: mongoHealthy ? 'connected' : 'disconnected' },
 			environment: config.nodeEnv,
 		},
 		'DOOH Tracking API Core is operational',
@@ -49,10 +49,12 @@ const runPipeline = async (req: IncomingMessage, res: ServerResponse, ctx: Route
 
 export const createApp = (mainRouter: Router = coreRouter, globalMiddlewares: MiddlewareHandler[] = []) => {
 	return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
-		const origin = req.headers.origin || '*';
-		const isAllowed = config.allowedOrigins.includes('*') || config.allowedOrigins.includes(origin);
-
-		res.setHeader('Access-Control-Allow-Origin', isAllowed ? origin : 'null');
+		const origin = req.headers.origin;
+		if (config.allowedOrigins.includes('*')) {
+			res.setHeader('Access-Control-Allow-Origin', origin || '*');
+		} else if (origin && config.allowedOrigins.includes(origin)) {
+			res.setHeader('Access-Control-Allow-Origin', origin);
+		}
 		res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
 		res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-DOOH-API-KEY, X-DOOH-SCREEN-KEY, X-DOOH-SIGNATURE, X-DOOH-TIMESTAMP');
 

@@ -7,7 +7,7 @@ import { createApp } from '@core/app.js';
 import { encryptToken } from '@core/utils/tokenCrypto.js';
 import { createAuthGuard } from '@modules/Auth/index.js';
 import { buildTrackingUrls } from '../utils/trackingUrlUtil.js';
-import { LogService, maskIp } from '../services/logService.js';
+import { LogService, maskIp, resolveDedupTtl } from '../services/logService.js';
 import { createLogRouter } from '../routes.js';
 import type { AtomicBeaconRecordParams, LogBeaconStore, RawTrackingLogEvent } from '../types/log.types.js';
 
@@ -66,6 +66,29 @@ describe('Log Module - IP Masking & Dedup Bucket', () => {
 		assert.equal(mem.queue.length, 2);
 		assert.notEqual(mem.queue[0].client_hash, mem.queue[1].client_hash);
 		assert.equal(mem.capCounts.get('cap:daily:2026-11-26:105'), 2);
+	});
+
+	it('computes dynamic dedup TTL from slot duration clamped to [3, 60] seconds', async () => {
+		assert.equal(resolveDedupTtl(8, 10), 6);
+		assert.equal(resolveDedupTtl(15, 10), 13);
+		assert.equal(resolveDedupTtl(30, 10), 28);
+		assert.equal(resolveDedupTtl(4, 10), 3);
+		assert.equal(resolveDedupTtl(120, 10), 60);
+		assert.equal(resolveDedupTtl(undefined, 10), 10);
+
+		let capturedTtl = 0;
+		const store: LogBeaconStore = {
+			recordAtomic: async (params: AtomicBeaconRecordParams) => {
+				capturedTtl = params.dedupTtlSeconds;
+				return true;
+			},
+		};
+		const service = new LogService({ store, appKey: TEST_APP_KEY, dedupTtlSeconds: 10 });
+		const urls = buildTrackingUrls({ venue_id: 12, screen_id: 42, line_item_id: 105, creative_id: 33, duration: 8, ttlSeconds: 600 }, { appUrl: 'http://localhost', apiPrefix: '/api/v1', appKey: TEST_APP_KEY });
+		const hash = urls.impression_url.split('/').pop() as string;
+
+		assert.equal(await service.ingestBeacon({ eventType: 'imp', hash, ip: '192.168.1.50', userAgent: 'DOOH-Player/1.0' }), 'recorded');
+		assert.equal(capturedTtl, 6);
 	});
 });
 

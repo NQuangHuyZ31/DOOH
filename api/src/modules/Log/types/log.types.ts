@@ -1,6 +1,6 @@
 export type LogEventType = 'imp' | 'complete';
 
-export type BeaconIngestStatus = 'recorded' | 'duplicate' | 'invalid_or_expired' | 'store_unavailable';
+export type BeaconIngestStatus = 'recorded' | 'duplicate' | 'invalid_or_expired';
 
 export interface RawTrackingLogEvent {
 	event_type: LogEventType;

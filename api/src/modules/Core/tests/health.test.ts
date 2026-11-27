@@ -2,7 +2,7 @@ import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { closeRedisConnection } from '@database';
+import { closeMongoConnection, closeRedisConnection } from '@database';
 import { createApp } from '../app.js';
 
 describe('Core Module - Health and Route Tests', () => {
@@ -26,6 +26,7 @@ describe('Core Module - Health and Route Tests', () => {
 			server.close(() => resolve());
 		});
 		await closeRedisConnection();
+		await closeMongoConnection();
 	});
 
 	it('GET /health returns 200 with operational status', async () => {
@@ -46,11 +47,14 @@ describe('Core Module - Health and Route Tests', () => {
 		assert.ok(data.data.modules.includes('Core'));
 	});
 
-	it('GET /undefined-route returns 404', async () => {
+	it('GET /undefined-route returns 404 and malformed percent-encoding does not 500', async () => {
 		const res = await fetch(`${baseUrl}/undefined-route`);
 		assert.equal(res.status, 404);
 
 		const data = (await res.json()) as { status: string; message: string };
 		assert.equal(data.status, 'error');
+
+		const malformed = await fetch(`${baseUrl}/api/v1/log/imp/%ZZ`);
+		assert.equal(malformed.status, 404);
 	});
 });

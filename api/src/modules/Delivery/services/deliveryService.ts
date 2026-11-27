@@ -18,6 +18,7 @@ export interface DeliveryServiceOptions {
 
 const createCmsDeliveryFallback = (cms: CmsClient): DeliveryFallbackResolver => ({
 	fetchPlaylist: ({ screenId, venueId }) => cms.getJson<CachedPlaylist>('/delivery/playlist', { screen_id: screenId, venue_id: venueId }),
+	resolveScreen: (screenCode: string) => cms.getJson<ScreenAuthRecord>('/auth/screen', { code: screenCode }),
 });
 
 export class DeliveryService {
@@ -33,7 +34,7 @@ export class DeliveryService {
 		this.nowProvider = options.nowProvider ?? (() => new Date());
 	}
 
-	public async getPlaylist(auth: AuthContext, query: { screenCode?: string | null; venueId?: string | null }): Promise<DeliveryResult> {
+	public async getPlaylist(auth: AuthContext, query: { screenCode?: string | null }): Promise<DeliveryResult> {
 		const target = await this.resolveTarget(auth, query);
 		if (!target.ok) return target;
 
@@ -60,7 +61,7 @@ export class DeliveryService {
 			type: slot.type,
 			media_url: slot.media_url,
 			duration: slot.duration,
-			tracking: this.buildTracking({ venue_id: venueId, screen_id: screenId, line_item_id: slot.line_item_id, creative_id: slot.creative_id, ttlSeconds }),
+			tracking: this.buildTracking({ venue_id: venueId, screen_id: screenId, line_item_id: slot.line_item_id, creative_id: slot.creative_id, duration: slot.duration, ttlSeconds }),
 		}));
 
 		const totalDuration = delivered.reduce((sum, s) => sum + s.duration, 0);
@@ -78,13 +79,19 @@ export class DeliveryService {
 		};
 	}
 
-	private async resolveTarget(auth: AuthContext, query: { screenCode?: string | null; venueId?: string | null }): Promise<{ ok: true; screenId?: number; venueId: number } | { ok: false; code: number; message: string }> {
+	private async resolveTarget(auth: AuthContext, query: { screenCode?: string | null }): Promise<{ ok: true; screenId?: number; venueId: number } | { ok: false; code: number; message: string }> {
 		if (auth.type === 'screen') {
 			return { ok: true, screenId: auth.screen.screen_id, venueId: auth.screen.venue_id };
 		}
 
-		if (query.screenCode) {
-			const screen = await readCacheJson<ScreenAuthRecord>(this.store, RedisKeyHelper.screenAuth(query.screenCode));
+		if (query.screenCode && query.screenCode.trim().length > 0) {
+			const normalizedCode = query.screenCode.trim().toUpperCase();
+			const cacheKey = RedisKeyHelper.screenAuth(normalizedCode);
+			let screen = await readCacheJson<ScreenAuthRecord>(this.store, cacheKey);
+			if (!screen && this.fallback.resolveScreen) {
+				screen = await this.fallback.resolveScreen(normalizedCode);
+				if (screen) await writeCacheJson(this.store, cacheKey, config.cache.authTtlSeconds, screen);
+			}
 			if (!screen || screen.status !== 'active') {
 				return { ok: false, code: 404, message: 'Screen not found or inactive' };
 			}
@@ -95,12 +102,7 @@ export class DeliveryService {
 			return { ok: true, screenId: screen.screen_id, venueId: screen.venue_id };
 		}
 
-		const parsedVenueId = Number(query.venueId);
-		if (Number.isInteger(parsedVenueId) && parsedVenueId > 0) {
-			return { ok: true, venueId: parsedVenueId };
-		}
-
-		return { ok: false, code: 400, message: 'Missing required screen_code or venue_id parameter' };
+		return { ok: false, code: 400, message: 'Missing required screen_code parameter' };
 	}
 
 	private async readPlaylist(screenId: number | undefined, venueId: number): Promise<CachedPlaylist | null> {

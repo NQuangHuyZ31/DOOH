@@ -44,8 +44,8 @@ class CreateCreativeRequest extends FormRequest
 				$validator->errors()->add('media_url', 'Video creative must have a valid video URL (.mp4, .mov, .avi).');
 			}
 
-			if ($type === 'html5' && !preg_match('/\.(zip)(\?.*)?$/i', $mediaUrl) && !str_starts_with($mediaUrl, 'http')) {
-				$validator->errors()->add('media_url', 'HTML5 creative must be a .zip file or a valid URL.');
+			if ($type === 'html5' && !preg_match('/\.(zip)(\?.*)?$/i', $mediaUrl) && !str_starts_with($mediaUrl, 'https://')) {
+				$validator->errors()->add('media_url', 'HTML5 creative must be a .zip file or an HTTPS URL.');
 			}
 		});
 	}

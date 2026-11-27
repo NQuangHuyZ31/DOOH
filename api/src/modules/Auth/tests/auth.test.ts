@@ -51,6 +51,9 @@ describe('Auth Module - HMAC & Scoped Key Parity', () => {
 
 	it('builds auth route rules dynamically from configurable API prefix', () => {
 		const v2Rules = buildDefaultAuthRules('/api/v2/');
+		assert.ok(v2Rules.some((r) => r.prefix === '/api/v2/venue/screens' && r.exact === true && r.policy === 'vendor'));
+		assert.ok(v2Rules.some((r) => r.prefix === '/api/v2/venue/screens/batch' && r.exact === true && r.policy === 'vendor'));
+		assert.ok(v2Rules.some((r) => r.prefix === '/api/v2/venue/screens/' && r.policy === 'screen'));
 		assert.ok(v2Rules.some((r) => r.prefix === '/api/v2/venue/' && r.policy === 'screen_or_vendor'));
 		assert.ok(v2Rules.some((r) => r.prefix === '/api/v2/partner/' && r.policy === 'vendor'));
 		assert.ok(v2Rules.some((r) => r.prefix === '/api/v2/log/' && r.policy === 'public'));
@@ -74,7 +77,7 @@ describe('Auth Module - AuthService Layer 1 & Layer 2', () => {
 		const mem = createMemoryStore({ [RedisKeyHelper.screenAuth('SCR-HN-01')]: screen });
 		const service = new AuthService({ store: mem.store, masterSecret: MASTER_SECRET });
 
-		const okRes = await service.authenticateScreen(validKey, 'SCR-HN-01');
+		const okRes = await service.authenticateScreen(validKey, 'scr-hn-01');
 		assert.equal(okRes.ok, true);
 		if (okRes.ok && okRes.auth.type === 'screen') assert.equal(okRes.auth.screen.screen_id, 10);
 

@@ -15,6 +15,9 @@ export const buildDefaultAuthRules = (apiPrefix: string = config.apiPrefix): Aut
 		{ prefix: `${base}/partner/`, policy: 'vendor' },
 		{ prefix: `${base}/player/`, policy: 'screen' },
 		{ prefix: `${base}/delivery/`, policy: 'screen_or_vendor' },
+		{ prefix: `${base}/venue/screens/batch`, exact: true, policy: 'vendor' },
+		{ prefix: `${base}/venue/screens`, exact: true, policy: 'vendor' },
+		{ prefix: `${base}/venue/screens/`, policy: 'screen' },
 		{ prefix: `${base}/venue/`, policy: 'screen_or_vendor' },
 	];
 };

@@ -220,4 +220,26 @@ describe('Delivery Module - Playlist, Daily Cap & Log Tracking URLs', () => {
 			await new Promise<void>((resolve) => cmsServer.close(() => resolve()));
 		}
 	});
+
+	it('resolves vendor screen_code via Layer 3 fallback on Redis cache miss and warms screen auth cache', async () => {
+		const store = createMemoryStore({
+			[RedisKeyHelper.playlistScreen(88)]: { screen_id: 88, venue_id: 30, refresh_seconds: 120, playlist: [{ line_item_id: 401, type: 'image', media_url: 'https://cdn.test/img.jpg', duration: 10 }] },
+		});
+		const service = new DeliveryService({
+			store,
+			fallback: {
+				resolveScreen: async (code) => ({ screen_id: 88, venue_id: 30, vendor_id: 7, code, secret_key: 'k', status: 'active' }),
+			},
+			trackingUrlBuilder: (input) => buildTrackingUrls(input, { appUrl: 'https://api.dooh.test', apiPrefix: '/api/v1', appKey: TEST_APP_KEY }),
+		});
+
+		const vendorAuth = { type: 'vendor' as const, vendor: { vendor_id: 7, name: 'Partner', status: 'active' as const } };
+		const missingCode = await service.getPlaylist(vendorAuth, {});
+		assert.equal(missingCode.ok, false);
+		if (!missingCode.ok) assert.equal(missingCode.code, 400);
+
+		const res = await service.getPlaylist(vendorAuth, { screenCode: 'scr-miss-88' });
+		assert.equal(res.ok, true);
+		assert.equal(store.has(RedisKeyHelper.screenAuth('SCR-MISS-88')), true);
+	});
 });

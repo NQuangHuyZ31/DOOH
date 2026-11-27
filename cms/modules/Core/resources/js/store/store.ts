@@ -7,6 +7,7 @@ import venueReducer from '@modules/Venue/resources/js/store/venueSlice';
 import creativeReducer from '@modules/Creative/resources/js/store/creativeSlice';
 import vendorReducer from '@modules/Vendor/resources/js/store/vendorSlice';
 import deliveryReducer from '@modules/Delivery/resources/js/store/deliverySlice';
+import simulatorReducer from '@modules/Simulator/resources/js/store/simulatorSlice';
 import metadataReducer from './metadataSlice';
 
 export const store = configureStore({
@@ -19,6 +20,7 @@ export const store = configureStore({
 		creative: creativeReducer,
 		vendor: vendorReducer,
 		delivery: deliveryReducer,
+		simulator: simulatorReducer,
 		metadata: metadataReducer,
 	},
 	middleware: (getDefaultMiddleware) =>

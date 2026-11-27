@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { getRedisClient, RedisKeyHelper } from '@database';
+import { getReadyRedis, RedisKeyHelper } from '@database';
 import { config } from '@core/config/config.js';
 import { decryptToken } from '@core/utils/tokenCrypto.js';
 import type { AtomicBeaconRecordParams, BeaconIngestInput, BeaconIngestStatus, LogBeaconStore, RawTrackingLogEvent } from '../types/log.types.js';
@@ -35,11 +35,8 @@ export interface LogServiceOptions {
 const defaultRedisBeaconStore: LogBeaconStore = {
 	recordAtomic: async (params: AtomicBeaconRecordParams): Promise<boolean> => {
 		try {
-			const client = getRedisClient();
-			if (client.status === 'wait' || client.status === 'close') {
-				await client.connect().catch(() => {});
-			}
-			if (client.status !== 'ready') return false;
+			const client = await getReadyRedis();
+			if (!client) return false;
 
 			const res = await client.eval(
 				INGEST_BEACON_LUA,
@@ -61,6 +58,13 @@ const defaultRedisBeaconStore: LogBeaconStore = {
 			return false;
 		}
 	},
+};
+
+export const resolveDedupTtl = (duration: unknown, fallbackSeconds: number): number => {
+	if (typeof duration === 'number' && Number.isFinite(duration) && duration > 0) {
+		return Math.min(60, Math.max(3, Math.floor(duration) - 2));
+	}
+	return Math.max(1, fallbackSeconds);
 };
 
 export const maskIp = (rawIp: string): string => {
@@ -102,10 +106,11 @@ export class LogService {
 		}
 
 		const screenId = typeof payload.screen_id === 'number' && payload.screen_id > 0 ? payload.screen_id : 0;
+		const dedupTtl = resolveDedupTtl(payload.duration, this.dedupTtlSeconds);
 		const now = this.nowProvider();
 		const epochMs = now.getTime();
 		const today = now.toISOString().slice(0, 10);
-		const bucket = Math.floor(epochMs / (Math.max(1, this.dedupTtlSeconds) * 1000));
+		const bucket = Math.floor(epochMs / (dedupTtl * 1000));
 		const clientHash = crypto.createHash('sha256').update(`${input.eventType}:${input.hash}:${bucket}`, 'utf8').digest('hex');
 
 		const event: RawTrackingLogEvent = {
@@ -127,7 +132,7 @@ export class LogService {
 			statKey: RedisKeyHelper.stat(today, lineItemId, venueId, screenId),
 			queueKey: RedisKeyHelper.rawQueue(),
 			eventType: input.eventType,
-			dedupTtlSeconds: this.dedupTtlSeconds,
+			dedupTtlSeconds: dedupTtl,
 			statTtlSeconds: this.statTtlSeconds,
 			rawPayload: JSON.stringify(event),
 		});

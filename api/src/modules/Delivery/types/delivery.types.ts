@@ -1,3 +1,4 @@
+import type { ScreenAuthRecord } from '@modules/Auth/types/auth.types.js';
 import type { TrackingUrlInput, TrackingUrls } from '@modules/Log/utils/trackingUrlUtil.js';
 
 export interface CachedPlaylistSlot {
@@ -45,6 +46,7 @@ export type DeliveryResult = { ok: true; data: DeliveryPlaylistResponse } | { ok
 
 export interface DeliveryFallbackResolver {
 	fetchPlaylist?: (target: { screenId?: number; venueId: number }) => Promise<CachedPlaylist | null>;
+	resolveScreen?: (screenCode: string) => Promise<ScreenAuthRecord | null>;
 }
 
 export type TrackingUrlBuilder = (input: TrackingUrlInput) => TrackingUrls;

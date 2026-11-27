@@ -2,7 +2,7 @@
 	"name": "dooh-tracking-api",
 	"version": "1.0.0",
 	"description": "High-throughput DOOH delivery & tracking API built with pure node:http and Redis",
-	"main": "dist/src/modules/Core/server.js",
+	"main": "dist/server.mjs",
 	"type": "module",
 	"imports": {
 		"@database": {
@@ -19,8 +19,8 @@
 		}
 	},
 	"scripts": {
-		"build": "tsc",
-		"start": "node dist/src/modules/Core/server.js",
+		"build": "tsc --noEmit && node -e \"import('node:fs').then(f=>f.rmSync('dist',{recursive:true,force:true}))\" && esbuild src/modules/Core/server.ts --bundle --platform=node --target=node22 --format=esm --packages=external --minify --legal-comments=none --outfile=dist/server.mjs",
+		"start": "node dist/server.mjs",
 		"dev": "tsx watch src/modules/Core/server.ts",
 		"test": "node --test --import tsx src/modules/**/*.test.ts"
 	},
@@ -34,6 +34,7 @@
 	},
 	"devDependencies": {
 		"@types/node": "^22.10.2",
+		"esbuild": "^0.28.2",
 		"tsx": "^4.19.2",
 		"typescript": "^5.7.2"
 	}

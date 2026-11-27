@@ -87,9 +87,16 @@ export const CreativePreviewModal: React.FC<CreativePreviewModalProps> = ({ open
 					<video src={videoUrl} controls autoPlay muted style={{ maxWidth: '100%', maxHeight: 360, borderRadius: 4 }} />
 				) : creative.type === 'image' ? (
 					<img src={creative.media_url} alt={creative.name} style={{ maxWidth: '100%', maxHeight: 360, objectFit: 'contain', borderRadius: 4 }} />
+				) : creative.type === 'html5' ? (
+					<iframe
+						src={creative.media_url}
+						title={creative.name}
+						sandbox="allow-scripts allow-same-origin"
+						style={{ width: '100%', height: 360, border: 'none', borderRadius: 4, background: '#ffffff' }}
+					/>
 				) : (
 					<div style={{ color: '#94a3b8', textAlign: 'center', padding: 24 }}>
-						<div style={{ fontSize: 15, fontWeight: 600, color: '#f8fafc', marginBottom: 6 }}>{creative.type === 'html5' ? 'HTML5 Interactive Package' : 'VAST XML Linear Stream'}</div>
+						<div style={{ fontSize: 15, fontWeight: 600, color: '#f8fafc', marginBottom: 6 }}>VAST XML Linear Stream</div>
 						<div style={{ wordBreak: 'break-all', fontSize: 13, color: '#38bdf8' }}>{creative.media_url}</div>
 					</div>
 				)}

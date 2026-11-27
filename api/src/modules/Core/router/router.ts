@@ -42,10 +42,19 @@ export class Router {
 		}
 
 		const paramNames: string[] = [];
-		const regexStr = '^' + path.replace(/:([a-zA-Z0-9_]+)/g, (_, name) => {
-			paramNames.push(name);
-			return '([^/]+)';
-		}) + '$';
+		const regexStr =
+			'^' +
+			path
+				.split('/')
+				.map((seg) => {
+					if (seg.startsWith(':') && /^:[a-zA-Z0-9_]+$/.test(seg)) {
+						paramNames.push(seg.slice(1));
+						return '([^/]+)';
+					}
+					return seg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+				})
+				.join('/') +
+			'$';
 
 		this.routes.push({
 			method: method.toUpperCase(),
@@ -74,7 +83,7 @@ export class Router {
 	}
 
 	public mount(prefix: string, subRouter: Router): this {
-		const cleanPrefix = prefix.replace(/\/+$/, '');
+		const cleanPrefix = prefix.replace(/\/+$/, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 		for (const route of subRouter.routes) {
 			const subRegexSrc = route.pattern.source.replace(/^\^/, '').replace(/\$$/, '');
 			this.routes.push({
@@ -95,8 +104,12 @@ export class Router {
 			const match = route.pattern.exec(pathname);
 			if (match) {
 				const params: Record<string, string> = {};
-				for (let i = 0; i < route.paramNames.length; i++) {
-					params[route.paramNames[i]] = decodeURIComponent(match[i + 1]);
+				try {
+					for (let i = 0; i < route.paramNames.length; i++) {
+						params[route.paramNames[i]] = decodeURIComponent(match[i + 1]);
+					}
+				} catch {
+					return null;
 				}
 				return { handler: route.handler, middlewares: [...this.middlewares, ...route.middlewares], params };
 			}

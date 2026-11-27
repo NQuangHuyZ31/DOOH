@@ -15,7 +15,8 @@ class CreativeService
 {
 	public function __construct(
 		protected CreativeRepositoryInterface $creativeRepository,
-		protected VastParserService $vastParserService
+		protected VastParserService $vastParserService,
+		protected Html5PackageService $html5PackageService
 	) {}
 
 	public function listCreatives(array $filters = [], int $perPage = 15): LengthAwarePaginator
@@ -125,6 +126,16 @@ class CreativeService
 			}
 		}
 
+		if ($type === 'html5' && !empty($mediaUrl) && $mediaUrl !== ($existing?->media_url ?? '')) {
+			$prepared = $this->html5PackageService->preparePackage($mediaUrl);
+			$oldExtractedDir = $existing?->metadata['html5']['extracted_dir'] ?? null;
+			if ($oldExtractedDir && $oldExtractedDir !== ($prepared['extracted_dir'] ?? null)) {
+				$this->html5PackageService->deletePackage($oldExtractedDir);
+			}
+			$data['media_url'] = $prepared['entry_url'];
+			$data['metadata'] = array_merge($existing?->metadata ?? [], $data['metadata'] ?? [], ['html5' => $prepared]);
+		}
+
 		$width = (int) ($data['width'] ?? $existing?->width ?? 0);
 		$height = (int) ($data['height'] ?? $existing?->height ?? 0);
 		if ($width > 0 && $height > 0 && empty($data['aspect_ratio'])) {
@@ -136,8 +147,10 @@ class CreativeService
 
 	public function deleteCreative(int|string $id): bool
 	{
+		$existing = $this->getCreativeById($id);
 		$deleted = $this->creativeRepository->delete($id);
 		if ($deleted) {
+			$this->html5PackageService->deletePackage($existing?->metadata['html5']['extracted_dir'] ?? null);
 			CreativeChanged::dispatch([(int) $id]);
 		}
 
