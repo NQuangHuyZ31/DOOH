@@ -3,6 +3,8 @@
 namespace Modules\Simulator\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Modules\Core\Services\MetadataService;
 
 class CreateSimulatorScreenRequest extends FormRequest
 {
@@ -18,7 +20,7 @@ class CreateSimulatorScreenRequest extends FormRequest
 			'location_name' => ['required', 'string', 'max:255'],
 			'city' => ['required', 'string', 'max:120'],
 			'sub_location' => ['nullable', 'string', 'max:255'],
-			'screen_type' => ['nullable', 'string', 'in:outdoor_led,indoor_led,lcd_commercial,elevator_screen,kiosk_totem'],
+			'screen_type' => ['nullable', 'string', Rule::in(MetadataService::enumValues('screen_types'))],
 			'resolution_width' => ['required', 'integer', 'min:100', 'max:16384'],
 			'resolution_height' => ['required', 'integer', 'min:100', 'max:16384'],
 			'has_audio' => ['nullable', 'boolean'],

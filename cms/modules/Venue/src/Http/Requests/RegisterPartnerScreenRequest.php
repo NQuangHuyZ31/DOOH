@@ -3,6 +3,8 @@
 namespace Modules\Venue\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Modules\Core\Services\MetadataService;
 
 class RegisterPartnerScreenRequest extends FormRequest
 {
@@ -24,7 +26,7 @@ class RegisterPartnerScreenRequest extends FormRequest
 			'city' => 'required|string|max:120',
 			'resolution_width' => 'required|integer|min:100|max:16384',
 			'resolution_height' => 'required|integer|min:100|max:16384',
-			'screen_type' => 'nullable|string|in:led,lcd,billboard,kiosk,elevator,transit',
+			'screen_type' => ['nullable', 'string', Rule::in(MetadataService::enumValues('screen_types'))],
 			'sub_location' => 'nullable|string|max:255',
 			'has_audio' => 'nullable|boolean',
 			'loop_duration_seconds' => 'nullable|integer|min:10|max:3600',

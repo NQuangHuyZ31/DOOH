@@ -133,4 +133,18 @@ class MetadataService
 
         return 'UTC';
     }
+
+	public static function enumValues(string $enumKey): array
+	{
+		$items = (new self())->resolveMetadataConfig()['enums'][$enumKey] ?? [];
+
+		return array_values(array_filter(array_column($items, 'value'), fn ($v) => is_string($v) && $v !== ''));
+	}
+
+	public static function defaultEnumValue(string $enumKey, string $fallback = ''): string
+	{
+		$values = self::enumValues($enumKey);
+
+		return $values[0] ?? $fallback;
+	}
 }

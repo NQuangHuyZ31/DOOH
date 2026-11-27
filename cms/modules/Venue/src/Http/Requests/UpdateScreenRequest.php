@@ -4,6 +4,7 @@ namespace Modules\Venue\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Core\Services\MetadataService;
 
 class UpdateScreenRequest extends FormRequest
 {
@@ -24,7 +25,7 @@ class UpdateScreenRequest extends FormRequest
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'code' => ['nullable', 'string', 'max:64', Rule::unique('screens', 'code')->ignore($screenId)],
             'sub_location' => ['nullable', 'string', 'max:255'],
-            'screen_type' => ['nullable', 'string', 'max:64'],
+            'screen_type' => ['nullable', 'string', 'max:64', Rule::in(MetadataService::enumValues('screen_types'))],
             'resolution_width' => ['sometimes', 'required', 'integer', 'min:100', 'max:15360'],
             'resolution_height' => ['sometimes', 'required', 'integer', 'min:100', 'max:8640'],
             'physical_width_m' => ['nullable', 'numeric', 'min:0'],

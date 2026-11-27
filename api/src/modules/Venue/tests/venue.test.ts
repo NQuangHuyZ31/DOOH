@@ -55,7 +55,7 @@ describe('Venue Module - HTTP Integration with AuthGuard & Upstream CMS', () => 
 					name: body.name,
 					location_name: body.location_name,
 					city: body.city,
-					screen_type: body.screen_type ?? 'led',
+					screen_type: body.screen_type ?? 'outdoor_led',
 					resolution_width: body.resolution_width,
 					resolution_height: body.resolution_height,
 					orientation: 'landscape',

@@ -29,7 +29,7 @@ class SimulatorApiTest extends TestCase
 			'name' => 'Partner Lobby LED',
 			'location_name' => 'Landmark 81',
 			'city' => 'Ho Chi Minh',
-			'screen_type' => 'led',
+			'screen_type' => 'outdoor_led',
 			'resolution_width' => 1920,
 			'resolution_height' => 1080,
 			'opening_time' => '08:00:00',

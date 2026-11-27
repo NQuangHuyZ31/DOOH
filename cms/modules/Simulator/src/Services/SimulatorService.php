@@ -3,6 +3,7 @@
 namespace Modules\Simulator\Services;
 
 use Illuminate\Pagination\LengthAwarePaginator;
+use Modules\Core\Services\MetadataService;
 use Modules\Core\Support\DisplaySpecHelper;
 use Modules\Creative\Services\VastParserService;
 use Modules\Simulator\Models\SimulatorScreen;
@@ -23,7 +24,10 @@ class SimulatorService
 	public function createLocalScreen(array $data): SimulatorScreen
 	{
 		$specs = DisplaySpecHelper::deriveSpecs((int) $data['resolution_width'], (int) $data['resolution_height']);
-		$payload = array_merge($data, $specs, ['sync_status' => 'unsynced']);
+		$payload = array_merge($data, $specs, [
+			'screen_type' => $data['screen_type'] ?? MetadataService::defaultEnumValue('screen_types', 'outdoor_led'),
+			'sync_status' => 'unsynced',
+		]);
 
 		return $this->simScreenRepo->create($payload);
 	}

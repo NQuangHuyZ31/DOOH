@@ -25,7 +25,7 @@ export const LocalScreenFormModal: React.FC<LocalScreenFormModalProps> = ({ open
 		if (open) {
 			form.resetFields();
 			form.setFieldsValue({
-				screen_type: 'led',
+				screen_type: screenTypeOptions[0]?.value || 'outdoor_led',
 				resolution_width: 1920,
 				resolution_height: 1080,
 				has_audio: false,

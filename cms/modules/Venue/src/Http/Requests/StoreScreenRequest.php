@@ -3,6 +3,8 @@
 namespace Modules\Venue\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Modules\Core\Services\MetadataService;
 
 class StoreScreenRequest extends FormRequest
 {
@@ -18,7 +20,7 @@ class StoreScreenRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'code' => ['nullable', 'string', 'max:64', 'unique:screens,code'],
             'sub_location' => ['nullable', 'string', 'max:255'],
-            'screen_type' => ['nullable', 'string', 'max:64'],
+            'screen_type' => ['nullable', 'string', 'max:64', Rule::in(MetadataService::enumValues('screen_types'))],
             'resolution_width' => ['required', 'integer', 'min:100', 'max:15360'],
             'resolution_height' => ['required', 'integer', 'min:100', 'max:8640'],
             'physical_width_m' => ['nullable', 'numeric', 'min:0'],

@@ -5,6 +5,7 @@ namespace Modules\Venue\Services;
 use DomainException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Validator;
+use Modules\Core\Services\MetadataService;
 use Modules\Venue\Http\Requests\RegisterPartnerScreenRequest;
 use Modules\Venue\Models\Screen;
 use Modules\Venue\Repositories\Interfaces\ScreenRepositoryInterface;
@@ -47,7 +48,7 @@ class PartnerScreenService
 			'venue_id' => $venue->id,
 			'name' => trim((string) $payload['name']),
 			'sub_location' => isset($payload['sub_location']) ? trim((string) $payload['sub_location']) : null,
-			'screen_type' => $payload['screen_type'] ?? 'led',
+			'screen_type' => $payload['screen_type'] ?? MetadataService::defaultEnumValue('screen_types', 'outdoor_led'),
 			'resolution_width' => (int) $payload['resolution_width'],
 			'resolution_height' => (int) $payload['resolution_height'],
 			'has_audio' => (bool) ($payload['has_audio'] ?? false),
