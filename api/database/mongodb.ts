@@ -1,19 +1,44 @@
+import dns from 'node:dns';
 import { MongoClient, type Db } from 'mongodb';
 import { config } from '@core/config/config.js';
 
 let clientInstance: MongoClient | null = null;
 let dbInstance: Db | null = null;
+let dnsFallbackApplied = false;
+
+const connectClient = async (): Promise<MongoClient> => {
+	const client = new MongoClient(config.mongodb.uri, {
+		maxPoolSize: 50,
+		minPoolSize: 5,
+		serverSelectionTimeoutMS: 3000,
+	});
+	try {
+		await client.connect();
+		return client;
+	} catch (err: unknown) {
+		await client.close().catch(() => {});
+		throw err;
+	}
+};
 
 export const getMongoClient = async (): Promise<MongoClient> => {
-	if (!clientInstance) {
-		clientInstance = new MongoClient(config.mongodb.uri, {
-			maxPoolSize: 50,
-			minPoolSize: 5,
-			serverSelectionTimeoutMS: 3000,
-		});
-		await clientInstance.connect();
+	if (clientInstance) return clientInstance;
+	if (!config.mongodb.uri) throw new Error('MONGODB_URI is not configured');
+
+	try {
+		clientInstance = await connectClient();
+		return clientInstance;
+	} catch (err: unknown) {
+		const msg = err instanceof Error ? err.message : '';
+		// Auto-fallback to public DNS when Windows/ISP local DNS refuses SRV lookups for mongodb+srv://
+		if (!dnsFallbackApplied && config.mongodb.uri.startsWith('mongodb+srv://') && /querySrv|ECONNREFUSED|ENOTFOUND/i.test(msg)) {
+			dnsFallbackApplied = true;
+			dns.setServers(['1.1.1.1', '8.8.8.8']);
+			clientInstance = await connectClient();
+			return clientInstance;
+		}
+		throw err;
 	}
-	return clientInstance;
 };
 
 export const getMongoDb = async (): Promise<Db> => {

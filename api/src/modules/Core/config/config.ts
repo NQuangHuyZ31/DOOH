@@ -90,9 +90,11 @@ export const assertProductionConfig = (cfg: AppConfig = config): void => {
 	if (!cfg.isProduction) return;
 
 	const required: [string, string][] = [
+		['APP_URL', cfg.appUrl],
 		['APP_KEY', cfg.appKey],
 		['SCREEN_MASTER_SECRET', cfg.screenMasterSecret],
 		['REDIS_HOST', cfg.redis.host],
+		['MONGODB_URI', cfg.mongodb.uri],
 		['CMS_BASE_URL', cfg.cms.baseUrl],
 		['CMS_INTERNAL_SECRET', cfg.cms.internalSecret],
 	];

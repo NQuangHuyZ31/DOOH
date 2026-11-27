@@ -43,7 +43,7 @@ export const getRedisClient = (): Redis => {
 	return redisInstance;
 };
 
-const getReadyRedis = async (): Promise<Redis | null> => {
+export const getReadyRedis = async (): Promise<Redis | null> => {
 	const client = getRedisClient();
 	if (client.status === 'wait' || client.status === 'close') {
 		await client.connect().catch(() => {});

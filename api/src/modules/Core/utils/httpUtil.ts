@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import type { RouteContext } from '../router/router.js';
 
 export interface ApiResponse<T = unknown> {
 	status: 'success' | 'error';
@@ -27,6 +28,22 @@ export const sendSuccess = <T>(res: ServerResponse, data: T, message = 'Success'
 
 export const sendError = (res: ServerResponse, statusCode: number, message: string, errors?: Record<string, string[]>): void => {
 	sendJson(res, statusCode, { status: 'error', message, errors });
+};
+
+export const extractClientIp = (req: IncomingMessage): string => {
+	const forwarded = req.headers['x-forwarded-for'];
+	if (typeof forwarded === 'string' && forwarded.trim().length > 0) {
+		return forwarded.split(',')[0]?.trim() || '';
+	}
+	return req.socket.remoteAddress || '';
+};
+
+export const getAuthContext = <T>(ctx: RouteContext, res: ServerResponse): T | null => {
+	if (!ctx.auth) {
+		sendError(res, 401, 'Unauthorized');
+		return null;
+	}
+	return ctx.auth as T;
 };
 
 export const readJsonBody = async <T = Record<string, unknown>>(req: IncomingMessage, maxBytes = 1048576): Promise<T> => {

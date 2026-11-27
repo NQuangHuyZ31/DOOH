@@ -52,21 +52,23 @@ export class AuthService {
 	}
 
 	public async authenticateScreen(screenKey: string | null, screenCode: string | null): Promise<AuthResult> {
-		if (!screenKey || !screenCode) {
+		if (!screenKey || !screenCode || screenCode.trim().length === 0) {
 			return { ok: false, code: 401, message: 'Unauthorized: missing screen key or screen code' };
 		}
 
+		const normalizedCode = screenCode.trim().toUpperCase();
+
 		// Layer 1: stateless HMAC verification blocks forged keys before touching Redis or CMS
-		if (!verifyScopedKey(screenKey, 'screen', screenCode, this.masterSecret)) {
+		if (!verifyScopedKey(screenKey, 'screen', normalizedCode, this.masterSecret)) {
 			return { ok: false, code: 401, message: 'Unauthorized: invalid screen key signature' };
 		}
 
 		// Layer 2: Redis cache lookup; Layer 3: fallback to CMS and warm Redis on cache miss
-		const cacheKey = RedisKeyHelper.screenAuth(screenCode);
+		const cacheKey = RedisKeyHelper.screenAuth(normalizedCode);
 		let record = await readCacheJson<ScreenAuthRecord>(this.store, cacheKey);
 
 		if (!record && this.fallback.resolveScreen) {
-			record = await this.fallback.resolveScreen(screenCode, screenKey);
+			record = await this.fallback.resolveScreen(normalizedCode, screenKey);
 			if (record) await writeCacheJson(this.store, cacheKey, config.cache.authTtlSeconds, record);
 		}
 

@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { RouteContext } from '@core/router/router.js';
-import { readJsonBody, sendError, sendSuccess } from '@core/utils/httpUtil.js';
+import { extractClientIp, getAuthContext, readJsonBody, sendError, sendSuccess } from '@core/utils/httpUtil.js';
 import type { AuthContext } from '@modules/Auth/types/auth.types.js';
 import type { HeartbeatPayload, PartnerScreenPayload } from '../types/venue.types.js';
 import { VenueService, defaultVenueService } from '../services/venueService.js';
@@ -18,11 +18,8 @@ const parseBodyOrRespond = async <T>(req: IncomingMessage, res: ServerResponse):
 
 export const createVenueController = (service: VenueService = defaultVenueService) => ({
 	registerScreen: async (req: IncomingMessage, res: ServerResponse, ctx: RouteContext): Promise<void> => {
-		const auth = ctx.auth as AuthContext | undefined;
-		if (!auth) {
-			sendError(res, 401, 'Unauthorized');
-			return;
-		}
+		const auth = getAuthContext<AuthContext>(ctx, res);
+		if (!auth) return;
 
 		const body = await parseBodyOrRespond<Partial<PartnerScreenPayload>>(req, res);
 		if (!body) return;
@@ -37,11 +34,8 @@ export const createVenueController = (service: VenueService = defaultVenueServic
 	},
 
 	registerScreensBatch: async (req: IncomingMessage, res: ServerResponse, ctx: RouteContext): Promise<void> => {
-		const auth = ctx.auth as AuthContext | undefined;
-		if (!auth) {
-			sendError(res, 401, 'Unauthorized');
-			return;
-		}
+		const auth = getAuthContext<AuthContext>(ctx, res);
+		if (!auth) return;
 
 		const body = await parseBodyOrRespond<{ screens?: unknown }>(req, res);
 		if (!body) return;
@@ -56,11 +50,8 @@ export const createVenueController = (service: VenueService = defaultVenueServic
 	},
 
 	listScreens: async (_req: IncomingMessage, res: ServerResponse, ctx: RouteContext): Promise<void> => {
-		const auth = ctx.auth as AuthContext | undefined;
-		if (!auth) {
-			sendError(res, 401, 'Unauthorized');
-			return;
-		}
+		const auth = getAuthContext<AuthContext>(ctx, res);
+		if (!auth) return;
 
 		const result = await service.listScreens(auth);
 		if (!result.ok) {
@@ -72,11 +63,8 @@ export const createVenueController = (service: VenueService = defaultVenueServic
 	},
 
 	getScreenConfig: async (_req: IncomingMessage, res: ServerResponse, ctx: RouteContext): Promise<void> => {
-		const auth = ctx.auth as AuthContext | undefined;
-		if (!auth) {
-			sendError(res, 401, 'Unauthorized');
-			return;
-		}
+		const auth = getAuthContext<AuthContext>(ctx, res);
+		if (!auth) return;
 
 		const result = await service.getScreenConfig(auth, ctx.params.code || '');
 		if (!result.ok) {
@@ -88,17 +76,13 @@ export const createVenueController = (service: VenueService = defaultVenueServic
 	},
 
 	recordHeartbeat: async (req: IncomingMessage, res: ServerResponse, ctx: RouteContext): Promise<void> => {
-		const auth = ctx.auth as AuthContext | undefined;
-		if (!auth) {
-			sendError(res, 401, 'Unauthorized');
-			return;
-		}
+		const auth = getAuthContext<AuthContext>(ctx, res);
+		if (!auth) return;
 
 		const body = await parseBodyOrRespond<HeartbeatPayload>(req, res);
 		if (!body) return;
 
-		const ipAddress = body.ip_address || (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() || req.socket.remoteAddress;
-		const result = await service.recordHeartbeat(auth, ctx.params.code || '', { ...body, ip_address: ipAddress });
+		const result = await service.recordHeartbeat(auth, ctx.params.code || '', { ...body, ip_address: body.ip_address || extractClientIp(req) });
 		if (!result.ok) {
 			sendError(res, result.code, result.message, result.errors);
 			return;

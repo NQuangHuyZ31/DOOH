@@ -124,8 +124,12 @@ export class VenueService {
 		if (!payload.name || typeof payload.name !== 'string' || payload.name.trim() === '') return 'name is required';
 		if (!payload.location_name || typeof payload.location_name !== 'string' || payload.location_name.trim() === '') return 'location_name is required';
 		if (!payload.city || typeof payload.city !== 'string' || payload.city.trim() === '') return 'city is required';
-		if (typeof payload.resolution_width !== 'number' || !Number.isInteger(payload.resolution_width) || payload.resolution_width < 100) return 'resolution_width must be an integer >= 100';
-		if (typeof payload.resolution_height !== 'number' || !Number.isInteger(payload.resolution_height) || payload.resolution_height < 100) return 'resolution_height must be an integer >= 100';
+		if (typeof payload.resolution_width !== 'number' || !Number.isInteger(payload.resolution_width) || payload.resolution_width < 100 || payload.resolution_width > 16384) {
+			return 'resolution_width must be an integer between 100 and 16384';
+		}
+		if (typeof payload.resolution_height !== 'number' || !Number.isInteger(payload.resolution_height) || payload.resolution_height < 100 || payload.resolution_height > 16384) {
+			return 'resolution_height must be an integer between 100 and 16384';
+		}
 		return null;
 	}
 }

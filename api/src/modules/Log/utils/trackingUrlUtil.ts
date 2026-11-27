@@ -6,6 +6,7 @@ export interface TrackingUrlInput {
 	screen_id?: number;
 	line_item_id: number;
 	creative_id?: number;
+	duration?: number;
 	ttlSeconds: number;
 }
 
@@ -22,7 +23,7 @@ export interface TrackingUrlOptions {
 
 export const buildTrackingUrls = (input: TrackingUrlInput, options: TrackingUrlOptions = {}): TrackingUrls => {
 	const exp = Math.floor(Date.now() / 1000) + Math.max(60, input.ttlSeconds);
-	const hash = encryptToken({ venue_id: input.venue_id, screen_id: input.screen_id, line_item_id: input.line_item_id, creative_id: input.creative_id, exp }, options.appKey);
+	const hash = encryptToken({ venue_id: input.venue_id, screen_id: input.screen_id, line_item_id: input.line_item_id, creative_id: input.creative_id, duration: input.duration, exp }, options.appKey);
 
 	const baseUrl = (options.appUrl ?? config.appUrl).replace(/\/+$/, '');
 	const prefix = normalizePathPrefix(options.apiPrefix ?? config.apiPrefix);
