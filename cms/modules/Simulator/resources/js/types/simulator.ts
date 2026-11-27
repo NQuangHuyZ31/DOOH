@@ -110,3 +110,11 @@ export interface BeaconLogEntry {
 	latencyMs: number;
 	detail?: string;
 }
+
+export interface BeaconLineItemStat {
+	lineItemId: number;
+	lineItemName: string;
+	imp: number;
+	complete: number;
+	failed: number;
+}

@@ -29,7 +29,7 @@ export const EventDebugPanel: React.FC<EventDebugPanelProps> = ({ playlistData, 
 				{playlistData ? (
 					<Descriptions size="small" column={2} bordered>
 						<Descriptions.Item label="Source">
-							<Tag color={playlistData.source === 'node_api' ? 'success' : 'warning'}>{playlistData.source === 'node_api' ? 'Node API Live' : 'CMS Fallback'}</Tag>
+							<Tag color="success">Node API Live</Tag>
 						</Descriptions.Item>
 						<Descriptions.Item label="Screen">{playlistData.screen.code}</Descriptions.Item>
 						<Descriptions.Item label="Resolution">{`${playlistData.screen.resolution_width}×${playlistData.screen.resolution_height}`}</Descriptions.Item>

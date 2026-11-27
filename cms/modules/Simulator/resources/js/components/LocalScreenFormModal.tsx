@@ -1,15 +1,7 @@
 import React, { useEffect } from 'react';
 import { Col, Form, Input, InputNumber, Modal, Row, Select, Switch } from 'antd';
+import { useAppSelector } from '@core/store/hooks';
 import type { CreateLocalScreenPayload } from '../types/simulator';
-
-const SCREEN_TYPES = [
-	{ value: 'led', label: 'LED' },
-	{ value: 'lcd', label: 'LCD' },
-	{ value: 'billboard', label: 'Billboard' },
-	{ value: 'kiosk', label: 'Kiosk' },
-	{ value: 'elevator', label: 'Elevator' },
-	{ value: 'transit', label: 'Transit' },
-];
 
 interface LocalScreenFormModalProps {
 	open: boolean;
@@ -20,6 +12,7 @@ interface LocalScreenFormModalProps {
 
 export const LocalScreenFormModal: React.FC<LocalScreenFormModalProps> = ({ open, loading, onCancel, onSubmit }) => {
 	const [form] = Form.useForm<CreateLocalScreenPayload>();
+	const screenTypeOptions = useAppSelector((state) => state.metadata.data?.enums?.screen_types) || [];
 
 	useEffect(() => {
 		if (open) {
@@ -44,7 +37,7 @@ export const LocalScreenFormModal: React.FC<LocalScreenFormModalProps> = ({ open
 					</Col>
 					<Col span={10}>
 						<Form.Item name="screen_type" label="Screen Type">
-							<Select options={SCREEN_TYPES} />
+							<Select options={screenTypeOptions} />
 						</Form.Item>
 					</Col>
 				</Row>

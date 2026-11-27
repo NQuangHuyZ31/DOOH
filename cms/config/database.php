@@ -66,9 +66,10 @@ return [
 
         'mongodb' => [
             'driver' => 'mongodb',
+            'dsn' => env('MONGODB_URI'),
             'host' => env('MONGODB_HOST', '127.0.0.1'),
             'port' => env('MONGODB_PORT', 27017),
-            'database' => env('MONGODB_DATABASE', 'dooh_tracking_db'),
+            'database' => env('MONGODB_DATABASE', 'dooh_tracking'),
             'username' => env('MONGODB_USERNAME', ''),
             'password' => env('MONGODB_PASSWORD', ''),
             'options' => [

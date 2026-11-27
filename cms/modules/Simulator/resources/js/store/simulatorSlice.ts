@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { BeaconLogEntry, SimulatorPlaylistData, SimulatorScreenItem } from '../types/simulator';
+import type { BeaconLineItemStat, BeaconLogEntry, SimulatorPlaylistData, SimulatorScreenItem } from '../types/simulator';
 import { batchSyncSimulatorScreensToCms, createLocalSimulatorScreen, deleteLocalSimulatorScreen, fetchNodeDeliveryPlaylist, fetchSimulatorScreens, syncSimulatorScreenToCms } from './simulatorThunk';
 
 export interface SimulatorState {
@@ -13,6 +13,7 @@ export interface SimulatorState {
 	loadingPlaylist: boolean;
 	error: string | null;
 	beaconLogs: BeaconLogEntry[];
+	beaconStats: Record<number, BeaconLineItemStat>;
 }
 
 const initialState: SimulatorState = {
@@ -26,6 +27,7 @@ const initialState: SimulatorState = {
 	loadingPlaylist: false,
 	error: null,
 	beaconLogs: [],
+	beaconStats: {},
 };
 
 export const simulatorSlice = createSlice({
@@ -36,12 +38,32 @@ export const simulatorSlice = createSlice({
 			state.selectedScreenId = action.payload;
 			state.playlistData = null;
 			state.error = null;
+			state.beaconStats = {};
 		},
 		appendBeaconLog(state, action: PayloadAction<BeaconLogEntry>) {
-			state.beaconLogs = [action.payload, ...state.beaconLogs].slice(0, 60);
+			const entry = action.payload;
+			state.beaconLogs = [entry, ...state.beaconLogs].slice(0, 60);
+
+			if ((entry.event === 'IMP' || entry.event === 'COMPLETE') && entry.lineItemId) {
+				const existing = state.beaconStats[entry.lineItemId] || {
+					lineItemId: entry.lineItemId,
+					lineItemName: entry.lineItemName || `LineItem #${entry.lineItemId}`,
+					imp: 0,
+					complete: 0,
+					failed: 0,
+				};
+				if (entry.statusCode === 204 || entry.statusCode === 200 || entry.statusCode === 'OK') {
+					if (entry.event === 'IMP') existing.imp += 1;
+					else existing.complete += 1;
+				} else if (entry.statusCode === 'ERR' || (typeof entry.statusCode === 'number' && entry.statusCode >= 400)) {
+					existing.failed += 1;
+				}
+				state.beaconStats[entry.lineItemId] = existing;
+			}
 		},
 		clearBeaconLogs(state) {
 			state.beaconLogs = [];
+			state.beaconStats = {};
 		},
 	},
 	extraReducers: (builder) => {

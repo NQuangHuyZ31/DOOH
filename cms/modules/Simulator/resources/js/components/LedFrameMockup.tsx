@@ -7,6 +7,7 @@ import type { ParsedVastResult, SimulatorScreenMeta, SimulatorSlot } from '../ty
 interface LedFrameMockupProps {
 	screen: SimulatorScreenMeta | null;
 	activeSlot: SimulatorSlot | null;
+	playCycle?: number;
 	resolvedVast: ParsedVastResult | null;
 	isPlaying: boolean;
 	isMuted: boolean;
@@ -25,6 +26,7 @@ interface LedFrameMockupProps {
 export const LedFrameMockup: React.FC<LedFrameMockupProps> = ({
 	screen,
 	activeSlot,
+	playCycle = 0,
 	resolvedVast,
 	isPlaying,
 	isMuted,
@@ -78,7 +80,7 @@ export const LedFrameMockup: React.FC<LedFrameMockupProps> = ({
 					</Space>
 				) : activeSlot && videoSrc ? (
 					<video
-						key={`${activeSlot.line_item_id}-${activeSlot.creative_id}-${videoSrc}`}
+						key={`${playCycle}-${activeSlot.line_item_id}-${activeSlot.creative_id}-${videoSrc}`}
 						src={videoSrc}
 						autoPlay
 						muted={isMuted}
@@ -90,7 +92,7 @@ export const LedFrameMockup: React.FC<LedFrameMockupProps> = ({
 					/>
 				) : activeSlot?.type === 'image' ? (
 					<img
-						key={`${activeSlot.line_item_id}-${activeSlot.creative_id}`}
+						key={`${playCycle}-${activeSlot.line_item_id}-${activeSlot.creative_id}`}
 						src={activeSlot.media_url}
 						alt={activeSlot.line_item_name || 'Creative'}
 						onLoad={onImpression}
@@ -99,7 +101,7 @@ export const LedFrameMockup: React.FC<LedFrameMockupProps> = ({
 					/>
 				) : activeSlot?.type === 'html5' ? (
 					<iframe
-						key={`${activeSlot.line_item_id}-${activeSlot.creative_id}`}
+						key={`${playCycle}-${activeSlot.line_item_id}-${activeSlot.creative_id}`}
 						src={activeSlot.media_url}
 						title={activeSlot.line_item_name || 'HTML5 Ad'}
 						sandbox="allow-scripts allow-same-origin"
